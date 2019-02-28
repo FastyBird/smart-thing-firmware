@@ -227,7 +227,7 @@ bool _settingsRestoreJson(
 
         int params = request->params();
 
-        for(unsigned int i = 0; i < params; i++) {
+        for (unsigned int i = 0; i < params; i++) {
             AsyncWebParameter* p = request->getParam(i);
             
             if (p->isFile()) {

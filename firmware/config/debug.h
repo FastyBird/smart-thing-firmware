@@ -1,8 +1,16 @@
+/*
+
+FIRMWARE DEBUG CONFIGURATION
+
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+
+*/
+
 #pragma once
 
-// -----------------------------------------------------------------------------
+// =============================================================================
 // Debug
-// -----------------------------------------------------------------------------
+// =============================================================================
 
 #ifndef DEBUG_SUPPORT
 #define DEBUG_SUPPORT   DEBUG_SERIAL_SUPPORT || DEBUG_WEB_SUPPORT || DEBUG_MQTT_SUPPORT

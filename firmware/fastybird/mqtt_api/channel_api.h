@@ -260,7 +260,7 @@ bool _fastybirdPropagateChannelProperties(
 
     strcpy(formatted_properties, properties[0].type);
 
-    for(unsigned int i = 1; i < properties.size(); i++) {
+    for (unsigned int i = 1; i < properties.size(); i++) {
         strcat(formatted_properties, ",");
         strcat(formatted_properties, properties[i].type);
     }

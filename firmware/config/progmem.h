@@ -105,32 +105,95 @@ PROGMEM const char firmware_modules[] =
 
 #if NODES_GATEWAY_SUPPORT
 
-PROGMEM const char gateway_packet_none[] = "GATEWAY_PACKET_NONE";
-PROGMEM const char gateway_packet_unknown[] = "GATEWAY_PACKET_UNKNOWN";
-PROGMEM const char gateway_packet_error[] = "GATEWAY_PACKET_ERROR";
-PROGMEM const char gateway_packet_accepted[] = "GATEWAY_PACKET_ACCEPTED";
-PROGMEM const char gateway_packet_master_lookup[] = "GATEWAY_PACKET_MASTER_LOOKUP";
-PROGMEM const char gateway_packet_heartbeat[] = "GATEWAY_PACKET_HEARTBEAT";
-PROGMEM const char gateway_packet_ping[] = "GATEWAY_PACKET_PING";
-PROGMEM const char gateway_packet_pong[] = "GATEWAY_PACKET_PONG";
-PROGMEM const char gateway_packet_data[] = "GATEWAY_PACKET_DATA";
-PROGMEM const char gateway_packet_init_start[] = "GATEWAY_PACKET_INIT_START";
-PROGMEM const char gateway_packet_init_end[] = "GATEWAY_PACKET_INIT_END";
-PROGMEM const char gateway_packet_init_restart[] = "GATEWAY_PACKET_INIT_RESTART";
-PROGMEM const char gateway_packet_hw_info[] = "GATEWAY_PACKET_HARDWARE_INFO";
-PROGMEM const char gateway_packet_fw_info[] = "GATEWAY_PACKET_FIRMWARE_INFO";
-PROGMEM const char gateway_packet_settings_schema[] = "GATEWAY_PACKET_SETTINGS_SCHEMA";
-PROGMEM const char gateway_packet_channels_schema[] = "GATEWAY_PACKET_CHANNELS_SCHEMA";
-PROGMEM const char gateway_packet_who_are_you[] = "GATEWAY_PACKET_WHO_ARE_YOU";
+const char gateway_packet_search_nodes[] PROGMEM                = "GATEWAY_PACKET_SEARCH_NODES";
+const char gateway_packet_node_address_confirm[] PROGMEM        = "GATEWAY_PACKET_NODE_ADDRESS_CONFIRM";
+const char gateway_packet_address_discard[] PROGMEM             = "GATEWAY_PACKET_ADDRESS_DISCARD";
 
-PROGMEM const char* const gateway_packet_string[] = {
-    gateway_packet_none, gateway_packet_unknown, gateway_packet_error, gateway_packet_accepted,
-    gateway_packet_master_lookup,
-    gateway_packet_heartbeat, gateway_packet_ping, gateway_packet_pong, gateway_packet_data,
-    gateway_packet_init_start, gateway_packet_init_end, gateway_packet_init_restart,
-    gateway_packet_hw_info, gateway_packet_fw_info,
-    gateway_packet_settings_schema, gateway_packet_channels_schema,
-    gateway_packet_who_are_you
+PROGMEM const char * const gateway_packets_addresing_string[] = {
+    gateway_packet_search_nodes, gateway_packet_node_address_confirm, gateway_packet_address_discard
+};
+
+const char gateway_packet_hw_model[] PROGMEM                    = "GATEWAY_PACKET_HW_MODEL";
+const char gateway_packet_hw_manufacturer[] PROGMEM             = "GATEWAY_PACKET_HW_MANUFACTURER";
+const char gateway_packet_hw_version[] PROGMEM                  = "GATEWAY_PACKET_HW_VERSION";
+const char gateway_packet_fw_model[] PROGMEM                    = "GATEWAY_PACKET_FW_MODEL";
+const char gateway_packet_fw_manufacturer[] PROGMEM             = "GATEWAY_PACKET_FW_MANUFACTURER";
+const char gateway_packet_fw_version[] PROGMEM                  = "GATEWAY_PACKET_FW_VERSION";
+
+PROGMEM const char * const gateway_packets_node_initialization_string[] = {
+    gateway_packet_hw_model, gateway_packet_hw_manufacturer, gateway_packet_hw_version,
+    gateway_packet_fw_model, gateway_packet_fw_manufacturer, gateway_packet_fw_version
+};
+
+const char gateway_packet_registers_size[] PROGMEM              = "GATEWAY_PACKET_REGISTERS_SIZE";
+const char gateway_packet_di_registers_structure[] PROGMEM      = "GATEWAY_PACKET_DI_REGISTERS_STRUCTURE";
+const char gateway_packet_do_registers_structure[] PROGMEM      = "GATEWAY_PACKET_DO_REGISTERS_STRUCTURE";
+const char gateway_packet_ai_registers_structure[] PROGMEM      = "GATEWAY_PACKET_AI_REGISTERS_STRUCTURE";
+const char gateway_packet_ao_registers_structure[] PROGMEM      = "GATEWAY_PACKET_AO_REGISTERS_STRUCTURE";
+
+PROGMEM const char * const gateway_packets_registers_initialization_string[] = {
+    gateway_packet_registers_size,
+    gateway_packet_di_registers_structure, gateway_packet_do_registers_structure,
+    gateway_packet_ai_registers_structure, gateway_packet_ao_registers_structure
+};
+
+const char gateway_packet_read_single_di[] PROGMEM              = "GATEWAY_PACKET_READ_SINGLE_DI";
+const char gateway_packet_read_multi_di[] PROGMEM               = "GATEWAY_PACKET_READ_MULTI_DI";
+const char gateway_packet_read_single_do[] PROGMEM              = "GATEWAY_PACKET_READ_SINGLE_DO";
+const char gateway_packet_read_multi_do[] PROGMEM               = "GATEWAY_PACKET_READ_MULTI_DO";
+const char gateway_packet_read_ai[] PROGMEM                     = "GATEWAY_PACKET_READ_AI";
+const char gateway_packet_read_ao[] PROGMEM                     = "GATEWAY_PACKET_READ_AO";
+
+PROGMEM const char * const gateway_packets_registers_reading_string[] = {
+    gateway_packet_read_single_di, gateway_packet_read_multi_di,
+    gateway_packet_read_single_do, gateway_packet_read_multi_do,
+    gateway_packet_read_ai, gateway_packet_read_ao
+};
+
+const char gateway_packet_write_one_do[] PROGMEM                = "GATEWAY_PACKET_WRITE_ONE_DO";
+const char gateway_packet_write_one_ao[] PROGMEM                = "GATEWAY_PACKET_WRITE_ONE_AO";
+const char gateway_packet_write_multi_do[] PROGMEM              = "GATEWAY_PACKET_WRITE_MULTI_DO";
+
+PROGMEM const char * const gateway_packets_registers_writing_string[] = {
+    gateway_packet_write_one_do, gateway_packet_write_one_ao, gateway_packet_write_multi_do
+};
+
+const char gateway_packet_none[] PROGMEM                        = "GATEWAY_PACKET_NONE";
+const char gateway_packet_ping[] PROGMEM                        = "GATEWAY_PACKET_GATEWAY_PING";
+
+PROGMEM const char * const gateway_packets_misc_string[] = {
+    gateway_packet_none, gateway_packet_ping
+};
+
+//--------------------------------------------------------------------------------
+
+const int gateway_packets_addresing[] PROGMEM = {
+    GATEWAY_PACKET_SEARCH_NODES, GATEWAY_PACKET_NODE_ADDRESS_CONFIRM, GATEWAY_PACKET_ADDRESS_DISCARD
+};
+
+const int gateway_packets_node_initialization[] PROGMEM = {
+    GATEWAY_PACKET_HW_MODEL, GATEWAY_PACKET_HW_MANUFACTURER, GATEWAY_PACKET_HW_VERSION,
+    GATEWAY_PACKET_FW_MODEL, GATEWAY_PACKET_FW_MANUFACTURER, GATEWAY_PACKET_FW_VERSION
+};
+
+const int gateway_packets_registers_initialization[] PROGMEM = {
+    GATEWAY_PACKET_REGISTERS_SIZE,
+    GATEWAY_PACKET_DI_REGISTERS_STRUCTURE, GATEWAY_PACKET_DO_REGISTERS_STRUCTURE,
+    GATEWAY_PACKET_AI_REGISTERS_STRUCTURE, GATEWAY_PACKET_AO_REGISTERS_STRUCTURE
+};
+
+const int gateway_packets_registers_reading[] PROGMEM = {
+    GATEWAY_PACKET_READ_SINGLE_DI, GATEWAY_PACKET_READ_MULTI_DI,
+    GATEWAY_PACKET_READ_SINGLE_DO, GATEWAY_PACKET_READ_MULTI_DO,
+    GATEWAY_PACKET_READ_AI, GATEWAY_PACKET_READ_AO
+};
+
+const int gateway_packets_registers_writing[] PROGMEM = {
+    GATEWAY_PACKET_WRITE_ONE_DO, GATEWAY_PACKET_WRITE_ONE_AO, GATEWAY_PACKET_WRITE_MULTI_DO
+};
+
+const int gateway_packets_misc[] PROGMEM = {
+    GATEWAY_PACKET_NONE, GATEWAY_PACKET_GATEWAY_PING
 };
 
 #endif

@@ -6,9 +6,9 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
-//------------------------------------------------------------------------------
+// =============================================================================
 // GENERAL
-//------------------------------------------------------------------------------
+// =============================================================================
 
 #define THING_NAME                      MANUFACTURER "_" THING      // Concatenate both to get a unique thing name
 
@@ -24,9 +24,17 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define LOOP_DELAY_TIME                 10                          // Delay for this millis in the main loop [0-250]
 #endif
 
-//------------------------------------------------------------------------------
-// FASTYBIRD
-//------------------------------------------------------------------------------
+// =============================================================================
+// NETWORK
+// =============================================================================
+
+#ifndef NETWORK_ASYNC_TCP_SSL_ENABLED
+#define NETWORK_ASYNC_TCP_SSL_ENABLED   0                           // Enable SSL
+#endif
+
+// =============================================================================
+// FASTYBIRD MODULE
+// =============================================================================
 
 #ifndef FASTYBIRD_SUPPORT
 #define FASTYBIRD_SUPPORT               1                           // Enable FastyBird cloud connection
@@ -44,17 +52,9 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define FASTYBIRD_MQTT_NODE_BASE_TOPIC  "/v2/{cloudThingId}/child/{nodeId}"
 #endif
 
-//------------------------------------------------------------------------------
-// NETWORK
-//------------------------------------------------------------------------------
-
-#ifndef NETWORK_ASYNC_TCP_SSL_ENABLED
-#define NETWORK_ASYNC_TCP_SSL_ENABLED   0                           // Enable SSL
-#endif
-
-//------------------------------------------------------------------------------
-// DEBUG
-//------------------------------------------------------------------------------
+// =============================================================================
+// DEBUG MODULE
+// =============================================================================
 
 #ifndef DEBUG_SUPPORT
 #define DEBUG_SUPPORT                   1                           // Enable serial debug log
@@ -1023,10 +1023,62 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define RFM69_IS_RFM69HW            0
 #endif
 
-// -----------------------------------------------------------------------------
-// Nodes gateway
-// -----------------------------------------------------------------------------
+// =============================================================================
+// GATEWAY MODULE
+// =============================================================================
 
 #ifndef NODES_GATEWAY_SUPPORT
-#define NODES_GATEWAY_SUPPORT       0               // Do not build with gateway support by default
+#define NODES_GATEWAY_SUPPORT                       0               // Do not build with gateway support by default
+#endif
+
+#ifndef NODES_GATEWAY_MAX_NODES
+#define NODES_GATEWAY_MAX_NODES                     10              // Define maximum slave nodes count that could connect to the master
+#endif
+
+#ifndef NODES_GATEWAY_MAX_INIT_ATTEMPTS
+#define NODES_GATEWAY_MAX_INIT_ATTEMPTS             5               // Maximum count of attempts before gateway delay node initialization process
+#endif
+
+#ifndef NODES_GATEWAY_INIT_DELAY
+#define NODES_GATEWAY_INIT_DELAY                    15000           // Delay in ms after reaching maximum initialization attempts
+#endif
+
+#ifndef NODES_GATEWAY_INIT_REPLY_DELAY
+#define NODES_GATEWAY_INIT_REPLY_DELAY              3000            // Delay in ms to wait for response on packet from node
+#endif
+
+#ifndef NODES_GATEWAY_NODES_CHECK_INTERVAL
+#define NODES_GATEWAY_NODES_CHECK_INTERVAL          8000            // Delay in ms to wait for response on packet from node
+#endif
+
+#ifndef NODES_GATEWAY_ADDRESSING_TIMEOUT
+#define NODES_GATEWAY_ADDRESSING_TIMEOUT            4000            // Master GATEWAY_ACQUIRE_ADDRESS_REQUEST and GATEWAY_ACQUIRE_ADDRESS_NEGATE timeout
+#endif
+
+#ifndef NODES_GATEWAY_LIST_ADDRESSES_TIME
+#define NODES_GATEWAY_LIST_ADDRESSES_TIME           250             // Master reception time during GATEWAY_ACQUIRE_ADDRESS_LIST broadcast (250 milliseconds)
+#endif
+
+#ifndef NODES_GATEWAY_DI_READING_INTERVAL
+#define NODES_GATEWAY_DI_READING_INTERVAL           250
+#endif
+
+#ifndef NODES_GATEWAY_DO_READING_INTERVAL
+#define NODES_GATEWAY_DO_READING_INTERVAL           3000
+#endif
+
+#ifndef NODES_GATEWAY_AI_READING_INTERVAL
+#define NODES_GATEWAY_AI_READING_INTERVAL           250
+#endif
+
+#ifndef NODES_GATEWAY_AO_READING_INTERVAL
+#define NODES_GATEWAY_AO_READING_INTERVAL           3000
+#endif
+
+#ifndef NODES_GATEWAY_NODES_BUFFER_FULL
+#define NODES_GATEWAY_NODES_BUFFER_FULL             254
+#endif
+
+#ifndef NODES_GATEWAY_FAIL
+#define NODES_GATEWAY_FAIL                          65535
 #endif

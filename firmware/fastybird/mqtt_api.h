@@ -86,7 +86,7 @@ void _fastybirdBeforeInitialization() {
 
 void _fastybirdApiRestore(std::vector<fastybird_channel_t> channels) {
     #if DIRECT_CONTROL_SUPPORT
-        for(unsigned int i; i < channels.size(); i++) {
+        for (unsigned int i; i < channels.size(); i++) {
             _fastybirdMqttApiChannelUnsubscribeDirectControls(channels[i]);
             _fastybirdMqttApiChannelSubscribeDirectControls(channels[i]);
         }
