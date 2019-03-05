@@ -16,6 +16,12 @@ PJON<ThroughSerial> _gateway_bus(PJON_MASTER_ID);
 
 SoftwareSerial _gateway_serial_bus(NODES_GATEWAY_TX_PIN, NODES_GATEWAY_RX_PIN);
 
+struct gateway_node_packet_t {
+    uint8_t     max_length      = PJON_PACKET_MAX_LENGTH;
+    uint8_t     waiting_for     = GATEWAY_PACKET_NONE;
+    uint32_t    sending_time    = 0;
+};
+
 struct gateway_node_description_t {
     char    manufacturer[20]    = GATEWAY_DESCRIPTION_NOT_SET;
     char    model[20]           = GATEWAY_DESCRIPTION_NOT_SET;
@@ -24,27 +30,28 @@ struct gateway_node_description_t {
 
 struct gateway_node_initiliazation_t {
     bool        state           = false;
-    uint8_t     step            = GATEWAY_NODE_INIT_HW_MODEL;
+    uint8_t     step            = GATEWAY_PACKET_NONE;
     uint8_t     attempts        = 0;
-    uint32_t    delay           = 0;                        // In case maximum attempts is reached a wait delay is activated
-    uint8_t     waiting_reply   = GATEWAY_PACKET_NONE;
-    uint32_t    packet_time     = 0;
+    uint32_t    delay           = 0;        // In case maximum attempts is reached a wait delay is activated
 };
 
 struct gateway_node_addressing_t {
     bool        state           = false;    // FALSE = node addresing is not finished | TRUE = address was successfully accepted by node
     uint32_t    registration    = 0;        // Timestamp when node requested for address
+    uint32_t    lost            = 0;        // Timestamp when gateway detected node as lost
 };
 
-struct gateway_digital_register_reading_t {
-    uint8_t     start      = 0;
-    uint32_t    delay      = 0;
+struct gateway_register_reading_t {
+    uint8_t     start           = 0;
+    uint32_t    delay           = 0;
 };
 
-struct gateway_analog_register_reading_t {
-    uint8_t     start      = 0;
-    uint32_t    delay      = 0;
-};
+typedef struct {
+    const char *    name;
+    uint8_t         data_type;
+    uint8_t         size;
+    char            value[4];
+} gateway_register_t;
 
 struct gateway_node_t {
     // Node addressing process
@@ -53,106 +60,272 @@ struct gateway_node_t {
     // Node initiliazation process
     gateway_node_initiliazation_t initiliazation;
 
+    // Node packet handling
+    gateway_node_packet_t packet;
+
     // Node basic info
-    char node[40] = GATEWAY_DESCRIPTION_NOT_SET;
-    uint8_t max_packet_length = PJON_PACKET_MAX_LENGTH;
+    char serial_number[15] = GATEWAY_DESCRIPTION_NOT_SET;
 
     gateway_node_description_t hardware;
     gateway_node_description_t firmware;
 
-    uint32_t last_updated;
-
     // Data registers
-    std::vector<bool>   digital_inputs;
-    std::vector<bool>   digital_outputs;
+    std::vector<gateway_register_t> digital_inputs;
+    std::vector<gateway_register_t> digital_outputs;
 
-    std::vector<word>  analog_inputs;
-    std::vector<word>  analog_outputs;
+    std::vector<gateway_register_t> analog_inputs;
+    std::vector<gateway_register_t> analog_outputs;
     
-    // Data registers reading
-    gateway_digital_register_reading_t  digital_inputs_reading;
-    gateway_digital_register_reading_t  digital_outputs_reading;
+    uint8_t registers_size[4];
 
-    gateway_analog_register_reading_t   analog_inputs_reading;
-    gateway_analog_register_reading_t   analog_outputs_reading;
+    // Data registers reading
+    gateway_register_reading_t digital_inputs_reading;
+    gateway_register_reading_t digital_outputs_reading;
+
+    gateway_register_reading_t analog_inputs_reading;
+    gateway_register_reading_t analog_outputs_reading;
 };
 
 gateway_node_t _gateway_nodes[NODES_GATEWAY_MAX_NODES];
 
+typedef union {
+    bool        number;
+    uint8_t     bytes[4];
+} BOOL_UNION_t;
+
+typedef union {
+    uint8_t     number;
+    uint8_t     bytes[4];
+} UINT8_UNION_t;
+
+typedef union {
+    uint16_t    number;
+    uint8_t     bytes[4];
+} UINT16_UNION_t;
+
+typedef union {
+    uint32_t    number;
+    uint8_t     bytes[4];
+} UINT32_UNION_t;
+
+typedef union {
+    int8_t      number;
+    uint8_t     bytes[4];
+} INT8_UNION_t;
+
+typedef union {
+    int16_t     number;
+    uint8_t     bytes[4];
+} INT16_UNION_t;
+
+typedef union {
+    int32_t     number;
+    uint8_t     bytes[4];
+} INT32_UNION_t;
+
+typedef union {
+    float       number;
+    uint8_t     bytes[4];
+} FLOAT32_UNION_t;
+
 uint8_t _gateway_reading_node_index = 0;
-bool _gateway_refresh_nodes = false;
 uint32_t _gateway_last_nodes_check = 0;
+
+#include "./pjon/addressing.h"
+#include "./pjon/initialization.h"
+#include "./pjon/registers.h"
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
 #if (WEB_SUPPORT && WS_SUPPORT) || FASTYBIRD_SUPPORT
-    void _nodesCollectNodes(
-        JsonArray& container
+    void _nodesCollectNode(
+        JsonObject& node,
+        const uint8_t id
     ) {
-        for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
-            JsonObject& node = container.createNestedObject();
+        bool value_bool;
+        uint8_t value_uint8;
+        uint16_t value_uint16;
+        uint32_t value_uint32;
+        int8_t value_int8;
+        int16_t value_int16;
+        int32_t value_int32;
+        float value_float;
 
-            node["addressed"] = _gateway_nodes[i].addressing.state;
-            node["initialized"] = _gateway_nodes[i].initiliazation.state;
+        node["addressed"] = _gateway_nodes[id].addressing.state;
+        node["initialized"] = _gateway_nodes[id].initiliazation.state;
+        node["lost"] = _gateway_nodes[id].addressing.lost;
 
-            JsonObject& addressing = node.createNestedObject("addressing");
+        JsonObject& addressing = node.createNestedObject("addressing");
 
-            addressing["registration"] = _gateway_nodes[i].addressing.registration;
+        addressing["registration"] = _gateway_nodes[id].addressing.registration;
 
-            // Node basic info
-            node["node"] = String(_gateway_nodes[i].node);
+        // Node basic info
+        node["node"] = String(_gateway_nodes[id].serial_number);
 
-            node["address"] = i + 1;
+        node["address"] = id + 1;
 
-            node["last_updated"] = _gateway_nodes[i].last_updated;
+        JsonObject& hardware = node.createNestedObject("hardware");
 
-            JsonObject& hardware = node.createNestedObject("hardware");
+        hardware["manufacturer"] = _gateway_nodes[id].hardware.manufacturer;
+        hardware["model"] = _gateway_nodes[id].hardware.model;
+        hardware["version"] = _gateway_nodes[id].hardware.version;
 
-            hardware["manufacturer"] = (char *) NULL;
-            hardware["model"] = (char *) NULL;
-            hardware["version"] = (char *) NULL;
+        JsonObject& firmware = node.createNestedObject("firmware");
 
-            hardware["manufacturer"] = _gateway_nodes[i].hardware.manufacturer;
-            hardware["model"] = _gateway_nodes[i].hardware.model;
-            hardware["version"] = _gateway_nodes[i].hardware.version;
+        firmware["manufacturer"] = _gateway_nodes[id].firmware.manufacturer;
+        firmware["model"] = _gateway_nodes[id].firmware.model;
+        firmware["version"] = _gateway_nodes[id].firmware.version;
 
-            JsonObject& firmware = node.createNestedObject("firmware");
+        // Node channels schema
+        JsonObject& registers = node.createNestedObject("registers");
 
-            firmware["manufacturer"] = (char *) NULL;
-            firmware["model"] = (char *) NULL;
-            firmware["version"] = (char *) NULL;
+        JsonArray& digital_inputs_register = registers.createNestedArray("digital_inputs");
 
-            firmware["manufacturer"] = _gateway_nodes[i].firmware.manufacturer;
-            firmware["model"] = _gateway_nodes[i].firmware.model;
-            firmware["version"] = _gateway_nodes[i].firmware.version;
+        for (uint8_t j = 0; j < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI]; j++) {
+            _gatewayReadRegisterValue(id, GATEWAY_REGISTER_DI, j, value_bool);
 
-            // Node channels schema
-            JsonObject& registers = node.createNestedObject("registers");
+            JsonObject& di_register = digital_inputs_register.createNestedObject();
 
-            JsonArray& digital_inputs_register = registers.createNestedArray("digital_inputs");
+            di_register["data_type"] = "b1";
+            di_register["value"] = value_bool;
+        }
 
-            for (uint8_t j = 0; j < _gateway_nodes[i].digital_inputs.size(); j++) {
-                digital_inputs_register.add((bool) _gateway_nodes[i].digital_inputs[j]);
+        JsonArray& digital_outputs_register = registers.createNestedArray("digital_outputs");
+
+        for (uint8_t j = 0; j < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO]; j++) {
+            _gatewayReadRegisterValue(id, GATEWAY_REGISTER_DO, j, value_bool);
+
+            JsonObject& do_register = digital_outputs_register.createNestedObject();
+
+            do_register["data_type"] = "b1";
+            do_register["value"] = value_bool;
+        }
+
+        JsonArray& analog_inputs_register = registers.createNestedArray("analog_inputs");
+
+        for (uint8_t j = 0; j < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI]; j++) {
+            JsonObject& ai_register = analog_inputs_register.createNestedObject();
+
+            switch (_gateway_nodes[id].analog_inputs[j].data_type)
+            {
+                case GATEWAY_DATA_TYPE_UINT8:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_uint8);
+
+                    ai_register["data_type"] = "u1";
+                    ai_register["value"] = value_uint8;
+                    break;
+
+                case GATEWAY_DATA_TYPE_UINT16:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_uint16);
+
+                    ai_register["data_type"] = "u2";
+                    ai_register["value"] = value_uint16;
+                    break;
+
+                case GATEWAY_DATA_TYPE_UINT32:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_uint32);
+
+                    ai_register["data_type"] = "u4";
+                    ai_register["value"] = value_uint32;
+                    break;
+
+                case GATEWAY_DATA_TYPE_INT8:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_int8);
+
+                    ai_register["data_type"] = "i1";
+                    ai_register["value"] = value_uint8;
+                    break;
+
+                case GATEWAY_DATA_TYPE_INT16:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_int16);
+
+                    ai_register["data_type"] = "i2";
+                    ai_register["value"] = value_uint16;
+                    break;
+
+                case GATEWAY_DATA_TYPE_INT32:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_int32);
+
+                    ai_register["data_type"] = "i4";
+                    ai_register["value"] = value_uint32;
+                    break;
+
+                case GATEWAY_DATA_TYPE_FLOAT32:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_float);
+
+                    ai_register["data_type"] = "f4";
+                    ai_register["value"] = value_float;
+                    break;
+
+                default:
+                    ai_register["data_type"] = "na";
+                    ai_register["value"] = 0;
+                    break;
             }
+        }
 
-            JsonArray& digital_outputs_register = registers.createNestedArray("digital_outputs");
+        JsonArray& analog_outputs_register = registers.createNestedArray("analog_outputs");
 
-            for (uint8_t j = 0; j < _gateway_nodes[i].digital_outputs.size(); j++) {
-                digital_outputs_register.add((bool) _gateway_nodes[i].digital_outputs[j]);
-            }
+        for (uint8_t j = 0; j < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO]; j++) {
+            JsonObject& ao_register = analog_outputs_register.createNestedObject();
 
-            JsonArray& analog_inputs_register = registers.createNestedArray("analog_inputs");
+            switch (_gateway_nodes[id].analog_outputs[j].data_type)
+            {
+                case GATEWAY_DATA_TYPE_UINT8:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_uint8);
 
-            for (uint8_t j = 0; j < _gateway_nodes[i].analog_inputs.size(); j++) {
-                analog_inputs_register.add((word) _gateway_nodes[i].analog_inputs[j]);
-            }
+                    ao_register["data_type"] = "u1";
+                    ao_register["value"] = value_uint8;
+                    break;
 
-            JsonArray& analog_outputs_register = registers.createNestedArray("analog_outputs");
+                case GATEWAY_DATA_TYPE_UINT16:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_uint16);
 
-            for (uint8_t j = 0; j < _gateway_nodes[i].analog_outputs.size(); j++) {
-                analog_outputs_register.add((word) _gateway_nodes[i].analog_outputs[j]);
+                    ao_register["data_type"] = "u2";
+                    ao_register["value"] = value_uint16;
+                    break;
+
+                case GATEWAY_DATA_TYPE_UINT32:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_uint32);
+
+                    ao_register["data_type"] = "u4";
+                    ao_register["value"] = value_uint32;
+                    break;
+
+                case GATEWAY_DATA_TYPE_INT8:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_int8);
+
+                    ao_register["data_type"] = "i1";
+                    ao_register["value"] = value_uint8;
+                    break;
+
+                case GATEWAY_DATA_TYPE_INT16:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_int16);
+
+                    ao_register["data_type"] = "i2";
+                    ao_register["value"] = value_uint16;
+                    break;
+
+                case GATEWAY_DATA_TYPE_INT32:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_int32);
+
+                    ao_register["data_type"] = "i4";
+                    ao_register["value"] = value_uint32;
+                    break;
+
+                case GATEWAY_DATA_TYPE_FLOAT32:
+                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_float);
+
+                    ao_register["data_type"] = "f4";
+                    ao_register["value"] = value_float;
+                    break;
+
+                default:
+                    ao_register["data_type"] = "na";
+                    ao_register["value"] = 0;
+                    break;
             }
         }
     }
@@ -175,7 +348,11 @@ uint32_t _gateway_last_nodes_check = 0;
         // Nodes container
         JsonArray& nodes = data.createNestedArray("nodes");
 
-        _nodesCollectNodes(nodes);
+        for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
+            JsonObject& node = nodes.createNestedObject();
+
+            _nodesCollectNode(node, i);
+        }
     }
 
 // -----------------------------------------------------------------------------
@@ -205,14 +382,18 @@ uint32_t _gateway_last_nodes_check = 0;
         // Nodes container
         JsonArray& nodes = data.createNestedArray("nodes");
 
-        _nodesCollectNodes(nodes);
+        for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
+            JsonObject& node = nodes.createNestedObject();
+
+            _nodesCollectNode(node, i);
+        }
     }
 
 // -----------------------------------------------------------------------------
 
     // WS client requested configuration update
     void _nodesWSOnConfigure(
-        uint32_t clientId, 
+        const uint32_t clientId, 
         JsonObject& module
     ) {
         if (module.containsKey("module") && module["module"] == "nodes") {
@@ -234,7 +415,7 @@ uint32_t _gateway_last_nodes_check = 0;
 
     // WS client called action
     void _nodesWSOnAction(
-        uint32_t clientId,
+        const uint32_t clientId,
         const char * action,
         JsonObject& data
     ) {
@@ -247,23 +428,23 @@ uint32_t _gateway_last_nodes_check = 0;
         ) {
             for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
                 // Search for node
-                if (strcmp(_gateway_nodes[i].node, data["node"].as<const char *>()) == 0) {
+                if (strcmp(_gateway_nodes[i].serial_number, data["node"].as<const char *>()) == 0) {
                     DEBUG_MSG(PSTR("[GATEWAY] Found node to update\n"));
 
                     if (strcmp("digital_output", data["register"].as<const char *>()) == 0) {
-                        if (data["address"].as<uint8_t>() < _gateway_nodes[i].digital_outputs.size()) {
-                            _gatewayWriteNodeDigitalOutputs(i, data["address"].as<uint8_t>(), data["value"].as<bool>());
+                        if (data["address"].as<uint8_t>() < _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DO]) {
+                            _gatewayRequestWritingSingleDigitalOutputRegister(i, data["address"].as<uint8_t>(), data["value"].as<bool>());
 
                         } else {
-                            DEBUG_MSG(PSTR("[GATEWAY][ERR] Register address: %d is out of range: 0 - %d\n"), data["address"].as<uint8_t>(), _gateway_nodes[i].digital_outputs.size());
+                            DEBUG_MSG(PSTR("[GATEWAY][ERR] Register address: %d is out of range: 0 - %d\n"), data["address"].as<uint8_t>(), _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DO]);
                         }
 
                     } else if (strcmp("analog_output", data["register"].as<const char *>()) == 0) {
-                        if (data["address"].as<uint8_t>() < _gateway_nodes[i].analog_outputs.size()) {
-                            // TODO: _gatewayWriteNodeAnalogOutputs(i, data["address"].as<uint8_t>(), data["value"].as<word>());
+                        if (data["address"].as<uint8_t>() < _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AO]) {
+                            // TODO: _gatewayRequestWritingSingleAnalogOutputRegister(i, data["address"].as<uint8_t>(), data["value"].as<float>());
 
                         } else {
-                            DEBUG_MSG(PSTR("[GATEWAY][ERR] Register address: %d is out of range: 0 - %d\n"), data["address"].as<uint8_t>(), _gateway_nodes[i].analog_outputs.size());
+                            DEBUG_MSG(PSTR("[GATEWAY][ERR] Register address: %d is out of range: 0 - %d\n"), data["address"].as<uint8_t>(), _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AO]);
                         }
                     }
                 }
@@ -276,97 +457,107 @@ uint32_t _gateway_last_nodes_check = 0;
 
 #if FASTYBIRD_SUPPORT
     void _gatewayRegisterFastybirdNode(
-        uint8_t nodeIndex
+        const uint8_t id
     ) {
-/*
         fastybird_node_hardware_t hardware = {
-            "fb_node",
-            "0.0.1",
-            "fastybird"
+            _gateway_nodes[id].hardware.model,
+            _gateway_nodes[id].hardware.version,
+            _gateway_nodes[id].hardware.manufacturer
         };
 
         fastybird_node_software_t software = {
-            "fb_node",
-            "0.0.1",
-            "fastybird"
+            _gateway_nodes[id].firmware.model,
+            _gateway_nodes[id].firmware.version,
+            _gateway_nodes[id].firmware.manufacturer
         };
 
         fastybird_node_t register_node = {
-            _gateway_nodes[nodeIndex].node.c_str(),
-            _gateway_nodes[nodeIndex].version.c_str(),
+            _gateway_nodes[id].serial_number,
             hardware,
             software,
             false
         };
 
-        for (uint8_t i = 0; i < _gateway_nodes[nodeIndex].channels.size(); i++) {
-            switch (_gateway_nodes[nodeIndex].channels[i].type)
-            {
-                case GATEWAY_NODE_CHANNEL_TYPE_BUTTON:
-                    register_node.channels.push_back({
-                        FASTYBIRD_CHANNEL_TYPE_BUTTON,
-                        _gateway_nodes[nodeIndex].channels[i].length,
-                        _gateway_nodes[nodeIndex].channels[i].setable
-                    });
-                    break;
-            
-                case GATEWAY_NODE_CHANNEL_TYPE_INPUT:
-                    break;
-            
-                case GATEWAY_NODE_CHANNEL_TYPE_OUTPUT:
-                    break;
-            
-                case GATEWAY_NODE_CHANNEL_TYPE_SWITCH:
-                    register_node.channels.push_back({
-                        FASTYBIRD_CHANNEL_TYPE_SWITCH,
-                        _gateway_nodes[nodeIndex].channels[i].length,
-                        _gateway_nodes[nodeIndex].channels[i].setable
-                    });
-                    break;
-            }
+        if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] > 0) {
+            register_node.channels.push_back({
+                FASTYBIRD_CHANNEL_TYPE_BINARY_SENSOR,
+                _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI],
+                false
+            });
         }
 
+        if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] > 0) {
+            register_node.channels.push_back({
+                FASTYBIRD_CHANNEL_TYPE_SWITCH,
+                _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO],
+                true
+            });
+        }
+
+        if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] > 0) {
+            register_node.channels.push_back({
+                FASTYBIRD_CHANNEL_TYPE_ANALOG_SENSOR,
+                _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI],
+                false
+            });
+        }
+
+        /*
         for (uint8_t i = 0; i < _gateway_nodes[nodeIndex].settings.size(); i++) {
             register_node.settings.push_back({
                 _gateway_nodes[nodeIndex].settings[i].key.c_str(),
                 _gateway_nodes[nodeIndex].settings[i].value.c_str()
             });
         }
+        */
 
         fastybirdRegisterNode(register_node);
-*/
     }
 #endif
 
 // -----------------------------------------------------------------------------
 
 void _gatewayResetNodeIndex(
-    uint8_t id
+    const uint8_t id
 ) {
-    _gateway_nodes[id].max_packet_length = PJON_PACKET_MAX_LENGTH;
-
     // Reset addressing
     _gateway_nodes[id].addressing.registration = 0;
     _gateway_nodes[id].addressing.state = false;
+    _gateway_nodes[id].addressing.lost = 0;
 
     // Reset initialization steps
-    _gateway_nodes[id].initiliazation.step = GATEWAY_NODE_INIT_HW_MODEL;
+    _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_NONE;
     _gateway_nodes[id].initiliazation.state = false;
     _gateway_nodes[id].initiliazation.attempts = 0;
-    _gateway_nodes[id].initiliazation.waiting_reply = GATEWAY_PACKET_NONE;
-    _gateway_nodes[id].initiliazation.packet_time = 0;
+
+    _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
+    _gateway_nodes[id].packet.sending_time = 0;
+    _gateway_nodes[id].packet.max_length = PJON_PACKET_MAX_LENGTH;
+
+    strcpy(_gateway_nodes[id].hardware.manufacturer, (char *) GATEWAY_DESCRIPTION_NOT_SET);
+    strcpy(_gateway_nodes[id].hardware.model, (char *) GATEWAY_DESCRIPTION_NOT_SET);
+    strcpy(_gateway_nodes[id].hardware.version, (char *) GATEWAY_DESCRIPTION_NOT_SET);
+
+    strcpy(_gateway_nodes[id].firmware.manufacturer, (char *) GATEWAY_DESCRIPTION_NOT_SET);
+    strcpy(_gateway_nodes[id].firmware.model, (char *) GATEWAY_DESCRIPTION_NOT_SET);
+    strcpy(_gateway_nodes[id].firmware.version, (char *) GATEWAY_DESCRIPTION_NOT_SET);
+
+    _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] = 0;
+    _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] = 0;
+    _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] = 0;
+    _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] = 0;
 
     // Reset registers
-    std::vector<bool> reset_digital_inputs;
+    std::vector<gateway_register_t> reset_digital_inputs;
     _gateway_nodes[id].digital_inputs = reset_digital_inputs;
 
-    std::vector<bool> reset_digital_outputs;
+    std::vector<gateway_register_t> reset_digital_outputs;
     _gateway_nodes[id].digital_outputs = reset_digital_outputs;
 
-    std::vector<word> reset_analog_inputs;
+    std::vector<gateway_register_t> reset_analog_inputs;
     _gateway_nodes[id].analog_inputs = reset_analog_inputs;
 
-    std::vector<word> reset_analog_outputs;
+    std::vector<gateway_register_t> reset_analog_outputs;
     _gateway_nodes[id].analog_outputs = reset_analog_outputs;
 }
 
@@ -386,951 +577,26 @@ void _gatewayCheckPacketsDelays()
             _gatewayResetNodeIndex(i);
         }
 
-        // Initialization
+        // Packets
         if (
-            _gateway_nodes[i].initiliazation.state == false
-            && _gateway_nodes[i].initiliazation.packet_time > 0
-            && (millis() - _gateway_nodes[i].initiliazation.packet_time) > NODES_GATEWAY_INIT_REPLY_DELAY
+            _gateway_nodes[i].packet.waiting_for != GATEWAY_PACKET_NONE
+            && _gateway_nodes[i].packet.sending_time > 0
+            && (millis() - _gateway_nodes[i].packet.sending_time) > NODES_GATEWAY_PACKET_REPLY_DELAY
         ) {
-            _gateway_nodes[i].initiliazation.waiting_reply = GATEWAY_PACKET_NONE;
-            _gateway_nodes[i].initiliazation.packet_time = 0;
+            _gateway_nodes[i].packet.waiting_for = GATEWAY_PACKET_NONE;
+            _gateway_nodes[i].packet.sending_time = 0;
         }
     }
 }
 
 // -----------------------------------------------------------------------------
-// DIGITAL REGISTERS READING
-// -----------------------------------------------------------------------------
-
-uint8_t _gatewayReadNodeDigitalRegisters(
-    uint8_t packetId,
-    uint8_t id,
-    uint8_t start,
-    uint8_t registerSize
-) {
-    char output_content[5];
-
-    output_content[0] = packetId;
-
-    // Register reading start address
-    output_content[1] = (char) (start >> 8);
-    output_content[2] = (char) (start & 0xFF);
-
-    // It is based on maximum packed size reduced by packet header (5 bytes)
-    uint8_t max_readable_addresses = _gateway_nodes[id].max_packet_length - 5;
-
-    // Node has less digital inputs than one packet can handle
-    if (registerSize <= max_readable_addresses) {
-        // Register reading lenght
-        output_content[3] = (char) (registerSize >> 8);
-        output_content[4] = (char) (registerSize & 0xFF);
-
-    } else {
-        if (start + max_readable_addresses <= registerSize) {
-            // Register reading lenght
-            output_content[3] = (char) (max_readable_addresses >> 8);
-            output_content[4] = (char) (max_readable_addresses & 0xFF);
-
-            if (start + max_readable_addresses < registerSize) {
-                // Move pointer
-                start = start + max_readable_addresses;
-
-            } else {
-                // Move pointer
-                start = 0;
-            }
-
-        } else {
-            // Register reading lenght
-            output_content[3] = (char) ((registerSize - start) >> 8);
-            output_content[4] = (char) ((registerSize - start) & 0xFF);
-
-            // Move pointer
-            start = 0;
-        }
-    }
-
-    _gatewaySendPacket(
-        (id + 1),
-        output_content,
-        5
-    );
-
-    return start;
-}
-
-
-// -----------------------------------------------------------------------------
-
-void _gatewayReadNodeDigitalInputs(
-    uint8_t id
-) {
-    uint8_t set_start = _gatewayReadNodeDigitalRegisters(
-        GATEWAY_PACKET_READ_MULTI_DI,
-        id,
-        _gateway_nodes[id].digital_inputs_reading.start,
-        _gateway_nodes[id].digital_inputs.size()
-    );
-
-    _gateway_nodes[id].digital_inputs_reading.start = set_start;
-
-    if (set_start == 0) {
-        _gateway_nodes[id].digital_inputs_reading.delay = millis();
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-void _gatewayReadNodeDigitalOutputs(
-    uint8_t id
-) {
-    uint8_t set_start = _gatewayReadNodeDigitalRegisters(
-        GATEWAY_PACKET_READ_MULTI_DO,
-        id,
-        _gateway_nodes[id].digital_outputs_reading.start,
-        _gateway_nodes[id].digital_outputs.size()
-    );
-
-    _gateway_nodes[id].digital_outputs_reading.start = set_start;
-
-    if (set_start == 0) {
-        _gateway_nodes[id].digital_outputs_reading.delay = millis();
-    }
-}
-
-// -----------------------------------------------------------------------------
-// ANALOG REGISTERS READING
-// -----------------------------------------------------------------------------
-
-void _gatewayReadNodeAnalogInputs(
-    uint8_t id
-) {
-
-}
-
-// -----------------------------------------------------------------------------
-
-void _gatewayReadNodeAnalogOutputs(
-    uint8_t id
-) {
-
-}
-
-// -----------------------------------------------------------------------------
-// DIGITAL REGISTERS WRITING
-// -----------------------------------------------------------------------------
-
-void _gatewayWriteNodeDigitalOutputs(
-    uint8_t id,
-    uint8_t registerAddress,
-    bool value
-) {
-    char output_content[5];
-
-    output_content[0] = GATEWAY_PACKET_WRITE_ONE_DO;
-
-    // Register write address
-    output_content[1] = (char) (registerAddress >> 8);
-    output_content[2] = (char) (registerAddress & 0xFF);
-
-    uint16_t write_value;
-
-    if (value == true) {
-        write_value = 0xFF00;
-    } else {
-        write_value = 0x0000;
-    }
-
-    output_content[3] = (char) (write_value >> 8);
-    output_content[4] = (char) (write_value & 0xFF);
-
-    _gatewaySendPacket(
-        (id + 1),
-        output_content,
-        5
-    );
-}
-
-// -----------------------------------------------------------------------------
-// ANALOG REGISTERS WRITING
-// -----------------------------------------------------------------------------
-
-// TODO
-
-// -----------------------------------------------------------------------------
-
-/**
- * Read data registers from node
- */
-void _gatewayReadNodes()
-{
-    if (_gateway_reading_node_index > 0 && _gateway_reading_node_index >= NODES_GATEWAY_MAX_NODES) {
-        _gateway_reading_node_index = 0;
-    }
-
-    for (uint8_t i = _gateway_reading_node_index; i < NODES_GATEWAY_MAX_NODES; i++) {
-        if (
-            _gateway_nodes[i].initiliazation.state == true
-            && (
-                _gateway_nodes[i].digital_inputs.size() > 0
-                || _gateway_nodes[i].digital_outputs.size() > 0
-                || _gateway_nodes[i].analog_inputs.size() > 0
-                || _gateway_nodes[i].analog_outputs.size() > 0
-            )
-        ) {
-            _gateway_reading_node_index = i;
-
-            if (
-                _gateway_nodes[i].digital_inputs.size() > 0
-                && (
-                    _gateway_nodes[i].digital_inputs_reading.delay == 0
-                    || (millis() - _gateway_nodes[i].digital_inputs_reading.delay) > NODES_GATEWAY_DI_READING_INTERVAL
-                )
-            ) {
-                _gatewayReadNodeDigitalInputs(i);
-
-            } else if (
-                _gateway_nodes[i].digital_outputs.size() > 0
-                && (
-                    _gateway_nodes[i].digital_outputs_reading.delay == 0
-                    || (millis() - _gateway_nodes[i].digital_outputs_reading.delay) > NODES_GATEWAY_DO_READING_INTERVAL
-                )
-            ) {
-                _gatewayReadNodeDigitalOutputs(i);
-
-            } else if (
-                _gateway_nodes[i].analog_inputs.size() > 0
-                && (
-                    _gateway_nodes[i].analog_inputs_reading.delay == 0
-                    || (millis() - _gateway_nodes[i].analog_inputs_reading.delay) > NODES_GATEWAY_AI_READING_INTERVAL
-                )
-            ) {
-                _gatewayReadNodeAnalogInputs(i);
-
-            } else if (
-                _gateway_nodes[i].analog_outputs.size() > 0
-                && (
-                    _gateway_nodes[i].analog_outputs_reading.delay == 0
-                    || (millis() - _gateway_nodes[i].analog_outputs_reading.delay) > NODES_GATEWAY_AO_READING_INTERVAL
-                )
-            ) {
-                _gatewayReadNodeAnalogOutputs(i);
-            }
-
-            return;
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-void _gatewayNodeReadDigitalOutputsHandler(
-    uint8_t address,
-    uint8_t * payload
-) {
-    word register_address = (word) payload[1] << 8 | (word) payload[2];
-    uint8_t bytes_length = (uint8_t) payload[3];
-
-    DEBUG_MSG(PSTR("[GATEWAY] Requested write to digital buffer for node at address: %d to register: %d with byte length: %d\n"), address, register_address, bytes_length);
-
-    if (
-        // Read start address mus be between <0, buffer.size()>
-        register_address < _gateway_nodes[(address - 1)].digital_outputs.size()
-    ) {
-        uint8_t write_byte = 1;
-        uint8_t data_byte;
-
-        uint8_t write_address = register_address;
-
-        while (
-            write_address < _gateway_nodes[(address - 1)].digital_outputs.size()
-            && write_byte <= bytes_length
-        ) {
-            data_byte = (uint8_t) payload[3 + write_byte];
-            bool write_value = false;
-
-            for (uint8_t i = 0; i < 8; i++) {
-                write_value = (data_byte >> i) & 0x01 ? true : false;
-
-                if (_gateway_nodes[(address - 1)].digital_outputs[write_address] != write_value) {
-                    _gateway_nodes[(address - 1)].digital_outputs[write_address] = write_value;
-
-                    DEBUG_MSG(PSTR("[GATEWAY] Value was written into digital register at address: %d\n"), write_address);
-
-                } else {
-                    DEBUG_MSG(PSTR("[GATEWAY] Value to write into digital register at address: %d is same as stored. Write skipped\n"), write_address);
-                }
-
-                write_address++;
-
-                if (write_address >= _gateway_nodes[(address - 1)].digital_outputs.size()) {
-                    break;
-                }
-            }
-
-            write_byte++;
-        }
-
-    } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined DO register address\n"));
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-void _gatewayNodeWriteDigitalOutputHandler(
-    uint8_t address,
-    uint8_t * payload
-) {
-    word register_address = (word) payload[1] << 8 | (word) payload[2];
-    word write_value = (word) payload[3] << 8 | (word) payload[4];
-
-    // Check if value is TRUE|FALSE or 1|0
-    if (write_value != 0xFF00 && write_value != 0x0000) {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Digital register accept only bool value\n"));
-        return;
-    }
-
-    if (
-        // Write address must be between <0, buffer.size()>
-        register_address < _gateway_nodes[(address - 1)].digital_outputs.size()
-    ) {
-        if (_gateway_nodes[(address - 1)].digital_outputs[register_address] != (bool) write_value) {
-            _gateway_nodes[(address - 1)].digital_outputs[register_address] = (bool) write_value;
-            DEBUG_MSG(PSTR("[GATEWAY] Value was written into digital register\n"));
-
-        } else {
-            DEBUG_MSG(PSTR("[GATEWAY] Value to write into digital register is same as stored. Write skipped\n"));
-        }
-
-    } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined DO register address\n"));
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-void _gatewayNodeWriteMultipleDigitalOutputsHandler(
-    uint8_t address,
-    uint8_t * payload
-) {
-    word register_address = (word) payload[1] << 8 | (word) payload[2];
-    word read_length = (word) payload[3] << 8 | (word) payload[4];
-    uint8_t bytes_length = (uint8_t) payload[5];
-
-    if (
-        // Write start address mus be between <0, buffer.size()>
-        register_address < _gateway_nodes[(address - 1)].digital_outputs.size()
-        // Write length have to be same or smaller as registers size
-        && (register_address + read_length) <= _gateway_nodes[(address - 1)].digital_outputs.size()
-    ) {
-        _gatewayReadNodeDigitalOutputs((address - 1));
-
-    } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined DO registers range\n"));
-    }
-}
-
-// -----------------------------------------------------------------------------
-// NODE ADDRESS HANDLER
-// -----------------------------------------------------------------------------
-
-void _gatewayRemoveNode(
-    uint8_t address = 0
-) {
-    // Remove all nodes
-    if (address == 0) {
-        for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
-            // Remove only node which is successfully addressed
-            if (_gateway_nodes[i].addressing.state != false) {
-                _gatewayResetNodeIndex(i);
-            }
-        }
-
-    // Remove selected node
-    } else if (address > 0 && address < NODES_GATEWAY_MAX_NODES) {
-        // Remove only node which is successfully addressed
-        if (_gateway_nodes[address - 1].addressing.state != false) {
-            _gatewayResetNodeIndex(address - 1);
-        }
-    }
-
-    #if WEB_SUPPORT && WS_SUPPORT
-        // Propagate nodes structure to WS clients
-        wsSend(_nodesWebSocketUpdate);
-    #endif
-}
-
-// -----------------------------------------------------------------------------
-
-bool _gatewayIsNodeSerialNumberUnique(
-    char * nodeSerialNumber
-) {
-    for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
-        if (strcmp(_gateway_nodes[i].node, nodeSerialNumber) == 0) {
-            DEBUG_MSG(PSTR("[GATEWAY][WARN] Nodes serial number is not unique\n"));
-
-            return false;
-        }
-    }
-
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-
-uint16_t _gatewayReserveNodeAddress(
-    char * nodeSerialNumber
-) {
-    if (!_gatewayIsNodeSerialNumberUnique(nodeSerialNumber)) {
-        return NODES_GATEWAY_FAIL;
-    }
-
-    for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
-        // Search for free node slot
-        if (_gateway_nodes[i].addressing.state == false && strcmp(_gateway_nodes[i].node, GATEWAY_DESCRIPTION_NOT_SET) == 0) {
-            // Add reservation stamp
-            _gateway_nodes[i].addressing.registration = millis();
-            // Add node RID
-            strcpy(_gateway_nodes[i].node, nodeSerialNumber);
-
-            return i + 1;
-        }
-    }
-
-    DEBUG_MSG(PSTR("[GATEWAY][WARN] Nodes registry is full. No other nodes could be added.\n"));
-
-    return NODES_GATEWAY_NODES_BUFFER_FULL;
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * PAYLOAD:
- * 0    => Packet identifier
- * 1    => Node bus address
- * 2    => Max packet size
- * 3    => Node SN length
- * 4-n  => Node parsed SN
- */
-void _gatewaySearchNodeRequestHandler(
-    uint8_t senderAddress,
-    uint8_t * payload,
-    uint16_t length
-) {
-    // Extract address returned by node
-    uint8_t address = (uint8_t) payload[1];
-
-    uint8_t max_packet_length = (uint8_t) payload[2];
-
-    char node_sn[(uint8_t) payload[3]];
-
-    // Extract node serial number from payload
-    for (uint8_t i = 0; i < (uint8_t) payload[3]; i++) {
-        node_sn[i] = (char) payload[i + 4];
-    }
-
-    // Node has allready assigned bus address
-    if (address != PJON_NOT_ASSIGNED) {
-        if (address != senderAddress) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed to node search but with addressing mismatch\n"));
-            return;
-        }
-
-        if (address >= NODES_GATEWAY_MAX_NODES) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed to node search but with address out of available range\n"));
-            return;
-        }
-
-        if (strcmp(_gateway_nodes[address - 1].node, node_sn) != 0 && strcmp(_gateway_nodes[address - 1].node, GATEWAY_DESCRIPTION_NOT_SET) != 0) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed to node search but with serial number mismatch\n"));
-            return;
-        }
-
-        // Node addressing finished
-        _gateway_nodes[address - 1].addressing.state = true;
-        _gateway_nodes[address - 1].addressing.registration = 0;
-
-        strncpy(_gateway_nodes[address - 1].node, node_sn, (uint8_t) payload[3]);
-        _gateway_nodes[address - 1].max_packet_length = max_packet_length;
-
-        DEBUG_MSG(PSTR("[GATEWAY] Addressing for node: %s was successfully finished. Previously assigned address is: %d\n"), (char *) node_sn, address);
-
-    // Node is new without bus address
-    } else {
-        // Check node serial number if is unique & get free address slot
-        uint16_t reserved_address = _gatewayReserveNodeAddress(node_sn);
-
-        // Maximum nodes count reached
-        if (reserved_address == NODES_GATEWAY_NODES_BUFFER_FULL) {
-            return;
-        }
-
-        // Node SN is allready used in registry
-        if (reserved_address == NODES_GATEWAY_FAIL) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node: %s is allready in registry\n"), (char *) node_sn);
-
-            return;
-        }
-
-        strncpy(_gateway_nodes[reserved_address - 1].node, node_sn, (uint8_t) payload[3]);
-        _gateway_nodes[reserved_address - 1].max_packet_length = max_packet_length;
-
-        DEBUG_MSG(PSTR("[GATEWAY] New node: %s was successfully added to registry with address: %d\n"), (char *) node_sn, reserved_address);
-
-        // Store start timestamp
-        uint32_t time = millis();
-
-        char output_content[PJON_PACKET_MAX_LENGTH];
-
-        // 0    => Packet identifier
-        // 1    => Node reserved bus address
-        // 2    => Node SN length
-        // 3-n  => Node parsed SN
-        output_content[0] = (uint8_t) GATEWAY_PACKET_NODE_ADDRESS_CONFIRM;
-        output_content[1] = (uint8_t) reserved_address;
-        output_content[2] = (uint8_t) (strlen((char *) node_sn) + 1);
-
-        uint8_t byte_pointer = 3;
-
-        for (uint8_t i = 0; i < strlen((char *) node_sn); i++) {
-            output_content[byte_pointer] = ((char *) node_sn)[i];
-
-            byte_pointer++;
-        }
-
-        output_content[byte_pointer] = 0; // Be sure to set the null terminator!!!
-
-        _gatewaySendPacket(
-            PJON_BROADCAST,
-            output_content,
-            (byte_pointer + 1)
-        );
-
-        while((millis() - time) <= NODES_GATEWAY_LIST_ADDRESSES_TIME) {
-            if (_gateway_bus.receive() == PJON_ACK) {
-                return;
-            }
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * PAYLOAD:
- * 0    => Packet identifier
- * 1    => Node bus address
- * 2    => Node SN length
- * 3-n  => Node parsed SN
- */
-void _gatewayConfirmNodeRequestHandler(
-    uint8_t senderAddress,
-    uint8_t * payload
-) {
-    uint8_t address = (uint8_t) payload[1];
-
-    char node_sn[(uint8_t) payload[2]];
-
-    // Extract node serial number from payload
-    for (uint8_t i = 0; i < (uint8_t) payload[2]; i++) {
-        node_sn[i] = (char) payload[i + 3];
-    }
-
-    // Node has allready assigned bus address
-    if (address != PJON_NOT_ASSIGNED) {
-        if (address != senderAddress) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed address acceptation but with addressing mismatch\n"));
-            return;
-        }
-
-        if (address >= NODES_GATEWAY_MAX_NODES) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed address acceptation but with address out of available range\n"));
-            return;
-        }
-
-        if (strcmp(_gateway_nodes[address - 1].node, node_sn) != 0) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed address acceptation but with serial number mismatch\n"));
-            return;
-        }
-
-        // Node addressing finished
-        _gateway_nodes[address - 1].addressing.state = true;
-        _gateway_nodes[address - 1].addressing.registration = 0;
-
-        DEBUG_MSG(PSTR("[GATEWAY] Addressing for node: %s was successfully finished. Assigned address is: %d\n"), (char *) node_sn, address);
-
-    } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed address acceptation but without setting node address\n"));
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-void _gatewayAddressRequestHandler(
-    uint8_t packetId,
-    uint8_t address,
-    uint8_t * payload,
-    uint16_t length
-) {
-    switch (packetId)
-    {
-        /**
-         * Node has replied to search request
-         */
-        case GATEWAY_PACKET_SEARCH_NODES:
-            _gatewaySearchNodeRequestHandler(address, payload, length);
-            break;
-
-        /**
-         * Node confirmed back reserved address
-         */
-        case GATEWAY_PACKET_NODE_ADDRESS_CONFIRM:
-            _gatewayConfirmNodeRequestHandler(address, payload);
-            break;
-
-        /**
-         * Node requested discarding its address
-         */
-        case GATEWAY_PACKET_ADDRESS_DISCARD:
-            // TODO
-            break;
-    }
-}
-
-// -----------------------------------------------------------------------------
-// NODE INITIALIZATION
-// -----------------------------------------------------------------------------
-
-/**
- * Parse received payload - Node description
- * 
- * 0    => Received packet identifier   => GATEWAY_PACKET_HW_MODEL|GATEWAY_PACKET_HW_MANUFACTURER|GATEWAY_PACKET_HW_VERSION|GATEWAY_PACKET_FW_MODEL|GATEWAY_PACKET_FW_MANUFACTURER|GATEWAY_PACKET_FW_VERSION
- * 1    => Description string length    => 1-255
- * 2-n  => Description content          => char array (a,b,c,...)
- */
-void _gatewayExtractAndStoreDescription(
-    uint8_t packetId,
-    uint8_t id,
-    uint8_t * payload
-) {
-    uint8_t content_length = (uint8_t) payload[1];
-
-    char content[content_length];
-
-    // Extract text content from payload
-    for (uint8_t i = 0; i < content_length; i++) {
-        content[i] = (char) payload[i + 2];
-    }
-
-    DEBUG_MSG(
-        PSTR("[GATEWAY] Received node description: %s for address: %d\n"),
-        (char *) content,
-        (id + 1)
-    );
-
-    switch (packetId)
-    {
-        case GATEWAY_PACKET_HW_MODEL:
-            _gateway_nodes[id].initiliazation.step = GATEWAY_NODE_INIT_HW_MANUFACTURER;
-            strncpy(_gateway_nodes[id].hardware.model, content, content_length);
-            break;
-
-        case GATEWAY_PACKET_HW_MANUFACTURER:
-            _gateway_nodes[id].initiliazation.step = GATEWAY_NODE_INIT_HW_VERSION;
-            strncpy(_gateway_nodes[id].hardware.manufacturer, content, content_length);
-            break;
-
-        case GATEWAY_PACKET_HW_VERSION:
-            _gateway_nodes[id].initiliazation.step = GATEWAY_NODE_INIT_FW_MODEL;
-            strncpy(_gateway_nodes[id].hardware.version, content, content_length);
-            break;
-
-        case GATEWAY_PACKET_FW_MODEL:
-            _gateway_nodes[id].initiliazation.step = GATEWAY_NODE_INIT_FW_MANUFACTURER;
-            strncpy(_gateway_nodes[id].firmware.model, content, content_length);
-            break;
-
-        case GATEWAY_PACKET_FW_MANUFACTURER:
-            _gateway_nodes[id].initiliazation.step = GATEWAY_NODE_INIT_FW_VERSION;
-            strncpy(_gateway_nodes[id].firmware.manufacturer, content, content_length);
-            break;
-
-        case GATEWAY_PACKET_FW_VERSION:
-            _gateway_nodes[id].initiliazation.step = GATEWAY_NODE_INIT_REGISTERS;
-            strncpy(_gateway_nodes[id].firmware.version, content, content_length);
-            break;
-
-        // Unknown init sequence
-        default:
-            return;
-    }
-
-    DEBUG_MSG(PSTR("[GATEWAY] Initialization step for node with address: %d is updated and set to: %d\n"), (id + 1), _gateway_nodes[id].initiliazation.step);
-
-    _gateway_nodes[id].initiliazation.waiting_reply = GATEWAY_PACKET_NONE;
-    _gateway_nodes[id].initiliazation.attempts = 0;
-    _gateway_nodes[id].initiliazation.packet_time = 0;
-}
-
-// -----------------------------------------------------------------------------
-
-void _gatewayNodeInitializationHandler(
-    uint8_t packetId,
-    uint8_t address,
-    uint8_t * payload
-) {
-    // Check if gateway is waiting for reply from node (initiliazation sequence)
-    if (_gateway_nodes[(address - 1)].initiliazation.waiting_reply == GATEWAY_PACKET_NONE) {
-        DEBUG_MSG(
-            PSTR("[GATEWAY][ERR] Received packet for node with address: %d but gateway is not waiting for packet from this node\n"),
-            address
-        );
-
-        return;
-    }
-
-    // Check if gateway is waiting for reply from node (initiliazation sequence)
-    if (_gateway_nodes[(address - 1)].initiliazation.waiting_reply != packetId) {
-        DEBUG_MSG(
-            PSTR("[GATEWAY][ERR] Received packet: %s for node with address: %d but gateway is waiting for: %s\n"),
-            _gatewayPacketName(packetId).c_str(),
-            address,
-            _gatewayPacketName(_gateway_nodes[(address - 1)].initiliazation.waiting_reply).c_str()
-        );
-
-        return;
-    }
-
-    switch (packetId)
-    {
-        case GATEWAY_PACKET_HW_MODEL:
-        case GATEWAY_PACKET_HW_MANUFACTURER:
-        case GATEWAY_PACKET_HW_VERSION:
-        case GATEWAY_PACKET_FW_MODEL:
-        case GATEWAY_PACKET_FW_MANUFACTURER:
-        case GATEWAY_PACKET_FW_VERSION:
-            _gatewayExtractAndStoreDescription(packetId, (address - 1), payload);
-            break;
-    }
-}
-
-// -----------------------------------------------------------------------------
-// REGISTERS INITIALIZATION HANDLER
-// -----------------------------------------------------------------------------
-
-/**
- * Parse received payload - Registers definitions
- * 
- * 0    => Received packet identifier   => GATEWAY_PACKET_REGISTERS_SIZE
- * 1    => DI buffer size               => 0-255
- * 2    => DO buffer size               => 0-255
- * 3    => AI buffer size               => 0-255
- * 4    => AO buffer size               => 0-255
- */
-void _gatewayExtractAndStoreRegistersDefinitions(
-    uint8_t id,
-    uint8_t * payload
-) {
-    std::vector<bool> reset_digital_inputs;
-    _gateway_nodes[id].digital_inputs = reset_digital_inputs;
-
-    std::vector<bool> reset_digital_outputs;
-    _gateway_nodes[id].digital_outputs = reset_digital_outputs;
-
-    std::vector<word> reset_analog_inputs;
-    _gateway_nodes[id].analog_inputs = reset_analog_inputs;
-
-    std::vector<word> reset_analog_outputs;
-    _gateway_nodes[id].analog_outputs = reset_analog_outputs;
-
-    for (uint8_t i = 0; i < (uint8_t) payload[1]; i++) {
-        _gateway_nodes[id].digital_inputs.push_back(false);
-        _gateway_nodes[id].digital_inputs_reading.start = 0;
-        _gateway_nodes[id].digital_inputs_reading.delay = 0;
-    }
-    
-    for (uint8_t i = 0; i < (uint8_t) payload[2]; i++) {
-        _gateway_nodes[id].digital_outputs.push_back(false);
-        _gateway_nodes[id].digital_outputs_reading.start = 0;
-        _gateway_nodes[id].digital_outputs_reading.delay = 0;
-    }
-
-    for (uint8_t i = 0; i < (uint8_t) payload[3]; i++) {
-        _gateway_nodes[id].analog_inputs.push_back(0);
-    }
-    
-    for (uint8_t i = 0; i < (uint8_t) payload[4]; i++) {
-        _gateway_nodes[id].analog_outputs.push_back(0);
-    }
-
-    // Node initiliazation successfully finished
-    _gatewayMarkNodeAsInitialized(id);
-
-    DEBUG_MSG(
-        PSTR("[GATEWAY] Received node registers structure (DI: %d, DO: %d, AI: %d, AO: %d) for node with address: %d\n"),
-        _gateway_nodes[id].digital_inputs.size(),
-        _gateway_nodes[id].digital_outputs.size(),
-        _gateway_nodes[id].analog_inputs.size(),
-        _gateway_nodes[id].analog_outputs.size(),
-        (id + 1)
-    );
-}
-
-// -----------------------------------------------------------------------------
-
-void _gatewayRegistersInitializationHandler(
-    uint8_t packetId,
-    uint8_t address,
-    uint8_t * payload
-) {
-    // Check if gateway is waiting for reply from node (initiliazation sequence)
-    if (_gateway_nodes[(address - 1)].initiliazation.waiting_reply == GATEWAY_PACKET_NONE) {
-        DEBUG_MSG(
-            PSTR("[GATEWAY][ERR] Received packet for node with address: %d but gateway is not waiting for packet from this node\n"),
-            address
-        );
-
-        return;
-    }
-
-    // Check if gateway is waiting for reply from node (initiliazation sequence)
-    if (_gateway_nodes[(address - 1)].initiliazation.waiting_reply != packetId) {
-        DEBUG_MSG(
-            PSTR("[GATEWAY][ERR] Received packet: %s for node with address: %d but gateway is waiting for: %s\n"),
-            _gatewayPacketName(packetId).c_str(),
-            address,
-            _gatewayPacketName(_gateway_nodes[(address - 1)].initiliazation.waiting_reply).c_str()
-        );
-
-        return;
-    }
-
-    switch (packetId)
-    {
-        case GATEWAY_PACKET_REGISTERS_SIZE:
-            _gatewayExtractAndStoreRegistersDefinitions((address - 1), payload);
-            break;
-
-        case GATEWAY_PACKET_DI_REGISTERS_STRUCTURE:
-            break;
-
-        case GATEWAY_PACKET_DO_REGISTERS_STRUCTURE:
-            break;
-
-        case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
-            break;
-
-        case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
-            break;
-    }
-}
-
-// -----------------------------------------------------------------------------
-// COMMUNICATION HANDLERS
-// -----------------------------------------------------------------------------
-
-void _gatewayReceiveHandler(
-    uint8_t * payload,
-    uint16_t length,
-    const PJON_Packet_Info &packetInfo
-) {
-    uint8_t sender_address = PJON_NOT_ASSIGNED;
-
-    // Get sender address from header
-    if (packetInfo.header & PJON_TX_INFO_BIT) {
-        sender_address = packetInfo.sender_id;
-    }
-
-    // Get packet identifier from payload
-    uint8_t packet_id = (uint8_t) payload[0];
-
-    DEBUG_MSG(PSTR("[GATEWAY] Received packet: %s for node with address: %d\n"), _gatewayPacketName(packet_id).c_str(), sender_address);
-
-    // Node is trying to acquire address
-    if (_gatewayIsPacketInGroup(packet_id, gateway_packets_addresing, GATEWAY_PACKET_ADDRESS_MAX)) {
-        _gatewayAddressRequestHandler(packet_id, sender_address, payload, length);
-
-    // Node send reply to request
-    } else {
-        if (sender_address == PJON_NOT_ASSIGNED) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Received packet is without sender address\n"));
-
-            return;
-        }
-
-        if (_gatewayIsPacketInGroup(packet_id, gateway_packets_node_initialization, GATEWAY_PACKET_NODE_INIT_MAX)) {
-            _gatewayNodeInitializationHandler(packet_id, sender_address, payload);
-
-        } else if (_gatewayIsPacketInGroup(packet_id, gateway_packets_registers_initialization, GATEWAY_PACKET_REGISTERS_INIT_MAX)) {
-            _gatewayRegistersInitializationHandler(packet_id, sender_address, payload);
-
-        } else {
-            switch (packet_id)
-            {
-                case GATEWAY_PACKET_READ_SINGLE_DI:
-                    break;
-
-                case GATEWAY_PACKET_READ_MULTI_DI:
-                    break;
-
-                case GATEWAY_PACKET_READ_SINGLE_DO:
-                    break;
-
-                case GATEWAY_PACKET_READ_MULTI_DO:
-                    _gatewayNodeReadDigitalOutputsHandler(sender_address, payload);
-                    break;
-
-                case GATEWAY_PACKET_READ_AI:
-                    break;
-
-                case GATEWAY_PACKET_READ_AO:
-                    break;
-
-                case GATEWAY_PACKET_WRITE_ONE_DO:
-                    _gatewayNodeWriteDigitalOutputHandler(sender_address, payload);
-                    break;
-
-                case GATEWAY_PACKET_WRITE_ONE_AO:
-                    break;
-
-                case GATEWAY_PACKET_WRITE_MULTI_DO:
-                    _gatewayNodeWriteMultipleDigitalOutputsHandler(sender_address, payload);
-                    break;
-            }
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-void _gatewayErrorHandler(
-    uint8_t code,
-    uint16_t data,
-    void *customPointer
-) {
-    if (code == PJON_CONNECTION_LOST) {
-        _gatewayRemoveNode(_gateway_bus.packets[data].content[0]);
-
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Connection lost with node\n"));
-
-    } else if (code == PJON_PACKETS_BUFFER_FULL) {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Buffer is full\n"));
-
-    } else if (code == PJON_CONTENT_TOO_LONG) {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Content is long\n"));
-
-    } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Unknown error\n"));
-    }
-}
-
+// PACKETS
 // -----------------------------------------------------------------------------
 
 bool _gatewayIsPacketInGroup(
-    uint8_t packetId,
+    const uint8_t packetId,
     const int * group,
-    uint8_t length
+    const uint8_t length
 ) {
     for (uint8_t i = 0; i < length; i++) {
         if ((uint8_t) pgm_read_byte(&group[i]) == packetId) {
@@ -1344,9 +610,9 @@ bool _gatewayIsPacketInGroup(
 // -----------------------------------------------------------------------------
 
 uint8_t _gatewayGetPacketIndexInGroup(
-    uint8_t packetId,
+    const uint8_t packetId,
     const int * group,
-    uint8_t length
+    const uint8_t length
 ) {
     for (uint8_t i = 0; i < length; i++) {
         if ((uint8_t) pgm_read_byte(&group[i]) == packetId) {
@@ -1360,7 +626,7 @@ uint8_t _gatewayGetPacketIndexInGroup(
 // -----------------------------------------------------------------------------
 
 String _gatewayPacketName(
-    uint8_t packetId
+    const uint8_t packetId
 ) {
     char buffer[50] = {0};
 
@@ -1392,9 +658,9 @@ String _gatewayPacketName(
 // -----------------------------------------------------------------------------
 
 bool _gatewaySendPacket(
-    uint8_t address,
+    const uint8_t address,
     char * payload,
-    uint8_t length
+    const uint8_t length
 ) {
     uint16_t result = _gateway_bus.send_packet_blocking(
         address,    // Master address
@@ -1426,6 +692,77 @@ bool _gatewaySendPacket(
     return true;
 }
 
+// -----------------------------------------------------------------------------
+// NODES READING
+// -----------------------------------------------------------------------------
+
+/**
+ * Read data registers from node
+ */
+void _gatewayReadNodes()
+{
+    if (_gateway_reading_node_index > 0 && _gateway_reading_node_index >= NODES_GATEWAY_MAX_NODES) {
+        _gateway_reading_node_index = 0;
+    }
+
+    for (uint8_t i = _gateway_reading_node_index; i < NODES_GATEWAY_MAX_NODES; i++) {
+        if (
+            _gateway_nodes[i].initiliazation.state == true
+            && _gateway_nodes[i].addressing.lost == 0
+            && (
+                _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DI] > 0
+                || _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DO] > 0
+                || _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AI] > 0
+                || _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AO] > 0
+            )
+            && _gateway_nodes[i].packet.waiting_for == GATEWAY_PACKET_NONE
+        ) {
+            _gateway_reading_node_index = i;
+
+            if (
+                _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DI] > 0
+                && (
+                    _gateway_nodes[i].digital_inputs_reading.delay == 0
+                    || (millis() - _gateway_nodes[i].digital_inputs_reading.delay) > NODES_GATEWAY_DI_READING_INTERVAL
+                )
+            ) {
+                _gatewayRequestReadingMultipleDigitalInputsRegisters(i);
+
+            } else if (
+                _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DO] > 0
+                && (
+                    _gateway_nodes[i].digital_outputs_reading.delay == 0
+                    || (millis() - _gateway_nodes[i].digital_outputs_reading.delay) > NODES_GATEWAY_DO_READING_INTERVAL
+                )
+            ) {
+                _gatewayRequestReadingMultipleDigitalOutputsRegisters(i);
+
+            } else if (
+                _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AI] > 0
+                && (
+                    _gateway_nodes[i].analog_inputs_reading.delay == 0
+                    || (millis() - _gateway_nodes[i].analog_inputs_reading.delay) > NODES_GATEWAY_AI_READING_INTERVAL
+                )
+            ) {
+                _gatewayRequestReadingMultipleAnalogInputsRegisters(i);
+
+            } else if (
+                _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AO] > 0
+                && (
+                    _gateway_nodes[i].analog_outputs_reading.delay == 0
+                    || (millis() - _gateway_nodes[i].analog_outputs_reading.delay) > NODES_GATEWAY_AO_READING_INTERVAL
+                )
+            ) {
+                _gatewayRequestReadingMultipleAnalogOutputsRegisters(i);
+            }
+
+            return;
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// NODES CHECKING
 // -----------------------------------------------------------------------------
 
 /**
@@ -1481,11 +818,19 @@ void _gatewayCheckNodesPresence()
                     1                   // Payload length
                 ) != true
             ) {
-                DEBUG_MSG(PSTR("[GATEWAY] Node with address: %d is lost\n"), (i + 1));
+                if (_gateway_nodes[i].addressing.lost == 0) {
+                    DEBUG_MSG(PSTR("[GATEWAY] Node with address: %d is lost\n"), (i + 1));
+                }
 
-                _gatewayRemoveNode(i + 1);
+                _gateway_nodes[i].addressing.lost = millis();
 
             } else {
+                if (_gateway_nodes[i].addressing.lost > 0) {
+                    DEBUG_MSG(PSTR("[GATEWAY] Node with address: %d is back alive\n"), (i + 1));
+                }
+
+                _gateway_nodes[i].addressing.lost = 0;
+
                 counter++;
             }
         }
@@ -1500,6 +845,36 @@ void _gatewayCheckNodesPresence()
 }
 
 // -----------------------------------------------------------------------------
+// NODE INITIALIZATION
+// -----------------------------------------------------------------------------
+
+/**
+ * Node is fully initialized & ready for receiving commands
+ */
+void _gatewayMarkNodeAsInitialized(
+    const uint8_t id
+) {
+    _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_NONE;
+    _gateway_nodes[id].initiliazation.state = true;
+    _gateway_nodes[id].initiliazation.attempts = 0;
+
+    _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
+    _gateway_nodes[id].packet.sending_time = 0;
+
+    // Store node SN into memory
+    setSetting("nodeSn", id, _gateway_nodes[id].serial_number);
+
+    #if WEB_SUPPORT && WS_SUPPORT
+        // Propagate nodes structure to WS clients
+        wsSend(_nodesWebSocketUpdate);
+    #endif
+
+    #if FASTYBIRD_SUPPORT
+        _gatewayRegisterFastybirdNode(id);
+    #endif
+}
+
+// -----------------------------------------------------------------------------
 
 uint8_t _gatewayGetNodeAddressToInitialize() {
     for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
@@ -1508,7 +883,7 @@ uint8_t _gatewayGetNodeAddressToInitialize() {
             _gateway_nodes[i].addressing.state == true
             // Check if node is not initialized
             && _gateway_nodes[i].initiliazation.state == false
-            && _gateway_nodes[i].initiliazation.waiting_reply == GATEWAY_PACKET_NONE
+            && _gateway_nodes[i].packet.waiting_for == GATEWAY_PACKET_NONE
         ) {
             // Attempts counter reached maximum
             if (_gateway_nodes[i].initiliazation.attempts > NODES_GATEWAY_MAX_INIT_ATTEMPTS) {
@@ -1536,29 +911,12 @@ uint8_t _gatewayGetNodeAddressToInitialize() {
 
 // -----------------------------------------------------------------------------
 
-void _gatewayMarkNodeAsInitialized(
-    uint8_t id
-) {
-    _gateway_nodes[id].initiliazation.step = GATEWAY_NODE_INIT_FINISHED;
-    _gateway_nodes[id].initiliazation.state = true;
-    _gateway_nodes[id].initiliazation.attempts = 0;
-    _gateway_nodes[id].initiliazation.waiting_reply = GATEWAY_PACKET_NONE;
-    _gateway_nodes[id].initiliazation.packet_time = 0;
-
-    #if WEB_SUPPORT && WS_SUPPORT
-        // Propagate nodes structure to WS clients
-        wsSend(_nodesWebSocketUpdate);
-    #endif
-}
-
-// -----------------------------------------------------------------------------
-
 /**
  * Send initiliaziation packet to node
  */
 void _gatewaySendInitializationPacket(
-    uint8_t id,
-    uint8_t requestState
+    const uint8_t id,
+    const uint8_t requestState
 ) {
     char output_content[1];
 
@@ -1571,8 +929,89 @@ void _gatewaySendInitializationPacket(
     // When successfully sent...
     if (result == true) {
         // ...add mark, that gateway is waiting for reply from node
-        _gateway_nodes[id].initiliazation.waiting_reply = requestState;
-        _gateway_nodes[id].initiliazation.packet_time = millis();
+        _gateway_nodes[id].packet.waiting_for = requestState;
+        _gateway_nodes[id].packet.sending_time = millis();
+
+        _gateway_nodes[id].initiliazation.attempts = _gateway_nodes[id].initiliazation.attempts + 1;
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+/**
+ * Send register structure request packet to node
+ */
+void _gatewaySendRegisterInitializationPacket(
+    const uint8_t id,
+    const uint8_t requestState,
+    const uint8_t start
+) {
+    char output_content[_gateway_nodes[id].packet.max_length];
+
+    // Packet identifier at first postion
+    output_content[0] = requestState;
+    output_content[1] = (char) (start >> 8);
+    output_content[2] = (char) (start & 0xFF);
+    
+    // It is based on maximum packed size reduced by packet header (4 bytes)
+    uint8_t max_readable_addresses = start + _gateway_nodes[id].packet.max_length - 4;
+
+    switch (requestState)
+    {
+        case GATEWAY_PACKET_DI_REGISTERS_STRUCTURE:
+            if (max_readable_addresses <= _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI]) {
+                output_content[3] = (char) (max_readable_addresses >> 8);
+                output_content[4] = (char) (max_readable_addresses & 0xFF);
+
+            } else {
+                output_content[3] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] >> 8);
+                output_content[4] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] & 0xFF);
+            }
+            break;
+
+        case GATEWAY_PACKET_DO_REGISTERS_STRUCTURE:
+            if (max_readable_addresses <= _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO]) {
+                output_content[3] = (char) (max_readable_addresses >> 8);
+                output_content[4] = (char) (max_readable_addresses & 0xFF);
+
+            } else {
+                output_content[3] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] >> 8);
+                output_content[4] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] & 0xFF);
+            }
+            break;
+
+        case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
+            if (max_readable_addresses <= _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI]) {
+                output_content[3] = (char) (max_readable_addresses >> 8);
+                output_content[4] = (char) (max_readable_addresses & 0xFF);
+
+            } else {
+                output_content[3] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] >> 8);
+                output_content[4] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] & 0xFF);
+            }
+            break;
+
+        case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
+            if (max_readable_addresses <= _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO]) {
+                output_content[3] = (char) (max_readable_addresses >> 8);
+                output_content[4] = (char) (max_readable_addresses & 0xFF);
+
+            } else {
+                output_content[3] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] >> 8);
+                output_content[4] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] & 0xFF);
+            }
+            break;
+    }
+
+    // Send packet to node
+    bool result = _gatewaySendPacket((id + 1), output_content, 5);
+
+    // When successfully sent...
+    if (result == true) {
+        // ...add mark, that gateway is waiting for reply from node
+        _gateway_nodes[id].packet.waiting_for = requestState;
+        _gateway_nodes[id].packet.sending_time = millis();
+
         _gateway_nodes[id].initiliazation.attempts = _gateway_nodes[id].initiliazation.attempts + 1;
     }
 }
@@ -1583,7 +1022,7 @@ void _gatewaySendInitializationPacket(
  * Get first not initialized node from the list & try to continue in initiliazation
  */
 void _gatewayContinueInNodeInitialization(
-    uint8_t address
+    const uint8_t address
 ) {
     // Convert node address to index
     uint8_t index = address - 1;
@@ -1594,45 +1033,183 @@ void _gatewayContinueInNodeInitialization(
         // Check if node is not initialized
         && _gateway_nodes[index].initiliazation.state == false
         && _gateway_nodes[index].initiliazation.attempts <= NODES_GATEWAY_MAX_INIT_ATTEMPTS
-        && _gateway_nodes[index].initiliazation.waiting_reply == GATEWAY_PACKET_NONE
+        && _gateway_nodes[index].packet.waiting_for == GATEWAY_PACKET_NONE
     ) {
         switch (_gateway_nodes[index].initiliazation.step)
         {
-            // Request hw model description from node
-            case GATEWAY_NODE_INIT_HW_MODEL:
-                _gatewaySendInitializationPacket(index, GATEWAY_PACKET_HW_MODEL);
+            case GATEWAY_PACKET_HW_MODEL:
+            case GATEWAY_PACKET_HW_MANUFACTURER:
+            case GATEWAY_PACKET_HW_VERSION:
+            case GATEWAY_PACKET_FW_MODEL:
+            case GATEWAY_PACKET_FW_MANUFACTURER:
+            case GATEWAY_PACKET_FW_VERSION:
+            case GATEWAY_PACKET_REGISTERS_SIZE:
+                _gatewaySendInitializationPacket(index, _gateway_nodes[index].initiliazation.step);
                 break;
 
-            // Request hw manufacturer name from node
-            case GATEWAY_NODE_INIT_HW_MANUFACTURER:
-                _gatewaySendInitializationPacket(index, GATEWAY_PACKET_HW_MANUFACTURER);
-                break;
-
-            // Request hw version from node
-            case GATEWAY_NODE_INIT_HW_VERSION:
-                _gatewaySendInitializationPacket(index, GATEWAY_PACKET_HW_VERSION);
-                break;
-
-            // Request fw model description from node
-            case GATEWAY_NODE_INIT_FW_MODEL:
-                _gatewaySendInitializationPacket(index, GATEWAY_PACKET_FW_MODEL);
-                break;
-
-            // Request fw name from node
-            case GATEWAY_NODE_INIT_FW_MANUFACTURER:
-                _gatewaySendInitializationPacket(index, GATEWAY_PACKET_FW_MANUFACTURER);
-                break;
-
-            // Request fw version from node
-            case GATEWAY_NODE_INIT_FW_VERSION:
-                _gatewaySendInitializationPacket(index, GATEWAY_PACKET_FW_VERSION);
-                break;
-
-            // Request registers description from node
-            case GATEWAY_NODE_INIT_REGISTERS:
-                _gatewaySendInitializationPacket(index, GATEWAY_PACKET_REGISTERS_SIZE);
+            case GATEWAY_PACKET_DI_REGISTERS_STRUCTURE:
+            case GATEWAY_PACKET_DO_REGISTERS_STRUCTURE:
+            case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
+            case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
+                _gatewaySendRegisterInitializationPacket(index, _gateway_nodes[index].initiliazation.step, 0);
                 break;
         }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// COMMUNICATION HANDLERS
+// -----------------------------------------------------------------------------
+
+void _gatewayReceiveHandler(
+    uint8_t * payload,
+    const uint16_t length,
+    const PJON_Packet_Info &packetInfo
+) {
+    uint8_t sender_address = PJON_NOT_ASSIGNED;
+
+    // Get sender address from header
+    if (packetInfo.header & PJON_TX_INFO_BIT) {
+        sender_address = packetInfo.sender_id;
+    }
+
+    // Get packet identifier from payload
+    uint8_t packet_id = (uint8_t) payload[0];
+
+    DEBUG_MSG(PSTR("[GATEWAY] Received packet: %s for node with address: %d\n"), _gatewayPacketName(packet_id).c_str(), sender_address);
+
+    // Node is trying to acquire address
+    if (_gatewayIsPacketInGroup(packet_id, gateway_packets_addresing, GATEWAY_PACKET_ADDRESS_MAX)) {
+        _gatewayAddressRequestHandler(packet_id, sender_address, payload);
+
+    // Node send reply to request
+    } else {
+        if (sender_address == PJON_NOT_ASSIGNED) {
+            DEBUG_MSG(PSTR("[GATEWAY][ERR] Received packet is without sender address\n"));
+
+            return;
+        }
+
+        // Check if gateway is waiting for reply from node (initiliazation sequence)
+        if (_gateway_nodes[(sender_address - 1)].packet.waiting_for == GATEWAY_PACKET_NONE) {
+            DEBUG_MSG(
+                PSTR("[GATEWAY][ERR] Received packet for node with address: %d but gateway is not waiting for packet from this node\n"),
+                sender_address
+            );
+
+            return;
+        }
+
+        // Check if gateway is waiting for reply from node (initiliazation sequence)
+        if (_gateway_nodes[(sender_address - 1)].packet.waiting_for != packet_id) {
+            DEBUG_MSG(
+                PSTR("[GATEWAY][ERR] Received packet: %s for node with address: %d but gateway is waiting for: %s\n"),
+                _gatewayPacketName(packet_id).c_str(),
+                sender_address,
+                _gatewayPacketName(_gateway_nodes[(sender_address - 1)].packet.waiting_for).c_str()
+            );
+
+            return;
+        }
+        
+        if (_gatewayIsPacketInGroup(packet_id, gateway_packets_node_initialization, GATEWAY_PACKET_NODE_INIT_MAX)) {
+            _gatewayNodeInitializationHandler(packet_id, sender_address, payload);
+
+        } else if (_gatewayIsPacketInGroup(packet_id, gateway_packets_registers_initialization, GATEWAY_PACKET_REGISTERS_INIT_MAX)) {
+            _gatewayRegistersInitializationHandler(packet_id, sender_address, payload, length);
+
+        } else {
+            switch (packet_id)
+            {
+
+            /**
+             * DIGITAL REGISTERS READING
+             */
+
+                case GATEWAY_PACKET_READ_SINGLE_DI:
+                    // TODO: implement
+                    break;
+
+                case GATEWAY_PACKET_READ_MULTI_DI:
+                    _gatewayReadMultipleDigitalRegisterHandler((sender_address - 1), GATEWAY_REGISTER_DI, payload);
+                    break;
+
+                case GATEWAY_PACKET_READ_SINGLE_DO:
+                    // TODO: implement
+                    break;
+
+                case GATEWAY_PACKET_READ_MULTI_DO:
+                    _gatewayReadMultipleDigitalRegisterHandler((sender_address - 1), GATEWAY_REGISTER_DO, payload);
+                    break;
+
+            /**
+             * ANALOG REGISTERS READING
+             */
+
+                case GATEWAY_PACKET_READ_SINGLE_AI:
+                    // TODO: implement
+                    break;
+
+                case GATEWAY_PACKET_READ_MULTI_AI:
+                    _gatewayReadMultipleAnalogRegisterHandler((sender_address - 1), GATEWAY_REGISTER_AI, payload);
+                    break;
+
+                case GATEWAY_PACKET_READ_SINGLE_AO:
+                    // TODO: implement
+                    break;
+
+                case GATEWAY_PACKET_READ_MULTI_AO:
+                    _gatewayReadMultipleAnalogRegisterHandler((sender_address - 1), GATEWAY_REGISTER_AO, payload);
+                    break;
+
+            /**
+             * DIGITAL REGISTERS WRITING
+             */
+
+                case GATEWAY_PACKET_WRITE_ONE_DO:
+                    _gatewayWriteOneDigitalOutputHandler((sender_address - 1), payload);
+                    break;
+
+                case GATEWAY_PACKET_WRITE_MULTI_DO:
+                    _gatewayWriteMultipleDigitalOutputsHandler((sender_address - 1), payload);
+                    break;
+
+            /**
+             * ANALOG REGISTERS WRITING
+             */
+
+                case GATEWAY_PACKET_WRITE_ONE_AO:
+                    _gatewayWriteOneAnalogOutputHandler((sender_address - 1), payload);
+                    break;
+
+                case GATEWAY_PACKET_WRITE_MULTI_AO:
+                    _gatewayWriteMultipleAnalogOutputsHandler((sender_address - 1), payload);
+                    break;
+            }
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+void _gatewayErrorHandler(
+    const uint8_t code,
+    const uint16_t data,
+    void *customPointer
+) {
+    if (code == PJON_CONNECTION_LOST) {
+        _gateway_nodes[_gateway_bus.packets[data].content[0] -1].addressing.lost = millis();
+
+        DEBUG_MSG(PSTR("[GATEWAY][ERR] Connection lost with node\n"));
+
+    } else if (code == PJON_PACKETS_BUFFER_FULL) {
+        DEBUG_MSG(PSTR("[GATEWAY][ERR] Buffer is full\n"));
+
+    } else if (code == PJON_CONTENT_TOO_LONG) {
+        DEBUG_MSG(PSTR("[GATEWAY][ERR] Content is long\n"));
+
+    } else {
+        DEBUG_MSG(PSTR("[GATEWAY][ERR] Unknown error\n"));
     }
 }
 
@@ -1663,12 +1240,12 @@ void gatewaySetup() {
 // -----------------------------------------------------------------------------
 
 void gatewayLoop() {
-    //_gatewayCheckPacketsDelays();
+    _gatewayCheckPacketsDelays();
 
-    if (
-        _gateway_refresh_nodes == true
-        || millis() < NODES_GATEWAY_ADDRESSING_TIMEOUT
-    ) {
+    // If some node is not initialized, get its address
+    uint8_t node_to_initialize = _gatewayGetNodeAddressToInitialize();
+
+    if (millis() < NODES_GATEWAY_ADDRESSING_TIMEOUT) {
         _gatewaySearchForNodes();
 
     // Check nodes presence in given interval
@@ -1678,8 +1255,8 @@ void gatewayLoop() {
         _gatewayCheckNodesPresence();
 
     // Check if all connected nodes are initialized
-    } else if (_gatewayGetNodeAddressToInitialize() != 0) {
-        _gatewayContinueInNodeInitialization(_gatewayGetNodeAddressToInitialize());
+    } else if (node_to_initialize != 0) {
+        _gatewayContinueInNodeInitialization(node_to_initialize);
 
     // Continue in nodes registers reading
     } else {

@@ -64,10 +64,11 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 // Node addressing
 #define GATEWAY_PACKET_SEARCH_NODES             0x01
-#define GATEWAY_PACKET_NODE_ADDRESS_CONFIRM     0x02
-#define GATEWAY_PACKET_ADDRESS_DISCARD          0x03
+#define GATEWAY_PACKET_SEARCH_NEW_NODES         0x02
+#define GATEWAY_PACKET_NODE_ADDRESS_CONFIRM     0x03
+#define GATEWAY_PACKET_ADDRESS_DISCARD          0x04
 
-#define GATEWAY_PACKET_ADDRESS_MAX              3
+#define GATEWAY_PACKET_ADDRESS_MAX              4
 
 // Node initialization
 #define GATEWAY_PACKET_HW_MODEL                 0x11
@@ -93,17 +94,20 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define GATEWAY_PACKET_READ_MULTI_DI            0x32   // Master requested DI multiple regiters reading
 #define GATEWAY_PACKET_READ_SINGLE_DO           0x33   // Master requested DO one regiter reading
 #define GATEWAY_PACKET_READ_MULTI_DO            0x34   // Master requested DO multiple regiters reading
-#define GATEWAY_PACKET_READ_AI                  0x35   // Master requested AI regiter reading
-#define GATEWAY_PACKET_READ_AO                  0x36   // Master requested AO regiter reading
+#define GATEWAY_PACKET_READ_SINGLE_AI           0x35   // Master requested AI one regiter reading
+#define GATEWAY_PACKET_READ_MULTI_AI            0x36   // Master requested AI multiple regiters reading
+#define GATEWAY_PACKET_READ_SINGLE_AO           0x37   // Master requested AO one regiter reading
+#define GATEWAY_PACKET_READ_MULTI_AO            0x38   // Master requested AO multiple regiters reading
 
-#define GATEWAY_PACKET_REGISTERS_REDING_MAX     6
+#define GATEWAY_PACKET_REGISTERS_REDING_MAX     8
 
 // Registers writing
 #define GATEWAY_PACKET_WRITE_ONE_DO             0x41
 #define GATEWAY_PACKET_WRITE_ONE_AO             0x42
 #define GATEWAY_PACKET_WRITE_MULTI_DO           0x43
+#define GATEWAY_PACKET_WRITE_MULTI_AO           0x44
 
-#define GATEWAY_PACKET_REGISTERS_WRITING_MAX    3
+#define GATEWAY_PACKET_REGISTERS_WRITING_MAX    4
 
 // Node misc communication
 #define GATEWAY_PACKET_NONE                     0xFF
@@ -115,16 +119,28 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #define GATEWAY_DESCRIPTION_NOT_SET             "N/A"
 
-// -----------------------------------------------------------------------------
+// =============================================================================
+// GATEWAY REGISTERS VALUES DATATYPES
+// =============================================================================
 
-#define GATEWAY_NODE_INIT_FINISHED              0
-#define GATEWAY_NODE_INIT_HW_MODEL              3
-#define GATEWAY_NODE_INIT_HW_MANUFACTURER       4
-#define GATEWAY_NODE_INIT_HW_VERSION            5
-#define GATEWAY_NODE_INIT_FW_MODEL              6
-#define GATEWAY_NODE_INIT_FW_MANUFACTURER       7
-#define GATEWAY_NODE_INIT_FW_VERSION            8
-#define GATEWAY_NODE_INIT_REGISTERS             9
+#define GATEWAY_DATA_TYPE_UNKNOWN               0xFF
+#define GATEWAY_DATA_TYPE_BOOLEAN               0x01
+#define GATEWAY_DATA_TYPE_UINT8                 0x02
+#define GATEWAY_DATA_TYPE_UINT16                0x03
+#define GATEWAY_DATA_TYPE_UINT32                0x04
+#define GATEWAY_DATA_TYPE_INT8                  0x05
+#define GATEWAY_DATA_TYPE_INT16                 0x06
+#define GATEWAY_DATA_TYPE_INT32                 0x07
+#define GATEWAY_DATA_TYPE_FLOAT32               0x08
+
+// =============================================================================
+// GATEWAY REGISTERS TYPES
+// =============================================================================
+
+#define GATEWAY_REGISTER_DI                     0
+#define GATEWAY_REGISTER_DO                     1
+#define GATEWAY_REGISTER_AI                     2
+#define GATEWAY_REGISTER_AO                     3
 
 // =============================================================================
 // ENCODER

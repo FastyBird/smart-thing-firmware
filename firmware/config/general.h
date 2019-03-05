@@ -1032,7 +1032,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 #ifndef NODES_GATEWAY_MAX_NODES
-#define NODES_GATEWAY_MAX_NODES                     10              // Define maximum slave nodes count that could connect to the master
+#define NODES_GATEWAY_MAX_NODES                     5               // Define maximum slave nodes count that could connect to the master
 #endif
 
 #ifndef NODES_GATEWAY_MAX_INIT_ATTEMPTS
@@ -1043,8 +1043,8 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define NODES_GATEWAY_INIT_DELAY                    15000           // Delay in ms after reaching maximum initialization attempts
 #endif
 
-#ifndef NODES_GATEWAY_INIT_REPLY_DELAY
-#define NODES_GATEWAY_INIT_REPLY_DELAY              3000            // Delay in ms to wait for response on packet from node
+#ifndef NODES_GATEWAY_PACKET_REPLY_DELAY
+#define NODES_GATEWAY_PACKET_REPLY_DELAY            3000            // Delay in ms to wait for response on packet from node
 #endif
 
 #ifndef NODES_GATEWAY_NODES_CHECK_INTERVAL
@@ -1060,7 +1060,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 #ifndef NODES_GATEWAY_DI_READING_INTERVAL
-#define NODES_GATEWAY_DI_READING_INTERVAL           250
+#define NODES_GATEWAY_DI_READING_INTERVAL           500
 #endif
 
 #ifndef NODES_GATEWAY_DO_READING_INTERVAL
@@ -1068,7 +1068,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 #ifndef NODES_GATEWAY_AI_READING_INTERVAL
-#define NODES_GATEWAY_AI_READING_INTERVAL           250
+#define NODES_GATEWAY_AI_READING_INTERVAL           500
 #endif
 
 #ifndef NODES_GATEWAY_AO_READING_INTERVAL

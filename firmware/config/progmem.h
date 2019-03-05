@@ -6,14 +6,15 @@
 // Reset reasons
 //--------------------------------------------------------------------------------
 
-PROGMEM const char custom_reset_hardware[] = "Hardware button";
-PROGMEM const char custom_reset_web[] = "Reboot from web interface";
-PROGMEM const char custom_reset_mqtt[] = "Reboot from MQTT";
-PROGMEM const char custom_reset_ota[] = "Reboot after successful OTA update";
-PROGMEM const char custom_reset_nofuss[] = "Reboot after successful NoFUSS update";
-PROGMEM const char custom_reset_upgrade[] = "Reboot after successful web update";
-PROGMEM const char custom_reset_factory[] = "Factory reset";
-PROGMEM const char* const custom_reset_string[] = {
+const char custom_reset_hardware[] PROGMEM  = "Hardware button";
+const char custom_reset_web[] PROGMEM       = "Reboot from web interface";
+const char custom_reset_mqtt[] PROGMEM      = "Reboot from MQTT";
+const char custom_reset_ota[] PROGMEM       = "Reboot after successful OTA update";
+const char custom_reset_nofuss[] PROGMEM    = "Reboot after successful NoFUSS update";
+const char custom_reset_upgrade[] PROGMEM   = "Reboot after successful web update";
+const char custom_reset_factory[] PROGMEM   = "Factory reset";
+
+PROGMEM const char * const custom_reset_string[] = {
     custom_reset_hardware, custom_reset_web,
     custom_reset_mqtt, custom_reset_ota,
     custom_reset_nofuss, custom_reset_upgrade,
@@ -24,7 +25,7 @@ PROGMEM const char* const custom_reset_string[] = {
 // Capabilities
 //--------------------------------------------------------------------------------
 
-PROGMEM const char firmware_modules[] =
+const char firmware_modules[] PROGMEM =
     #if ALEXA_SUPPORT
         "ALEXA "
     #endif
@@ -106,11 +107,13 @@ PROGMEM const char firmware_modules[] =
 #if NODES_GATEWAY_SUPPORT
 
 const char gateway_packet_search_nodes[] PROGMEM                = "GATEWAY_PACKET_SEARCH_NODES";
+const char gateway_packet_srarch_new_nodes[] PROGMEM            = "GATEWAY_PACKET_SEARCH_NEW_NODES";
 const char gateway_packet_node_address_confirm[] PROGMEM        = "GATEWAY_PACKET_NODE_ADDRESS_CONFIRM";
 const char gateway_packet_address_discard[] PROGMEM             = "GATEWAY_PACKET_ADDRESS_DISCARD";
 
 PROGMEM const char * const gateway_packets_addresing_string[] = {
-    gateway_packet_search_nodes, gateway_packet_node_address_confirm, gateway_packet_address_discard
+    gateway_packet_search_nodes, gateway_packet_srarch_new_nodes,
+    gateway_packet_node_address_confirm, gateway_packet_address_discard
 };
 
 const char gateway_packet_hw_model[] PROGMEM                    = "GATEWAY_PACKET_HW_MODEL";
@@ -141,21 +144,26 @@ const char gateway_packet_read_single_di[] PROGMEM              = "GATEWAY_PACKE
 const char gateway_packet_read_multi_di[] PROGMEM               = "GATEWAY_PACKET_READ_MULTI_DI";
 const char gateway_packet_read_single_do[] PROGMEM              = "GATEWAY_PACKET_READ_SINGLE_DO";
 const char gateway_packet_read_multi_do[] PROGMEM               = "GATEWAY_PACKET_READ_MULTI_DO";
-const char gateway_packet_read_ai[] PROGMEM                     = "GATEWAY_PACKET_READ_AI";
-const char gateway_packet_read_ao[] PROGMEM                     = "GATEWAY_PACKET_READ_AO";
+const char gateway_packet_read_single_ai[] PROGMEM              = "GATEWAY_PACKET_READ_SINGLE_AI";
+const char gateway_packet_read_multi_ai[] PROGMEM               = "GATEWAY_PACKET_READ_MULTI_AI";
+const char gateway_packet_read_single_ao[] PROGMEM              = "GATEWAY_PACKET_READ_SINGLE_AO";
+const char gateway_packet_read_multi_ao[] PROGMEM               = "GATEWAY_PACKET_READ_MULTI_AO";
 
 PROGMEM const char * const gateway_packets_registers_reading_string[] = {
     gateway_packet_read_single_di, gateway_packet_read_multi_di,
     gateway_packet_read_single_do, gateway_packet_read_multi_do,
-    gateway_packet_read_ai, gateway_packet_read_ao
+    gateway_packet_read_single_ai, gateway_packet_read_multi_ai,
+    gateway_packet_read_single_ao, gateway_packet_read_multi_ao
 };
 
 const char gateway_packet_write_one_do[] PROGMEM                = "GATEWAY_PACKET_WRITE_ONE_DO";
 const char gateway_packet_write_one_ao[] PROGMEM                = "GATEWAY_PACKET_WRITE_ONE_AO";
 const char gateway_packet_write_multi_do[] PROGMEM              = "GATEWAY_PACKET_WRITE_MULTI_DO";
+const char gateway_packet_write_multi_ao[] PROGMEM              = "GATEWAY_PACKET_WRITE_MULTI_AO";
 
 PROGMEM const char * const gateway_packets_registers_writing_string[] = {
-    gateway_packet_write_one_do, gateway_packet_write_one_ao, gateway_packet_write_multi_do
+    gateway_packet_write_one_do, gateway_packet_write_one_ao,
+    gateway_packet_write_multi_do, gateway_packet_write_multi_ao
 };
 
 const char gateway_packet_none[] PROGMEM                        = "GATEWAY_PACKET_NONE";
@@ -168,7 +176,8 @@ PROGMEM const char * const gateway_packets_misc_string[] = {
 //--------------------------------------------------------------------------------
 
 const int gateway_packets_addresing[] PROGMEM = {
-    GATEWAY_PACKET_SEARCH_NODES, GATEWAY_PACKET_NODE_ADDRESS_CONFIRM, GATEWAY_PACKET_ADDRESS_DISCARD
+    GATEWAY_PACKET_SEARCH_NODES, GATEWAY_PACKET_SEARCH_NEW_NODES,
+    GATEWAY_PACKET_NODE_ADDRESS_CONFIRM, GATEWAY_PACKET_ADDRESS_DISCARD
 };
 
 const int gateway_packets_node_initialization[] PROGMEM = {
@@ -185,11 +194,13 @@ const int gateway_packets_registers_initialization[] PROGMEM = {
 const int gateway_packets_registers_reading[] PROGMEM = {
     GATEWAY_PACKET_READ_SINGLE_DI, GATEWAY_PACKET_READ_MULTI_DI,
     GATEWAY_PACKET_READ_SINGLE_DO, GATEWAY_PACKET_READ_MULTI_DO,
-    GATEWAY_PACKET_READ_AI, GATEWAY_PACKET_READ_AO
+    GATEWAY_PACKET_READ_SINGLE_AI, GATEWAY_PACKET_READ_MULTI_AI,
+    GATEWAY_PACKET_READ_SINGLE_AO, GATEWAY_PACKET_READ_MULTI_AO
 };
 
 const int gateway_packets_registers_writing[] PROGMEM = {
-    GATEWAY_PACKET_WRITE_ONE_DO, GATEWAY_PACKET_WRITE_ONE_AO, GATEWAY_PACKET_WRITE_MULTI_DO
+    GATEWAY_PACKET_WRITE_ONE_DO, GATEWAY_PACKET_WRITE_ONE_AO,
+    GATEWAY_PACKET_WRITE_MULTI_DO, GATEWAY_PACKET_WRITE_MULTI_AO
 };
 
 const int gateway_packets_misc[] PROGMEM = {
