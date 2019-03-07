@@ -129,14 +129,11 @@ PROGMEM const char * const gateway_packets_node_initialization_string[] = {
 };
 
 const char gateway_packet_registers_size[] PROGMEM              = "GATEWAY_PACKET_REGISTERS_SIZE";
-const char gateway_packet_di_registers_structure[] PROGMEM      = "GATEWAY_PACKET_DI_REGISTERS_STRUCTURE";
-const char gateway_packet_do_registers_structure[] PROGMEM      = "GATEWAY_PACKET_DO_REGISTERS_STRUCTURE";
 const char gateway_packet_ai_registers_structure[] PROGMEM      = "GATEWAY_PACKET_AI_REGISTERS_STRUCTURE";
 const char gateway_packet_ao_registers_structure[] PROGMEM      = "GATEWAY_PACKET_AO_REGISTERS_STRUCTURE";
 
 PROGMEM const char * const gateway_packets_registers_initialization_string[] = {
     gateway_packet_registers_size,
-    gateway_packet_di_registers_structure, gateway_packet_do_registers_structure,
     gateway_packet_ai_registers_structure, gateway_packet_ao_registers_structure
 };
 
@@ -187,7 +184,6 @@ const int gateway_packets_node_initialization[] PROGMEM = {
 
 const int gateway_packets_registers_initialization[] PROGMEM = {
     GATEWAY_PACKET_REGISTERS_SIZE,
-    GATEWAY_PACKET_DI_REGISTERS_STRUCTURE, GATEWAY_PACKET_DO_REGISTERS_STRUCTURE,
     GATEWAY_PACKET_AI_REGISTERS_STRUCTURE, GATEWAY_PACKET_AO_REGISTERS_STRUCTURE
 };
 

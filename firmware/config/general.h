@@ -69,7 +69,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 #ifndef DEBUG_WEB_SUPPORT
-#define DEBUG_WEB_SUPPORT               1                           // Enable web debug log (will only work if WEB_SUPPORT is also 1)
+#define DEBUG_WEB_SUPPORT               0                           // Enable web debug log (will only work if WEB_SUPPORT is also 1)
 #endif
 
 #ifndef DEBUG_MQTT_SUPPORT

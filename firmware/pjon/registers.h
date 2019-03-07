@@ -19,12 +19,6 @@ uint8_t _gatewayRegistersGetDataType(
 ) {
     switch (dataRegister)
     {
-        case GATEWAY_REGISTER_DI:
-            return _gateway_nodes[id].digital_inputs[address].data_type;
-
-        case GATEWAY_REGISTER_DO:
-            return _gateway_nodes[id].digital_outputs[address].data_type;
-
         case GATEWAY_REGISTER_AI:
             return _gateway_nodes[id].analog_inputs[address].data_type;
 
@@ -34,29 +28,6 @@ uint8_t _gatewayRegistersGetDataType(
 
     return 0;
 }
-// -----------------------------------------------------------------------------
-
-bool _gatewayRegisterValueUpdated(
-    const uint8_t id,
-    const uint8_t dataRegister,
-    const uint8_t address,
-    const void * storedValue,
-    const void * writtenValue
-) {
-    // TODO: finish notification after value change
-}
-
-// -----------------------------------------------------------------------------
-
-// Specialized convenience setters (these do not cost memory because of inlining)
-void _gatewayRegisterValueUpdated(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const bool storedValue, const bool writtenValue) {  _gatewayRegisterValueUpdated(id, dataRegister, address, storedValue, writtenValue); }
-void _gatewayRegisterValueUpdated(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const uint8_t storedValue, const uint8_t writtenValue) {  _gatewayRegisterValueUpdated(id, dataRegister, address, storedValue, writtenValue); }
-void _gatewayRegisterValueUpdated(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const uint16_t storedValue, const uint16_t writtenValue) {  _gatewayRegisterValueUpdated(id, dataRegister, address, storedValue, writtenValue); }
-void _gatewayRegisterValueUpdated(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const uint32_t storedValue, const uint32_t writtenValue) {  _gatewayRegisterValueUpdated(id, dataRegister, address, storedValue, writtenValue); }
-void _gatewayRegisterValueUpdated(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const int8_t storedValue, const int8_t writtenValue) {  _gatewayRegisterValueUpdated(id, dataRegister, address, storedValue, writtenValue); }
-void _gatewayRegisterValueUpdated(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const int16_t storedValue, const int16_t writtenValue) {  _gatewayRegisterValueUpdated(id, dataRegister, address, storedValue, writtenValue); }
-void _gatewayRegisterValueUpdated(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const int32_t storedValue, const int32_t writtenValue) {  _gatewayRegisterValueUpdated(id, dataRegister, address, storedValue, writtenValue); }
-void _gatewayRegisterValueUpdated(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const float storedValue, const float writtenValue) {  _gatewayRegisterValueUpdated(id, dataRegister, address, storedValue, writtenValue); }
 
 // -----------------------------------------------------------------------------
 // REGISTERS READ & WRITE
@@ -91,17 +62,37 @@ bool _gatewayRegistersIsSizeCorrect(
     const uint8_t address,
     const uint8_t size
 ) {
-    if (dataRegister == GATEWAY_REGISTER_DI) {
-        return (_gateway_nodes[id].digital_inputs[address].size == size);
-
-    } else if (dataRegister == GATEWAY_REGISTER_DO) {
-        return (_gateway_nodes[id].digital_outputs[address].size == size);
-
-    } else if (dataRegister == GATEWAY_REGISTER_AI) {
+    if (dataRegister == GATEWAY_REGISTER_AI) {
         return (_gateway_nodes[id].analog_inputs[address].size == size);
 
     } else if (dataRegister == GATEWAY_REGISTER_AO) {
         return (_gateway_nodes[id].analog_outputs[address].size == size);
+    }
+
+    return false;
+}
+
+// -----------------------------------------------------------------------------
+
+bool _gatewayWriteDigitalRegisterValue(
+    const uint8_t id,
+    const uint8_t dataRegister,
+    const uint8_t address,
+    const bool value
+) {
+    if (_gatewayRegistersIsAddressCorrect(id, dataRegister, address) == false) {
+        return false;
+    }
+
+    if (dataRegister == GATEWAY_REGISTER_DI) {
+        _gateway_nodes[id].digital_inputs[address].value = value ? true : false;
+
+        return true;
+
+    } else if (dataRegister == GATEWAY_REGISTER_DO) {
+        _gateway_nodes[id].digital_outputs[address].value = value ? true : false;
+
+        return true;
     }
 
     return false;
@@ -121,27 +112,24 @@ bool _gatewayWriteRegisterValue(
     }
 
     if (_gatewayRegistersIsSizeCorrect(id, dataRegister, address, size)) {
-        if (dataRegister == GATEWAY_REGISTER_DI) {
-            memcpy(_gateway_nodes[id].digital_inputs[address].value, value, size);
-
-        } else if (dataRegister == GATEWAY_REGISTER_DO) {
-            memcpy(_gateway_nodes[id].digital_outputs[address].value, value, size);
-
-        } else if (dataRegister == GATEWAY_REGISTER_AI) {
+        if (dataRegister == GATEWAY_REGISTER_AI) {
             memcpy(_gateway_nodes[id].analog_inputs[address].value, value, size);
+
+            return true;
 
         } else if (dataRegister == GATEWAY_REGISTER_AO) {
             memcpy(_gateway_nodes[id].analog_outputs[address].value, value, size);
+
+            return true;
         }
     }
 
-    return true;
+    return false;
 }
 
 // -----------------------------------------------------------------------------
 
 // Specialized convenience setters (these do not cost memory because of inlining)
-bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const bool value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 1); }
 bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const uint8_t value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 1); }
 bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const uint16_t value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 2); }
 bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const uint32_t value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 4); }
@@ -149,6 +137,25 @@ bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, co
 bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const int16_t value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 2); }
 bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const int32_t value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 4); }
 bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const float value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 4); }
+
+// -----------------------------------------------------------------------------
+
+bool _gatewayReadDigitalRegisterValue(
+    const uint8_t id,
+    const uint8_t dataRegister,
+    const uint8_t address
+) {
+    if (_gatewayRegistersIsAddressCorrect(id, dataRegister, address)) {
+        if (dataRegister == GATEWAY_REGISTER_DI) {
+            return _gateway_nodes[id].digital_inputs[address].value;
+
+        } else if (dataRegister == GATEWAY_REGISTER_DO) {
+            return _gateway_nodes[id].digital_outputs[address].value;
+        }
+    }
+
+    return false;
+}
 
 // -----------------------------------------------------------------------------
 
@@ -163,13 +170,7 @@ void _gatewayReadRegisterValue(
         _gatewayRegistersIsAddressCorrect(id, dataRegister, address)
         && _gatewayRegistersIsSizeCorrect(id, dataRegister, address, size)
     ) {
-        if (dataRegister == GATEWAY_REGISTER_DI) {
-            memcpy(value, _gateway_nodes[id].digital_inputs[address].value, size);
-
-        } else if (dataRegister == GATEWAY_REGISTER_DO) {
-            memcpy(value, _gateway_nodes[id].digital_outputs[address].value, size);
-
-        } else if (dataRegister == GATEWAY_REGISTER_AI) {
+        if (dataRegister == GATEWAY_REGISTER_AI) {
             memcpy(value, _gateway_nodes[id].analog_inputs[address].value, size);
 
         } else if (dataRegister == GATEWAY_REGISTER_AO) {
@@ -187,7 +188,6 @@ void _gatewayReadRegisterValue(
 // -----------------------------------------------------------------------------
 
 // Specialized convenience setters (these do not cost memory because of inlining)
-void _gatewayReadRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, bool &value) { _gatewayReadRegisterValue(id, dataRegister, address, &value, 1); }
 void _gatewayReadRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, uint8_t &value) { _gatewayReadRegisterValue(id, dataRegister, address, &value, 1); }
 void _gatewayReadRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, uint16_t &value) { _gatewayReadRegisterValue(id, dataRegister, address, &value, 2); }
 void _gatewayReadRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, uint32_t &value) { _gatewayReadRegisterValue(id, dataRegister, address, &value, 4); }
@@ -209,30 +209,6 @@ void _gatewayRegistersWriteValueFromTransfer(
 ) {
     switch (_gatewayRegistersGetDataType(id, dataRegister, address))
     {
-        case GATEWAY_DATA_TYPE_BOOLEAN:
-            bool bool_stored_value;
-            BOOL_UNION_t bool_write_value;
-
-            bool_write_value.bytes[0] = value[0];
-            bool_write_value.bytes[1] = value[1];
-            bool_write_value.bytes[2] = value[2];
-            bool_write_value.bytes[3] = value[3];
-
-            _gatewayReadRegisterValue(id, dataRegister, address, bool_stored_value);
-
-            if (bool_stored_value != bool_write_value.number) {
-                _gatewayWriteRegisterValue(id, dataRegister, address, bool_write_value.number);
-
-                _gatewayRegisterValueUpdated(id, dataRegister, address, bool_stored_value, bool_write_value.number);
-
-
-                DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
-
-            } else {
-                DEBUG_MSG(PSTR("[GATEWAY] Value to write into register is same as stored. Write skipped\n"));
-            }
-            break;
-
         case GATEWAY_DATA_TYPE_UINT8:
             uint8_t uint8_stored_value;
             UINT8_UNION_t uint8_write_value;
@@ -247,13 +223,10 @@ void _gatewayRegistersWriteValueFromTransfer(
             if (uint8_stored_value != uint8_write_value.number) {
                 _gatewayWriteRegisterValue(id, dataRegister, address, uint8_write_value.number);
 
-                _gatewayRegisterValueUpdated(id, dataRegister, address, uint8_stored_value, uint8_write_value.number);
+                _gatewayRegisterValueUpdated(id, dataRegister, address);
 
 
                 DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
-
-            } else {
-                DEBUG_MSG(PSTR("[GATEWAY] Value to write into register is same as stored. Write skipped\n"));
             }
             break;
 
@@ -271,12 +244,9 @@ void _gatewayRegistersWriteValueFromTransfer(
             if (uint16_stored_value != uint16_write_value.number) {
                 _gatewayWriteRegisterValue(id, dataRegister, address, uint16_write_value.number);
 
-                _gatewayRegisterValueUpdated(id, dataRegister, address, uint16_stored_value, uint16_write_value.number);
+                _gatewayRegisterValueUpdated(id, dataRegister, address);
 
                 DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
-
-            } else {
-                DEBUG_MSG(PSTR("[GATEWAY] Value to write into register is same as stored. Write skipped\n"));
             }
             break;
 
@@ -294,12 +264,9 @@ void _gatewayRegistersWriteValueFromTransfer(
             if (uint32_stored_value != uint32_write_value.number) {
                 _gatewayWriteRegisterValue(id, dataRegister, address, uint32_write_value.number);
 
-                _gatewayRegisterValueUpdated(id, dataRegister, address, uint32_stored_value, uint32_write_value.number);
+                _gatewayRegisterValueUpdated(id, dataRegister, address);
 
                 DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
-
-            } else {
-                DEBUG_MSG(PSTR("[GATEWAY] Value to write into register is same as stored. Write skipped\n"));
             }
             break;
 
@@ -317,12 +284,9 @@ void _gatewayRegistersWriteValueFromTransfer(
             if (int8_stored_value != int8_write_value.number) {
                 _gatewayWriteRegisterValue(id, dataRegister, address, int8_write_value.number);
 
-                _gatewayRegisterValueUpdated(id, dataRegister, address, int8_stored_value, int8_write_value.number);
+                _gatewayRegisterValueUpdated(id, dataRegister, address);
 
                 DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
-
-            } else {
-                DEBUG_MSG(PSTR("[GATEWAY] Value to write into register is same as stored. Write skipped\n"));
             }
             break;
 
@@ -340,12 +304,9 @@ void _gatewayRegistersWriteValueFromTransfer(
             if (int16_stored_value != int16_write_value.number) {
                 _gatewayWriteRegisterValue(id, dataRegister, address, int16_write_value.number);
 
-                _gatewayRegisterValueUpdated(id, dataRegister, address, int16_stored_value, int16_write_value.number);
+                _gatewayRegisterValueUpdated(id, dataRegister, address);
 
                 DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
-
-            } else {
-                DEBUG_MSG(PSTR("[GATEWAY] Value to write into register is same as stored. Write skipped\n"));
             }
             break;
 
@@ -363,12 +324,9 @@ void _gatewayRegistersWriteValueFromTransfer(
             if (int32_stored_value != int32_write_value.number) {
                 _gatewayWriteRegisterValue(id, dataRegister, address, int32_write_value.number);
 
-                _gatewayRegisterValueUpdated(id, dataRegister, address, int32_stored_value, int32_write_value.number);
+                _gatewayRegisterValueUpdated(id, dataRegister, address);
 
                 DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
-
-            } else {
-                DEBUG_MSG(PSTR("[GATEWAY] Value to write into register is same as stored. Write skipped\n"));
             }
             break;
 
@@ -386,12 +344,9 @@ void _gatewayRegistersWriteValueFromTransfer(
             if (float_stored_value != float_write_value.number) {
                 _gatewayWriteRegisterValue(id, dataRegister, address, float_write_value.number);
 
-                _gatewayRegisterValueUpdated(id, dataRegister, address, float_stored_value, float_write_value.number);
+                _gatewayRegisterValueUpdated(id, dataRegister, address);
 
                 DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
-
-            } else {
-                DEBUG_MSG(PSTR("[GATEWAY] Value to write into register is same as stored. Write skipped\n"));
             }
             break;
 
@@ -711,29 +666,26 @@ void _gatewayReadMultipleDigitalRegisterHandler(
 
         uint8_t write_address = start_address;
 
+        bool write_value = false;
+        bool stored_value = false;
+
         while (
             write_address < _gateway_nodes[id].registers_size[dataRegister]
             && write_byte <= bytes_length
         ) {
             data_byte = (uint8_t) payload[3 + write_byte];
 
-            bool write_value = false;
-            bool stored_value;
-
             for (uint8_t i = 0; i < 8; i++) {
                 write_value = (data_byte >> i) & 0x01 ? true : false;
 
-                _gatewayReadRegisterValue(id, dataRegister, write_address, stored_value);
+                stored_value = _gatewayReadDigitalRegisterValue(id, dataRegister, write_address);
 
                 if (stored_value != write_value) {
-                    _gatewayWriteRegisterValue(id, dataRegister, write_address, write_value);
+                    _gatewayWriteDigitalRegisterValue(id, dataRegister, write_address, write_value);
 
-                    _gatewayRegisterValueUpdated(id, dataRegister, write_address, stored_value, write_value);
+                    _gatewayRegisterValueUpdated(id, dataRegister, write_address);
 
                     DEBUG_MSG(PSTR("[GATEWAY] Value was written into digital register at address: %d\n"), write_address);
-
-                } else {
-                    DEBUG_MSG(PSTR("[GATEWAY] Value to write into digital register at address: %d is same as stored. Write skipped\n"), write_address);
                 }
 
                 write_address++;
@@ -831,19 +783,14 @@ void _gatewayWriteOneDigitalOutputHandler(
         // Write address must be between <0, buffer.size()>
         register_address < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO]
     ) {
-        bool stored_value;
-
-        _gatewayReadRegisterValue(id, GATEWAY_REGISTER_DO, register_address, stored_value);
+        bool stored_value = _gatewayReadDigitalRegisterValue(id, GATEWAY_REGISTER_DO, register_address);
 
         if (stored_value != (bool) write_value) {
-            _gatewayWriteRegisterValue(id, GATEWAY_REGISTER_DO, register_address, (bool) write_value);
+            _gatewayWriteDigitalRegisterValue(id, GATEWAY_REGISTER_DO, register_address, (bool) write_value ? true : false);
 
-            _gatewayRegisterValueUpdated(id, GATEWAY_REGISTER_DO, register_address, stored_value, (bool) write_value);
+            _gatewayRegisterValueUpdated(id, GATEWAY_REGISTER_DO, register_address);
 
             DEBUG_MSG(PSTR("[GATEWAY] Value was written into DO register\n"));
-
-        } else {
-            DEBUG_MSG(PSTR("[GATEWAY] Value to write into DO register is same as stored. Write skipped\n"));
         }
 
     } else {

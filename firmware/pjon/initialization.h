@@ -88,8 +88,6 @@ void _gatewayExtractAndStoreDescription(
             return;
     }
 
-    DEBUG_MSG(PSTR("[GATEWAY] Initialization step for node with address: %d is updated and set to: %d\n"), (id + 1), _gateway_nodes[id].initiliazation.step);
-
     _gateway_nodes[id].initiliazation.attempts = 0;
 
     _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
@@ -112,16 +110,16 @@ void _gatewayExtractAndStoreRegistersDefinitions(
     const uint8_t id,
     uint8_t * payload
 ) {
-    std::vector<gateway_register_t> reset_digital_inputs;
+    std::vector<gateway_digital_register_t> reset_digital_inputs;
     _gateway_nodes[id].digital_inputs = reset_digital_inputs;
 
-    std::vector<gateway_register_t> reset_digital_outputs;
+    std::vector<gateway_digital_register_t> reset_digital_outputs;
     _gateway_nodes[id].digital_outputs = reset_digital_outputs;
 
-    std::vector<gateway_register_t> reset_analog_inputs;
+    std::vector<gateway_analog_register_t> reset_analog_inputs;
     _gateway_nodes[id].analog_inputs = reset_analog_inputs;
 
-    std::vector<gateway_register_t> reset_analog_outputs;
+    std::vector<gateway_analog_register_t> reset_analog_outputs;
     _gateway_nodes[id].analog_outputs = reset_analog_outputs;
 
     _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] = (uint8_t) payload[1];
@@ -129,52 +127,41 @@ void _gatewayExtractAndStoreRegistersDefinitions(
     _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] = (uint8_t) payload[3];
     _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] = (uint8_t) payload[4];
 
-    for (uint8_t i = 0; i < (uint8_t) payload[1]; i++) {
-        _gateway_nodes[id].digital_inputs.push_back((gateway_register_t) {
-            GATEWAY_DESCRIPTION_NOT_SET,
-            GATEWAY_DATA_TYPE_BOOLEAN,
-            1,
-            { 0 }
-        });
-
-        _gateway_nodes[id].digital_inputs_reading.start = 0;
-        _gateway_nodes[id].digital_inputs_reading.delay = 0;
-    }
+    _gateway_nodes[id].digital_inputs_reading.start = 0;
+    _gateway_nodes[id].digital_inputs_reading.delay = 0;
+    _gateway_nodes[id].digital_outputs_reading.start = 0;
+    _gateway_nodes[id].digital_outputs_reading.delay = 0;
+    _gateway_nodes[id].analog_inputs_reading.start = 0;
+    _gateway_nodes[id].analog_inputs_reading.delay = 0;
+    _gateway_nodes[id].analog_outputs_reading.start = 0;
+    _gateway_nodes[id].analog_outputs_reading.delay = 0;
     
-    for (uint8_t i = 0; i < (uint8_t) payload[2]; i++) {
-        _gateway_nodes[id].digital_outputs.push_back((gateway_register_t) {
+    for (uint8_t i = 0; i < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI]; i++) {
+        _gateway_nodes[id].digital_inputs.push_back((gateway_digital_register_t) {
             GATEWAY_DESCRIPTION_NOT_SET,
-            GATEWAY_DATA_TYPE_BOOLEAN,
-            1,
-            { 0 }
+            false
         });
-
-        _gateway_nodes[id].digital_outputs_reading.start = 0;
-        _gateway_nodes[id].digital_outputs_reading.delay = 0;
     }
 
-    for (uint8_t i = 0; i < (uint8_t) payload[3]; i++) {
-        _gateway_nodes[id].analog_inputs.push_back((gateway_register_t) {
+    for (uint8_t i = 0; i < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO]; i++) {
+        _gateway_nodes[id].digital_outputs.push_back((gateway_digital_register_t) {
             GATEWAY_DESCRIPTION_NOT_SET,
-            GATEWAY_DATA_TYPE_UNKNOWN,
-            0,
-            { 0 }
+            false
         });
-
-        _gateway_nodes[id].analog_inputs_reading.start = 0;
-        _gateway_nodes[id].analog_inputs_reading.delay = 0;
     }
-    
-    for (uint8_t i = 0; i < (uint8_t) payload[4]; i++) {
-        _gateway_nodes[id].analog_outputs.push_back((gateway_register_t) {
-            GATEWAY_DESCRIPTION_NOT_SET,
-            GATEWAY_DATA_TYPE_UNKNOWN,
-            0,
-            { 0 }
-        });
 
-        _gateway_nodes[id].analog_outputs_reading.start = 0;
-        _gateway_nodes[id].analog_outputs_reading.delay = 0;
+    for (uint8_t i = 0; i < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI]; i++) {
+        _gateway_nodes[id].analog_inputs.push_back((gateway_analog_register_t) {
+            GATEWAY_DESCRIPTION_NOT_SET,
+            GATEWAY_DATA_TYPE_UNKNOWN
+        });
+    }
+ 
+    for (uint8_t i = 0; i < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO]; i++) {
+        _gateway_nodes[id].analog_outputs.push_back((gateway_analog_register_t) {
+            GATEWAY_DESCRIPTION_NOT_SET,
+            GATEWAY_DATA_TYPE_UNKNOWN
+        });
     }
 
     DEBUG_MSG(
@@ -186,13 +173,7 @@ void _gatewayExtractAndStoreRegistersDefinitions(
         (id + 1)
     );
 
-    if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] > 0) {
-        _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_DI_REGISTERS_STRUCTURE;
-
-    } else if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] > 0) {
-        _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_DO_REGISTERS_STRUCTURE;
-
-    } else if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] > 0) {
+    if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] > 0) {
         _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_AI_REGISTERS_STRUCTURE;
 
     } else if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] > 0) {
@@ -210,7 +191,7 @@ void _gatewayExtractAndStoreRegistersDefinitions(
  * Parse received payload - Register structure
  * 
  * PAYLOAD
- * 0    => Received packet identifier       => GATEWAY_PACKET_DI_REGISTERS_STRUCTURE|GATEWAY_PACKET_DO_REGISTERS_STRUCTURE|GATEWAY_PACKET_AI_REGISTERS_STRUCTURE|GATEWAY_PACKET_AO_REGISTERS_STRUCTURE
+ * 0    => Received packet identifier       => GATEWAY_PACKET_AI_REGISTERS_STRUCTURE|GATEWAY_PACKET_AO_REGISTERS_STRUCTURE
  * 1    => High byte of register address    => 0-255
  * 2    => Low byte of register address     => 0-255
  * 3    => Register length                  => 0-255
@@ -237,64 +218,82 @@ void _gatewayExtractAndStoreRegisterStructure(
     for (uint8_t i = register_address; i <= (register_address + bytes_length); i++) {
         switch ((uint8_t) payload[0])
         {
-            case GATEWAY_PACKET_DI_REGISTERS_STRUCTURE:
-                _gateway_nodes[id].digital_inputs[i].data_type = payload[byte_pointer];
-                //_gateway_nodes[id].digital_inputs[i].size = 1;
-                break;
-
-            case GATEWAY_PACKET_DO_REGISTERS_STRUCTURE:
-                _gateway_nodes[id].digital_outputs[i].data_type = payload[byte_pointer];
-                //_gateway_nodes[id].digital_outputs[i].size = 1;
-                break;
-
             case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
-                _gateway_nodes[id].analog_inputs[i].data_type = payload[byte_pointer];
-
-                switch (payload[byte_pointer])
+                switch ((uint8_t) payload[byte_pointer])
                 {
                     case GATEWAY_DATA_TYPE_UINT8:
+                        _gateway_nodes[id].analog_inputs[i].data_type = GATEWAY_DATA_TYPE_UINT8;
+                        _gateway_nodes[id].analog_inputs[i].size = 1;
+                        break;
+
                     case GATEWAY_DATA_TYPE_INT8:
+                        _gateway_nodes[id].analog_inputs[i].data_type = GATEWAY_DATA_TYPE_INT8;
                         _gateway_nodes[id].analog_inputs[i].size = 1;
                         break;
 
                     case GATEWAY_DATA_TYPE_UINT16:
+                        _gateway_nodes[id].analog_inputs[i].data_type = GATEWAY_DATA_TYPE_UINT16;
+                        _gateway_nodes[id].analog_inputs[i].size = 2;
+                        break;
+
                     case GATEWAY_DATA_TYPE_INT16:
+                        _gateway_nodes[id].analog_inputs[i].data_type = GATEWAY_DATA_TYPE_INT16;
                         _gateway_nodes[id].analog_inputs[i].size = 2;
                         break;
 
                     case GATEWAY_DATA_TYPE_UINT32:
-                    case GATEWAY_DATA_TYPE_INT32:
-                    case GATEWAY_DATA_TYPE_FLOAT32:
+                        _gateway_nodes[id].analog_inputs[i].data_type = GATEWAY_DATA_TYPE_UINT32;
                         _gateway_nodes[id].analog_inputs[i].size = 4;
                         break;
-                
-                    default:
+
+                    case GATEWAY_DATA_TYPE_INT32:
+                        _gateway_nodes[id].analog_inputs[i].data_type = GATEWAY_DATA_TYPE_INT32;
+                        _gateway_nodes[id].analog_inputs[i].size = 4;
+                        break;
+
+                    case GATEWAY_DATA_TYPE_FLOAT32:
+                        _gateway_nodes[id].analog_inputs[i].data_type = GATEWAY_DATA_TYPE_FLOAT32;
+                        _gateway_nodes[id].analog_inputs[i].size = 4;
                         break;
                 }
                 break;
 
             case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
-                _gateway_nodes[id].analog_outputs[i].data_type = payload[byte_pointer];
-
-                switch (payload[byte_pointer])
+                switch ((uint8_t) payload[byte_pointer])
                 {
                     case GATEWAY_DATA_TYPE_UINT8:
+                        _gateway_nodes[id].analog_outputs[i].data_type = GATEWAY_DATA_TYPE_UINT8;
+                        _gateway_nodes[id].analog_outputs[i].size = 1;
+                        break;
+
                     case GATEWAY_DATA_TYPE_INT8:
+                        _gateway_nodes[id].analog_outputs[i].data_type = GATEWAY_DATA_TYPE_INT8;
                         _gateway_nodes[id].analog_outputs[i].size = 1;
                         break;
 
                     case GATEWAY_DATA_TYPE_UINT16:
+                        _gateway_nodes[id].analog_outputs[i].data_type = GATEWAY_DATA_TYPE_UINT16;
+                        _gateway_nodes[id].analog_outputs[i].size = 2;
+                        break;
+
                     case GATEWAY_DATA_TYPE_INT16:
+                        _gateway_nodes[id].analog_outputs[i].data_type = GATEWAY_DATA_TYPE_INT16;
                         _gateway_nodes[id].analog_outputs[i].size = 2;
                         break;
 
                     case GATEWAY_DATA_TYPE_UINT32:
-                    case GATEWAY_DATA_TYPE_INT32:
-                    case GATEWAY_DATA_TYPE_FLOAT32:
+                        _gateway_nodes[id].analog_outputs[i].data_type = GATEWAY_DATA_TYPE_UINT32;
                         _gateway_nodes[id].analog_outputs[i].size = 4;
                         break;
-                
-                    default:
+
+                    case GATEWAY_DATA_TYPE_INT32:
+                        _gateway_nodes[id].analog_outputs[i].data_type = GATEWAY_DATA_TYPE_INT32;
+                        _gateway_nodes[id].analog_outputs[i].size = 4;
+                        break;
+
+                    case GATEWAY_DATA_TYPE_FLOAT32:
+                        _gateway_nodes[id].analog_outputs[i].data_type = GATEWAY_DATA_TYPE_FLOAT32;
+                        _gateway_nodes[id].analog_outputs[i].size = 4;
                         break;
                 }
                 break;
@@ -305,74 +304,26 @@ void _gatewayExtractAndStoreRegisterStructure(
 
     switch ((uint8_t) payload[0])
     {
-        case GATEWAY_PACKET_DI_REGISTERS_STRUCTURE:
-            if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] > bytes_length) {
-                _gatewaySendRegisterInitializationPacket(id, GATEWAY_PACKET_DI_REGISTERS_STRUCTURE, (register_address + bytes_length));
-                return;
-            }
-
-            if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] > 0) {
-                _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_DO_REGISTERS_STRUCTURE;
-
-            } else if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] > 0) {
-                _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_AI_REGISTERS_STRUCTURE;
-
-            } else if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] > 0) {
-                _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_AO_REGISTERS_STRUCTURE;
-
-            } else {
-                // Node initiliazation successfully finished
-                _gatewayMarkNodeAsInitialized(id);
-            }
-
-            return;
-            break;
-
-        case GATEWAY_PACKET_DO_REGISTERS_STRUCTURE:
-            if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] > bytes_length) {
-                _gatewaySendRegisterInitializationPacket(id, GATEWAY_PACKET_DO_REGISTERS_STRUCTURE, (register_address + bytes_length));
-                return;
-            }
-
-            if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] > 0) {
-                _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_AI_REGISTERS_STRUCTURE;
-
-            } else if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] > 0) {
-                _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_AO_REGISTERS_STRUCTURE;
-
-            } else {
-                // Node initiliazation successfully finished
-                _gatewayMarkNodeAsInitialized(id);
-            }
-
-            return;
-            break;
-
         case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
             if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] > bytes_length) {
                 _gatewaySendRegisterInitializationPacket(id, GATEWAY_PACKET_AI_REGISTERS_STRUCTURE, (register_address + bytes_length));
+
                 return;
             }
 
             if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] > 0) {
                 _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_AO_REGISTERS_STRUCTURE;
 
-            } else {
-                // Node initiliazation successfully finished
-                _gatewayMarkNodeAsInitialized(id);
+                return;
             }
-
-            return;
             break;
 
         case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
             if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] > bytes_length) {
                 _gatewaySendRegisterInitializationPacket(id, GATEWAY_PACKET_AO_REGISTERS_STRUCTURE, (register_address + bytes_length));
+
                 return;
             }
-
-            // Node initiliazation successfully finished
-            _gatewayMarkNodeAsInitialized(id);
             break;
     }
     
@@ -414,14 +365,6 @@ void _gatewayRegistersInitializationHandler(
     {
         case GATEWAY_PACKET_REGISTERS_SIZE:
             _gatewayExtractAndStoreRegistersDefinitions((address - 1), payload);
-            break;
-
-        case GATEWAY_PACKET_DI_REGISTERS_STRUCTURE:
-            _gatewayExtractAndStoreRegisterStructure((address - 1), payload, payloadLength, GATEWAY_REGISTER_DI);
-            break;
-
-        case GATEWAY_PACKET_DO_REGISTERS_STRUCTURE:
-            _gatewayExtractAndStoreRegisterStructure((address - 1), payload, payloadLength, GATEWAY_REGISTER_DO);
             break;
 
         case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:

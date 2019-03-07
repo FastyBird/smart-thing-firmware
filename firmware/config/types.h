@@ -82,12 +82,10 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 // Node registers initialization
 #define GATEWAY_PACKET_REGISTERS_SIZE           0x21
-#define GATEWAY_PACKET_DI_REGISTERS_STRUCTURE   0x22
-#define GATEWAY_PACKET_DO_REGISTERS_STRUCTURE   0x23
-#define GATEWAY_PACKET_AI_REGISTERS_STRUCTURE   0x24
-#define GATEWAY_PACKET_AO_REGISTERS_STRUCTURE   0x25
+#define GATEWAY_PACKET_AI_REGISTERS_STRUCTURE   0x22
+#define GATEWAY_PACKET_AO_REGISTERS_STRUCTURE   0x23
 
-#define GATEWAY_PACKET_REGISTERS_INIT_MAX       5
+#define GATEWAY_PACKET_REGISTERS_INIT_MAX       3
 
 // Registers reading
 #define GATEWAY_PACKET_READ_SINGLE_DI           0x31   // Master requested DI one regiter reading
@@ -124,14 +122,13 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 // =============================================================================
 
 #define GATEWAY_DATA_TYPE_UNKNOWN               0xFF
-#define GATEWAY_DATA_TYPE_BOOLEAN               0x01
-#define GATEWAY_DATA_TYPE_UINT8                 0x02
-#define GATEWAY_DATA_TYPE_UINT16                0x03
-#define GATEWAY_DATA_TYPE_UINT32                0x04
-#define GATEWAY_DATA_TYPE_INT8                  0x05
-#define GATEWAY_DATA_TYPE_INT16                 0x06
-#define GATEWAY_DATA_TYPE_INT32                 0x07
-#define GATEWAY_DATA_TYPE_FLOAT32               0x08
+#define GATEWAY_DATA_TYPE_UINT8                 0x01
+#define GATEWAY_DATA_TYPE_UINT16                0x02
+#define GATEWAY_DATA_TYPE_UINT32                0x03
+#define GATEWAY_DATA_TYPE_INT8                  0x04
+#define GATEWAY_DATA_TYPE_INT16                 0x05
+#define GATEWAY_DATA_TYPE_INT32                 0x06
+#define GATEWAY_DATA_TYPE_FLOAT32               0x07
 
 // =============================================================================
 // GATEWAY REGISTERS TYPES

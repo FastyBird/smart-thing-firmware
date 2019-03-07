@@ -48,10 +48,15 @@ struct gateway_register_reading_t {
 
 typedef struct {
     const char *    name;
+    bool            value;
+} gateway_digital_register_t;
+
+typedef struct {
+    const char *    name;
     uint8_t         data_type;
     uint8_t         size;
     char            value[4];
-} gateway_register_t;
+} gateway_analog_register_t;
 
 struct gateway_node_t {
     // Node addressing process
@@ -70,11 +75,11 @@ struct gateway_node_t {
     gateway_node_description_t firmware;
 
     // Data registers
-    std::vector<gateway_register_t> digital_inputs;
-    std::vector<gateway_register_t> digital_outputs;
+    std::vector<gateway_digital_register_t> digital_inputs;
+    std::vector<gateway_digital_register_t> digital_outputs;
 
-    std::vector<gateway_register_t> analog_inputs;
-    std::vector<gateway_register_t> analog_outputs;
+    std::vector<gateway_analog_register_t> analog_inputs;
+    std::vector<gateway_analog_register_t> analog_outputs;
     
     uint8_t registers_size[4];
 
@@ -140,7 +145,7 @@ uint32_t _gateway_last_nodes_check = 0;
 // -----------------------------------------------------------------------------
 
 #if (WEB_SUPPORT && WS_SUPPORT) || FASTYBIRD_SUPPORT
-    void _nodesCollectNode(
+    void _gatewayCollectNode(
         JsonObject& node,
         const uint8_t id
     ) {
@@ -184,23 +189,19 @@ uint32_t _gateway_last_nodes_check = 0;
         JsonArray& digital_inputs_register = registers.createNestedArray("digital_inputs");
 
         for (uint8_t j = 0; j < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI]; j++) {
-            _gatewayReadRegisterValue(id, GATEWAY_REGISTER_DI, j, value_bool);
-
             JsonObject& di_register = digital_inputs_register.createNestedObject();
 
             di_register["data_type"] = "b1";
-            di_register["value"] = value_bool;
+            di_register["value"] = _gatewayReadDigitalRegisterValue(id, GATEWAY_REGISTER_DI, j);
         }
 
         JsonArray& digital_outputs_register = registers.createNestedArray("digital_outputs");
 
         for (uint8_t j = 0; j < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO]; j++) {
-            _gatewayReadRegisterValue(id, GATEWAY_REGISTER_DO, j, value_bool);
-
             JsonObject& do_register = digital_outputs_register.createNestedObject();
 
             do_register["data_type"] = "b1";
-            do_register["value"] = value_bool;
+            do_register["value"] = _gatewayReadDigitalRegisterValue(id, GATEWAY_REGISTER_DO, j);
         }
 
         JsonArray& analog_inputs_register = registers.createNestedArray("analog_inputs");
@@ -335,7 +336,7 @@ uint32_t _gateway_last_nodes_check = 0;
 
 #if WEB_SUPPORT && WS_SUPPORT
     // Send module status to WS clients
-    void _nodesWebSocketUpdate(
+    void _gatewayWebSocketUpdate(
         JsonObject& root
     ) {
         DEBUG_MSG(PSTR("[GATEWAY] Updating nodes to WS clients\n"));
@@ -351,14 +352,14 @@ uint32_t _gateway_last_nodes_check = 0;
         for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
             JsonObject& node = nodes.createNestedObject();
 
-            _nodesCollectNode(node, i);
+            _gatewayCollectNode(node, i);
         }
     }
 
 // -----------------------------------------------------------------------------
 
     // New WS client is connected
-    void _nodesWSOnConnect(
+    void _gatewayWSOnConnect(
         JsonObject& root
     ) {
         JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
@@ -385,14 +386,14 @@ uint32_t _gateway_last_nodes_check = 0;
         for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
             JsonObject& node = nodes.createNestedObject();
 
-            _nodesCollectNode(node, i);
+            _gatewayCollectNode(node, i);
         }
     }
 
 // -----------------------------------------------------------------------------
 
     // WS client requested configuration update
-    void _nodesWSOnConfigure(
+    void _gatewayWSOnConfigure(
         const uint32_t clientId, 
         JsonObject& module
     ) {
@@ -414,7 +415,7 @@ uint32_t _gateway_last_nodes_check = 0;
 // -----------------------------------------------------------------------------
 
     // WS client called action
-    void _nodesWSOnAction(
+    void _gatewayWSOnAction(
         const uint32_t clientId,
         const char * action,
         JsonObject& data
@@ -517,6 +518,43 @@ uint32_t _gateway_last_nodes_check = 0;
 
 // -----------------------------------------------------------------------------
 
+void _gatewayBootup()
+{
+    String node_sn;
+
+    for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
+        node_sn = getSetting("nodeSn", i, GATEWAY_DESCRIPTION_NOT_SET);
+
+        if (node_sn.equals(GATEWAY_DESCRIPTION_NOT_SET) == false) {
+            strncpy(_gateway_nodes[i].serial_number, node_sn.c_str(), (node_sn.length() + 1));
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+bool _gatewayRegisterValueUpdated(
+    const uint8_t id,
+    const uint8_t dataRegister,
+    const uint8_t address
+) {
+    #if WEB_SUPPORT && WS_SUPPORT
+        DynamicJsonBuffer jsonBuffer;
+
+        JsonObject& message = jsonBuffer.createObject();
+
+        message["module"] = "nodes";
+
+        JsonObject& container = message.createNestedObject("node");
+
+        _gatewayCollectNode(container, id);
+
+        wsSend(message);
+    #endif
+}
+
+// -----------------------------------------------------------------------------
+
 void _gatewayResetNodeIndex(
     const uint8_t id
 ) {
@@ -548,16 +586,16 @@ void _gatewayResetNodeIndex(
     _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] = 0;
 
     // Reset registers
-    std::vector<gateway_register_t> reset_digital_inputs;
+    std::vector<gateway_digital_register_t> reset_digital_inputs;
     _gateway_nodes[id].digital_inputs = reset_digital_inputs;
 
-    std::vector<gateway_register_t> reset_digital_outputs;
+    std::vector<gateway_digital_register_t> reset_digital_outputs;
     _gateway_nodes[id].digital_outputs = reset_digital_outputs;
 
-    std::vector<gateway_register_t> reset_analog_inputs;
+    std::vector<gateway_analog_register_t> reset_analog_inputs;
     _gateway_nodes[id].analog_inputs = reset_analog_inputs;
 
-    std::vector<gateway_register_t> reset_analog_outputs;
+    std::vector<gateway_analog_register_t> reset_analog_outputs;
     _gateway_nodes[id].analog_outputs = reset_analog_outputs;
 }
 
@@ -866,7 +904,7 @@ void _gatewayMarkNodeAsInitialized(
 
     #if WEB_SUPPORT && WS_SUPPORT
         // Propagate nodes structure to WS clients
-        wsSend(_nodesWebSocketUpdate);
+        wsSend(_gatewayWebSocketUpdate);
     #endif
 
     #if FASTYBIRD_SUPPORT
@@ -958,28 +996,6 @@ void _gatewaySendRegisterInitializationPacket(
 
     switch (requestState)
     {
-        case GATEWAY_PACKET_DI_REGISTERS_STRUCTURE:
-            if (max_readable_addresses <= _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI]) {
-                output_content[3] = (char) (max_readable_addresses >> 8);
-                output_content[4] = (char) (max_readable_addresses & 0xFF);
-
-            } else {
-                output_content[3] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] >> 8);
-                output_content[4] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] & 0xFF);
-            }
-            break;
-
-        case GATEWAY_PACKET_DO_REGISTERS_STRUCTURE:
-            if (max_readable_addresses <= _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO]) {
-                output_content[3] = (char) (max_readable_addresses >> 8);
-                output_content[4] = (char) (max_readable_addresses & 0xFF);
-
-            } else {
-                output_content[3] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] >> 8);
-                output_content[4] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] & 0xFF);
-            }
-            break;
-
         case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
             if (max_readable_addresses <= _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI]) {
                 output_content[3] = (char) (max_readable_addresses >> 8);
@@ -1047,8 +1063,6 @@ void _gatewayContinueInNodeInitialization(
                 _gatewaySendInitializationPacket(index, _gateway_nodes[index].initiliazation.step);
                 break;
 
-            case GATEWAY_PACKET_DI_REGISTERS_STRUCTURE:
-            case GATEWAY_PACKET_DO_REGISTERS_STRUCTURE:
             case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
             case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
                 _gatewaySendRegisterInitializationPacket(index, _gateway_nodes[index].initiliazation.step, 0);
@@ -1229,10 +1243,12 @@ void gatewaySetup() {
     _gateway_bus.begin();
 
     #if WEB_SUPPORT && WS_SUPPORT
-        wsOnConnectRegister(_nodesWSOnConnect);
-        wsOnConfigureRegister(_nodesWSOnConfigure);
-        wsOnActionRegister(_nodesWSOnAction);
+        wsOnConnectRegister(_gatewayWSOnConnect);
+        wsOnConfigureRegister(_gatewayWSOnConfigure);
+        wsOnActionRegister(_gatewayWSOnAction);
     #endif
+
+    _gatewayBootup();
 
     firmwareRegisterLoop(gatewayLoop);
 }
