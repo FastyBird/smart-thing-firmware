@@ -198,6 +198,7 @@ void _gatewayExtractAndStoreRegistersDefinitions(
  * 4-n  => Register data type               => 0-255
  */
 void _gatewayExtractAndStoreRegisterStructure(
+    const uint8_t packetId,
     const uint8_t id,
     uint8_t * payload,
     const uint8_t payloadLength,
@@ -216,7 +217,7 @@ void _gatewayExtractAndStoreRegisterStructure(
     uint8_t byte_pointer = 4;
 
     for (uint8_t i = register_address; i <= (register_address + bytes_length); i++) {
-        switch ((uint8_t) payload[0])
+        switch (packetId)
         {
             case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
                 switch ((uint8_t) payload[byte_pointer])
@@ -302,7 +303,7 @@ void _gatewayExtractAndStoreRegisterStructure(
         byte_pointer++;
     }
 
-    switch ((uint8_t) payload[0])
+    switch (packetId)
     {
         case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
             if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] > bytes_length) {
@@ -368,11 +369,11 @@ void _gatewayRegistersInitializationHandler(
             break;
 
         case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
-            _gatewayExtractAndStoreRegisterStructure((address - 1), payload, payloadLength, GATEWAY_REGISTER_AI);
+            _gatewayExtractAndStoreRegisterStructure(packetId, (address - 1), payload, payloadLength, GATEWAY_REGISTER_AI);
             break;
 
         case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
-            _gatewayExtractAndStoreRegisterStructure((address - 1), payload, payloadLength, GATEWAY_REGISTER_AO);
+            _gatewayExtractAndStoreRegisterStructure(packetId, (address - 1), payload, payloadLength, GATEWAY_REGISTER_AO);
             break;
     }
 }

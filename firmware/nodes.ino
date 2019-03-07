@@ -212,49 +212,49 @@ uint32_t _gateway_last_nodes_check = 0;
             switch (_gateway_nodes[id].analog_inputs[j].data_type)
             {
                 case GATEWAY_DATA_TYPE_UINT8:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_uint8);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_uint8);
 
                     ai_register["data_type"] = "u1";
                     ai_register["value"] = value_uint8;
                     break;
 
                 case GATEWAY_DATA_TYPE_UINT16:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_uint16);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_uint16);
 
                     ai_register["data_type"] = "u2";
                     ai_register["value"] = value_uint16;
                     break;
 
                 case GATEWAY_DATA_TYPE_UINT32:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_uint32);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_uint32);
 
                     ai_register["data_type"] = "u4";
                     ai_register["value"] = value_uint32;
                     break;
 
                 case GATEWAY_DATA_TYPE_INT8:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_int8);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_int8);
 
                     ai_register["data_type"] = "i1";
                     ai_register["value"] = value_uint8;
                     break;
 
                 case GATEWAY_DATA_TYPE_INT16:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_int16);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_int16);
 
                     ai_register["data_type"] = "i2";
                     ai_register["value"] = value_uint16;
                     break;
 
                 case GATEWAY_DATA_TYPE_INT32:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_int32);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_int32);
 
                     ai_register["data_type"] = "i4";
                     ai_register["value"] = value_uint32;
                     break;
 
                 case GATEWAY_DATA_TYPE_FLOAT32:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AI, j, value_float);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_float);
 
                     ai_register["data_type"] = "f4";
                     ai_register["value"] = value_float;
@@ -275,49 +275,49 @@ uint32_t _gateway_last_nodes_check = 0;
             switch (_gateway_nodes[id].analog_outputs[j].data_type)
             {
                 case GATEWAY_DATA_TYPE_UINT8:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_uint8);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_uint8);
 
                     ao_register["data_type"] = "u1";
                     ao_register["value"] = value_uint8;
                     break;
 
                 case GATEWAY_DATA_TYPE_UINT16:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_uint16);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_uint16);
 
                     ao_register["data_type"] = "u2";
                     ao_register["value"] = value_uint16;
                     break;
 
                 case GATEWAY_DATA_TYPE_UINT32:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_uint32);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_uint32);
 
                     ao_register["data_type"] = "u4";
                     ao_register["value"] = value_uint32;
                     break;
 
                 case GATEWAY_DATA_TYPE_INT8:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_int8);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_int8);
 
                     ao_register["data_type"] = "i1";
                     ao_register["value"] = value_uint8;
                     break;
 
                 case GATEWAY_DATA_TYPE_INT16:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_int16);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_int16);
 
                     ao_register["data_type"] = "i2";
                     ao_register["value"] = value_uint16;
                     break;
 
                 case GATEWAY_DATA_TYPE_INT32:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_int32);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_int32);
 
                     ao_register["data_type"] = "i4";
                     ao_register["value"] = value_uint32;
                     break;
 
                 case GATEWAY_DATA_TYPE_FLOAT32:
-                    _gatewayReadRegisterValue(id, GATEWAY_REGISTER_AO, j, value_float);
+                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_float);
 
                     ao_register["data_type"] = "f4";
                     ao_register["value"] = value_float;
@@ -434,7 +434,7 @@ uint32_t _gateway_last_nodes_check = 0;
 
                     if (strcmp("digital_output", data["register"].as<const char *>()) == 0) {
                         if (data["address"].as<uint8_t>() < _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DO]) {
-                            _gatewayRequestWritingSingleDigitalOutputRegister(i, data["address"].as<uint8_t>(), data["value"].as<bool>());
+                            _gatewayRequestWritingSingleDigitalRegister(i, data["address"].as<uint8_t>(), data["value"].as<bool>());
 
                         } else {
                             DEBUG_MSG(PSTR("[GATEWAY][ERR] Register address: %d is out of range: 0 - %d\n"), data["address"].as<uint8_t>(), _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DO]);
@@ -442,7 +442,7 @@ uint32_t _gateway_last_nodes_check = 0;
 
                     } else if (strcmp("analog_output", data["register"].as<const char *>()) == 0) {
                         if (data["address"].as<uint8_t>() < _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AO]) {
-                            // TODO: _gatewayRequestWritingSingleAnalogOutputRegister(i, data["address"].as<uint8_t>(), data["value"].as<float>());
+                            // TODO: _gatewayRequestWritingSingleAnalogRegister(i, data["address"].as<uint8_t>(), data["value"].as<float>());
 
                         } else {
                             DEBUG_MSG(PSTR("[GATEWAY][ERR] Register address: %d is out of range: 0 - %d\n"), data["address"].as<uint8_t>(), _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AO]);
@@ -1181,7 +1181,7 @@ void _gatewayReceiveHandler(
              */
 
                 case GATEWAY_PACKET_WRITE_ONE_DO:
-                    _gatewayWriteOneDigitalOutputHandler((sender_address - 1), payload);
+                    _gatewayWriteSingleDigitalOutputHandler((sender_address - 1), payload);
                     break;
 
                 case GATEWAY_PACKET_WRITE_MULTI_DO:
@@ -1193,7 +1193,7 @@ void _gatewayReceiveHandler(
              */
 
                 case GATEWAY_PACKET_WRITE_ONE_AO:
-                    _gatewayWriteOneAnalogOutputHandler((sender_address - 1), payload);
+                    _gatewayWriteSingleAnalogOutputHandler((sender_address - 1), payload);
                     break;
 
                 case GATEWAY_PACKET_WRITE_MULTI_AO:

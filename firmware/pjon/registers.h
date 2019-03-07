@@ -12,7 +12,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 // REGISTERS UTILS
 // -----------------------------------------------------------------------------
 
-uint8_t _gatewayRegistersGetDataType(
+uint8_t _gatewayGetAnalogRegistersDataType(
     const uint8_t id,
     const uint8_t dataRegister,
     const uint8_t address
@@ -30,10 +30,8 @@ uint8_t _gatewayRegistersGetDataType(
 }
 
 // -----------------------------------------------------------------------------
-// REGISTERS READ & WRITE
-// -----------------------------------------------------------------------------
 
-bool _gatewayRegistersIsAddressCorrect(
+bool _gatewayIsRegistersAddressCorrect(
     const uint8_t id,
     const uint8_t dataRegister,
     const uint8_t address
@@ -73,6 +71,8 @@ bool _gatewayRegistersIsSizeCorrect(
 }
 
 // -----------------------------------------------------------------------------
+// REGISTERS READ & WRITE
+// -----------------------------------------------------------------------------
 
 bool _gatewayWriteDigitalRegisterValue(
     const uint8_t id,
@@ -80,7 +80,7 @@ bool _gatewayWriteDigitalRegisterValue(
     const uint8_t address,
     const bool value
 ) {
-    if (_gatewayRegistersIsAddressCorrect(id, dataRegister, address) == false) {
+    if (_gatewayIsRegistersAddressCorrect(id, dataRegister, address) == false) {
         return false;
     }
 
@@ -100,14 +100,14 @@ bool _gatewayWriteDigitalRegisterValue(
 
 // -----------------------------------------------------------------------------
 
-bool _gatewayWriteRegisterValue(
+bool _gatewayWriteAnalogRegisterValue(
     const uint8_t id,
     const uint8_t dataRegister,
     const uint8_t address,
     const void * value,
     const uint8_t size
 ) {
-    if (_gatewayRegistersIsAddressCorrect(id, dataRegister, address) == false) {
+    if (_gatewayIsRegistersAddressCorrect(id, dataRegister, address) == false) {
         return false;
     }
 
@@ -130,13 +130,13 @@ bool _gatewayWriteRegisterValue(
 // -----------------------------------------------------------------------------
 
 // Specialized convenience setters (these do not cost memory because of inlining)
-bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const uint8_t value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 1); }
-bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const uint16_t value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 2); }
-bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const uint32_t value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 4); }
-bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const int8_t value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 1); }
-bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const int16_t value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 2); }
-bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const int32_t value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 4); }
-bool _gatewayWriteRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const float value) { return _gatewayWriteRegisterValue(id, dataRegister, address, &value, 4); }
+bool _gatewayWriteAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const uint8_t value) { return _gatewayWriteAnalogRegisterValue(id, dataRegister, address, &value, 1); }
+bool _gatewayWriteAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const uint16_t value) { return _gatewayWriteAnalogRegisterValue(id, dataRegister, address, &value, 2); }
+bool _gatewayWriteAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const uint32_t value) { return _gatewayWriteAnalogRegisterValue(id, dataRegister, address, &value, 4); }
+bool _gatewayWriteAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const int8_t value) { return _gatewayWriteAnalogRegisterValue(id, dataRegister, address, &value, 1); }
+bool _gatewayWriteAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const int16_t value) { return _gatewayWriteAnalogRegisterValue(id, dataRegister, address, &value, 2); }
+bool _gatewayWriteAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const int32_t value) { return _gatewayWriteAnalogRegisterValue(id, dataRegister, address, &value, 4); }
+bool _gatewayWriteAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, const float value) { return _gatewayWriteAnalogRegisterValue(id, dataRegister, address, &value, 4); }
 
 // -----------------------------------------------------------------------------
 
@@ -145,7 +145,7 @@ bool _gatewayReadDigitalRegisterValue(
     const uint8_t dataRegister,
     const uint8_t address
 ) {
-    if (_gatewayRegistersIsAddressCorrect(id, dataRegister, address)) {
+    if (_gatewayIsRegistersAddressCorrect(id, dataRegister, address)) {
         if (dataRegister == GATEWAY_REGISTER_DI) {
             return _gateway_nodes[id].digital_inputs[address].value;
 
@@ -159,7 +159,7 @@ bool _gatewayReadDigitalRegisterValue(
 
 // -----------------------------------------------------------------------------
 
-void _gatewayReadRegisterValue(
+void _gatewayReadAnalogRegisterValue(
     const uint8_t id,
     const uint8_t dataRegister,
     const uint8_t address,
@@ -167,7 +167,7 @@ void _gatewayReadRegisterValue(
     const uint8_t size
 ) {
     if (
-        _gatewayRegistersIsAddressCorrect(id, dataRegister, address)
+        _gatewayIsRegistersAddressCorrect(id, dataRegister, address)
         && _gatewayRegistersIsSizeCorrect(id, dataRegister, address, size)
     ) {
         if (dataRegister == GATEWAY_REGISTER_AI) {
@@ -188,26 +188,26 @@ void _gatewayReadRegisterValue(
 // -----------------------------------------------------------------------------
 
 // Specialized convenience setters (these do not cost memory because of inlining)
-void _gatewayReadRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, uint8_t &value) { _gatewayReadRegisterValue(id, dataRegister, address, &value, 1); }
-void _gatewayReadRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, uint16_t &value) { _gatewayReadRegisterValue(id, dataRegister, address, &value, 2); }
-void _gatewayReadRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, uint32_t &value) { _gatewayReadRegisterValue(id, dataRegister, address, &value, 4); }
-void _gatewayReadRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, int8_t &value) { _gatewayReadRegisterValue(id, dataRegister, address, &value, 1); }
-void _gatewayReadRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, int16_t &value) { _gatewayReadRegisterValue(id, dataRegister, address, &value, 2); }
-void _gatewayReadRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, int32_t &value) { _gatewayReadRegisterValue(id, dataRegister, address, &value, 4); }
-void _gatewayReadRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, float &value) { _gatewayReadRegisterValue(id, dataRegister, address, &value, 4); }
+void _gatewayReadAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, uint8_t &value) { _gatewayReadAnalogRegisterValue(id, dataRegister, address, &value, 1); }
+void _gatewayReadAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, uint16_t &value) { _gatewayReadAnalogRegisterValue(id, dataRegister, address, &value, 2); }
+void _gatewayReadAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, uint32_t &value) { _gatewayReadAnalogRegisterValue(id, dataRegister, address, &value, 4); }
+void _gatewayReadAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, int8_t &value) { _gatewayReadAnalogRegisterValue(id, dataRegister, address, &value, 1); }
+void _gatewayReadAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, int16_t &value) { _gatewayReadAnalogRegisterValue(id, dataRegister, address, &value, 2); }
+void _gatewayReadAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, int32_t &value) { _gatewayReadAnalogRegisterValue(id, dataRegister, address, &value, 4); }
+void _gatewayReadAnalogRegisterValue(const uint8_t id, const uint8_t dataRegister, const uint8_t address, float &value) { _gatewayReadAnalogRegisterValue(id, dataRegister, address, &value, 4); }
 
 // -----------------------------------------------------------------------------
 
 /**
  * Transform received 4 bytes value into register value
  */
-void _gatewayRegistersWriteValueFromTransfer(
+void _gatewayWriteReceivedAnalogValue(
     const uint8_t id,
     const uint8_t dataRegister,
     const uint8_t address,
     char * value
 ) {
-    switch (_gatewayRegistersGetDataType(id, dataRegister, address))
+    switch (_gatewayGetAnalogRegistersDataType(id, dataRegister, address))
     {
         case GATEWAY_DATA_TYPE_UINT8:
             uint8_t uint8_stored_value;
@@ -218,10 +218,10 @@ void _gatewayRegistersWriteValueFromTransfer(
             uint8_write_value.bytes[2] = value[2];
             uint8_write_value.bytes[3] = value[3];
 
-            _gatewayReadRegisterValue(id, dataRegister, address, uint8_stored_value);
+            _gatewayReadAnalogRegisterValue(id, dataRegister, address, uint8_stored_value);
 
             if (uint8_stored_value != uint8_write_value.number) {
-                _gatewayWriteRegisterValue(id, dataRegister, address, uint8_write_value.number);
+                _gatewayWriteAnalogRegisterValue(id, dataRegister, address, uint8_write_value.number);
 
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
@@ -239,10 +239,10 @@ void _gatewayRegistersWriteValueFromTransfer(
             uint16_write_value.bytes[2] = value[2];
             uint16_write_value.bytes[3] = value[3];
 
-            _gatewayReadRegisterValue(id, dataRegister, address, uint16_stored_value);
+            _gatewayReadAnalogRegisterValue(id, dataRegister, address, uint16_stored_value);
 
             if (uint16_stored_value != uint16_write_value.number) {
-                _gatewayWriteRegisterValue(id, dataRegister, address, uint16_write_value.number);
+                _gatewayWriteAnalogRegisterValue(id, dataRegister, address, uint16_write_value.number);
 
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
@@ -259,10 +259,10 @@ void _gatewayRegistersWriteValueFromTransfer(
             uint32_write_value.bytes[2] = value[2];
             uint32_write_value.bytes[3] = value[3];
 
-            _gatewayReadRegisterValue(id, dataRegister, address, uint32_stored_value);
+            _gatewayReadAnalogRegisterValue(id, dataRegister, address, uint32_stored_value);
 
             if (uint32_stored_value != uint32_write_value.number) {
-                _gatewayWriteRegisterValue(id, dataRegister, address, uint32_write_value.number);
+                _gatewayWriteAnalogRegisterValue(id, dataRegister, address, uint32_write_value.number);
 
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
@@ -279,10 +279,10 @@ void _gatewayRegistersWriteValueFromTransfer(
             int8_write_value.bytes[2] = value[2];
             int8_write_value.bytes[3] = value[3];
 
-            _gatewayReadRegisterValue(id, dataRegister, address, int8_stored_value);
+            _gatewayReadAnalogRegisterValue(id, dataRegister, address, int8_stored_value);
 
             if (int8_stored_value != int8_write_value.number) {
-                _gatewayWriteRegisterValue(id, dataRegister, address, int8_write_value.number);
+                _gatewayWriteAnalogRegisterValue(id, dataRegister, address, int8_write_value.number);
 
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
@@ -299,10 +299,10 @@ void _gatewayRegistersWriteValueFromTransfer(
             int16_write_value.bytes[2] = value[2];
             int16_write_value.bytes[3] = value[3];
 
-            _gatewayReadRegisterValue(id, dataRegister, address, int16_stored_value);
+            _gatewayReadAnalogRegisterValue(id, dataRegister, address, int16_stored_value);
 
             if (int16_stored_value != int16_write_value.number) {
-                _gatewayWriteRegisterValue(id, dataRegister, address, int16_write_value.number);
+                _gatewayWriteAnalogRegisterValue(id, dataRegister, address, int16_write_value.number);
 
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
@@ -319,10 +319,10 @@ void _gatewayRegistersWriteValueFromTransfer(
             int32_write_value.bytes[2] = value[2];
             int32_write_value.bytes[3] = value[3];
 
-            _gatewayReadRegisterValue(id, dataRegister, address, int32_stored_value);
+            _gatewayReadAnalogRegisterValue(id, dataRegister, address, int32_stored_value);
 
             if (int32_stored_value != int32_write_value.number) {
-                _gatewayWriteRegisterValue(id, dataRegister, address, int32_write_value.number);
+                _gatewayWriteAnalogRegisterValue(id, dataRegister, address, int32_write_value.number);
 
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
@@ -339,10 +339,10 @@ void _gatewayRegistersWriteValueFromTransfer(
             float_write_value.bytes[2] = value[2];
             float_write_value.bytes[3] = value[3];
 
-            _gatewayReadRegisterValue(id, dataRegister, address, float_stored_value);
+            _gatewayReadAnalogRegisterValue(id, dataRegister, address, float_stored_value);
 
             if (float_stored_value != float_write_value.number) {
-                _gatewayWriteRegisterValue(id, dataRegister, address, float_write_value.number);
+                _gatewayWriteAnalogRegisterValue(id, dataRegister, address, float_write_value.number);
 
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
@@ -360,7 +360,7 @@ void _gatewayRegistersWriteValueFromTransfer(
 // DIGITAL REGISTERS READING
 // -----------------------------------------------------------------------------
 
-uint8_t _gatewayRegistersRequestReadingDigitalRegisters(
+uint8_t _gatewayRequestReadingDigitalRegisters(
     const uint8_t packetId,
     const uint8_t id,
     uint8_t start,
@@ -423,7 +423,7 @@ uint8_t _gatewayRegistersRequestReadingDigitalRegisters(
 void _gatewayRequestReadingMultipleDigitalInputsRegisters(
     const uint8_t id
 ) {
-    uint8_t set_start = _gatewayRegistersRequestReadingDigitalRegisters(
+    uint8_t set_start = _gatewayRequestReadingDigitalRegisters(
         GATEWAY_PACKET_READ_MULTI_DI,
         id,
         _gateway_nodes[id].digital_inputs_reading.start,
@@ -442,7 +442,7 @@ void _gatewayRequestReadingMultipleDigitalInputsRegisters(
 void _gatewayRequestReadingMultipleDigitalOutputsRegisters(
     const uint8_t id
 ) {
-    uint8_t set_start = _gatewayRegistersRequestReadingDigitalRegisters(
+    uint8_t set_start = _gatewayRequestReadingDigitalRegisters(
         GATEWAY_PACKET_READ_MULTI_DO,
         id,
         _gateway_nodes[id].digital_outputs_reading.start,
@@ -460,7 +460,7 @@ void _gatewayRequestReadingMultipleDigitalOutputsRegisters(
 // ANALOG REGISTERS READING
 // -----------------------------------------------------------------------------
 
-uint8_t _gatewayRegistersRequestReadingAnalogRegisters(
+uint8_t _gatewayRequestReadingAnalogRegisters(
     const uint8_t packetId,
     const uint8_t id,
     uint8_t start,
@@ -523,7 +523,7 @@ uint8_t _gatewayRegistersRequestReadingAnalogRegisters(
 void _gatewayRequestReadingMultipleAnalogInputsRegisters(
     const uint8_t id
 ) {
-    uint8_t set_start = _gatewayRegistersRequestReadingAnalogRegisters(
+    uint8_t set_start = _gatewayRequestReadingAnalogRegisters(
         GATEWAY_PACKET_READ_MULTI_AI,
         id,
         _gateway_nodes[id].analog_inputs_reading.start,
@@ -542,7 +542,7 @@ void _gatewayRequestReadingMultipleAnalogInputsRegisters(
 void _gatewayRequestReadingMultipleAnalogOutputsRegisters(
     const uint8_t id
 ) {
-    uint8_t set_start = _gatewayRegistersRequestReadingAnalogRegisters(
+    uint8_t set_start = _gatewayRequestReadingAnalogRegisters(
         GATEWAY_PACKET_READ_MULTI_AO,
         id,
         _gateway_nodes[id].analog_outputs_reading.start,
@@ -560,7 +560,7 @@ void _gatewayRequestReadingMultipleAnalogOutputsRegisters(
 // DIGITAL REGISTERS WRITING (only for DO registers)
 // -----------------------------------------------------------------------------
 
-void _gatewayRequestWritingSingleDigitalOutputRegister(
+void _gatewayRequestWritingSingleDigitalRegister(
     const uint8_t id,
     const uint8_t registerAddress,
     const bool value
@@ -596,7 +596,7 @@ void _gatewayRequestWritingSingleDigitalOutputRegister(
 // ANALOG REGISTERS WRITING (only for AO registers)
 // -----------------------------------------------------------------------------
 
-void _gatewayRequestWritingSingleAnalogOutputRegister(
+void _gatewayRequestWritingSingleAnalogRegister(
     const uint8_t id,
     const uint8_t registerAddress,
     void * value,
@@ -628,13 +628,13 @@ void _gatewayRequestWritingSingleAnalogOutputRegister(
 // -----------------------------------------------------------------------------
 
 // Specialized convenience setters (these do not cost memory because of inlining)
-void _gatewayRequestWritingSingleAnalogOutputRegister(const uint8_t id, const uint8_t registerAddress, uint8_t value) { _gatewayRequestWritingSingleAnalogOutputRegister(id, registerAddress, &value, 1); }
-void _gatewayRequestWritingSingleAnalogOutputRegister(const uint8_t id, const uint8_t registerAddress, uint16_t value) { _gatewayRequestWritingSingleAnalogOutputRegister(id, registerAddress, &value, 2); }
-void _gatewayRequestWritingSingleAnalogOutputRegister(const uint8_t id, const uint8_t registerAddress, uint32_t value) { _gatewayRequestWritingSingleAnalogOutputRegister(id, registerAddress, &value, 4); }
-void _gatewayRequestWritingSingleAnalogOutputRegister(const uint8_t id, const uint8_t registerAddress, int8_t value) { _gatewayRequestWritingSingleAnalogOutputRegister(id, registerAddress, &value, 1); }
-void _gatewayRequestWritingSingleAnalogOutputRegister(const uint8_t id, const uint8_t registerAddress, int16_t value) { _gatewayRequestWritingSingleAnalogOutputRegister(id, registerAddress, &value, 2); }
-void _gatewayRequestWritingSingleAnalogOutputRegister(const uint8_t id, const uint8_t registerAddress, int32_t value) { _gatewayRequestWritingSingleAnalogOutputRegister(id, registerAddress, &value, 4); }
-void _gatewayRequestWritingSingleAnalogOutputRegister(const uint8_t id, const uint8_t registerAddress, float value) { _gatewayRequestWritingSingleAnalogOutputRegister(id, registerAddress, &value, 4); }
+void _gatewayRequestWritingSingleAnalogRegister(const uint8_t id, const uint8_t registerAddress, uint8_t value) { _gatewayRequestWritingSingleAnalogRegister(id, registerAddress, &value, 1); }
+void _gatewayRequestWritingSingleAnalogRegister(const uint8_t id, const uint8_t registerAddress, uint16_t value) { _gatewayRequestWritingSingleAnalogRegister(id, registerAddress, &value, 2); }
+void _gatewayRequestWritingSingleAnalogRegister(const uint8_t id, const uint8_t registerAddress, uint32_t value) { _gatewayRequestWritingSingleAnalogRegister(id, registerAddress, &value, 4); }
+void _gatewayRequestWritingSingleAnalogRegister(const uint8_t id, const uint8_t registerAddress, int8_t value) { _gatewayRequestWritingSingleAnalogRegister(id, registerAddress, &value, 1); }
+void _gatewayRequestWritingSingleAnalogRegister(const uint8_t id, const uint8_t registerAddress, int16_t value) { _gatewayRequestWritingSingleAnalogRegister(id, registerAddress, &value, 2); }
+void _gatewayRequestWritingSingleAnalogRegister(const uint8_t id, const uint8_t registerAddress, int32_t value) { _gatewayRequestWritingSingleAnalogRegister(id, registerAddress, &value, 4); }
+void _gatewayRequestWritingSingleAnalogRegister(const uint8_t id, const uint8_t registerAddress, float value) { _gatewayRequestWritingSingleAnalogRegister(id, registerAddress, &value, 4); }
 
 // -----------------------------------------------------------------------------
 // READING HANDLERS 
@@ -748,7 +748,7 @@ void _gatewayReadMultipleAnalogRegisterHandler(
             write_value[2] = payload[write_byte + 2];
             write_value[3] = payload[write_byte + 3];
 
-            _gatewayRegistersWriteValueFromTransfer(id, dataRegister, write_address, write_value);
+            _gatewayWriteReceivedAnalogValue(id, dataRegister, write_address, write_value);
 
             write_byte = write_byte + 4;
             write_address++;
@@ -766,7 +766,7 @@ void _gatewayReadMultipleAnalogRegisterHandler(
 // WRITING HANDLERS
 // -----------------------------------------------------------------------------
 
-void _gatewayWriteOneDigitalOutputHandler(
+void _gatewayWriteSingleDigitalOutputHandler(
     const uint8_t id,
     uint8_t * payload
 ) {
@@ -830,7 +830,7 @@ void _gatewayWriteMultipleDigitalOutputsHandler(
 
 // -----------------------------------------------------------------------------
 
-void _gatewayWriteOneAnalogOutputHandler(
+void _gatewayWriteSingleAnalogOutputHandler(
     const uint8_t id,
     uint8_t * payload
 ) {
@@ -847,7 +847,7 @@ void _gatewayWriteOneAnalogOutputHandler(
         // Write address must be between <0, buffer.size()>
         register_address < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO]
     ) {
-        _gatewayRegistersWriteValueFromTransfer(id, GATEWAY_REGISTER_AO, register_address, write_value);
+        _gatewayWriteReceivedAnalogValue(id, GATEWAY_REGISTER_AO, register_address, write_value);
 
     } else {
         DEBUG_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined AO register address\n"));
