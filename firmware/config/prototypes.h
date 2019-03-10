@@ -267,12 +267,6 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
     void fastybirdChannelsReportSchedulerRegister(fastybird_channels_report_scheduler_callback_f callback);
 
     typedef struct {
-        const char * type;
-        unsigned int length;
-        bool setable;
-    } fastybird_node_channel_t;
-
-    typedef struct {
         const char * key;
         const char * value;
     } fastybird_node_setting_t;
@@ -299,7 +293,7 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
         bool initialized;
 
         // Node channels
-        std::vector<fastybird_node_channel_t> channels;
+        std::vector<fastybird_channel_t> channels;
 
         std::vector<fastybird_node_setting_t> settings;
     } fastybird_node_t;

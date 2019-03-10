@@ -17,6 +17,10 @@ typedef struct {
 
 std::vector<button_t> _buttons;
 
+#if FASTYBIRD_SUPPORT
+    uint8_t _button_fastybird_channel_index = 0xFF;
+#endif
+
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
@@ -239,8 +243,7 @@ void _buttonEvent(
         itoa(event, payload, 10);
 
         fastybirdReportChannelValue(
-            _buttonFastybirdGetChannelStructure(),
-            _buttonFastybirdGetChannelStatePropertyStructure(),
+            _button_fastybird_channel_index,
             id,
             payload
         );
@@ -336,7 +339,7 @@ void buttonSetup() {
         fastybirdOnConfigureRegister(_buttonUpdateConfiguration);
 
         if (buttonCount() > 0) {
-            fastybirdRegisterChannel(_buttonFastybirdGetChannelStructure());
+            _button_fastybird_channel_index = fastybirdRegisterChannel(_buttonFastybirdGetChannelStructure());
         }
     #endif
 

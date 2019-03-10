@@ -15,7 +15,9 @@ const char * _fastybird_mqtt_thing_id = MQTT_USER;
 
 // -----------------------------------------------------------------------------
 
-String fastybirdMqttApiBuildTopicPrefix(const char * thingId) {
+String fastybirdMqttApiBuildTopicPrefix(
+    const char * thingId
+) {
     String topic_prefix;
 
     if (_fastybird_mqtt_thing_id != thingId) {
@@ -41,7 +43,10 @@ String fastybirdMqttApiBuildTopicPrefix(const char * thingId) {
 
 // -----------------------------------------------------------------------------
 
-bool fastybirdMqttApiIsSameTopic(const char * compareTopic, const char * topic) {
+bool fastybirdMqttApiIsSameTopic(
+    const char * compareTopic,
+    const char * topic
+) {
     return (String(topic)).endsWith(String(compareTopic));
 }
 
@@ -84,15 +89,17 @@ void _fastybirdBeforeInitialization() {
 
 // -----------------------------------------------------------------------------
 
-void _fastybirdApiRestore(std::vector<fastybird_channel_t> channels) {
+void _fastybirdApiRestore(
+    std::vector<fastybird_channel_t> channels
+) {
     #if DIRECT_CONTROL_SUPPORT
-        for (unsigned int i; i < channels.size(); i++) {
+        for (uint8_t i; i < channels.size(); i++) {
             _fastybirdMqttApiChannelUnsubscribeDirectControls(channels[i]);
             _fastybirdMqttApiChannelSubscribeDirectControls(channels[i]);
         }
 
         if (_fastybird_channels_report_direct_controls_callbacks.size() > 0) {
-            for (unsigned int i = 0; i < _fastybird_channels_report_direct_controls_callbacks.size(); i++) {
+            for (uint8_t i = 0; i < _fastybird_channels_report_direct_controls_callbacks.size(); i++) {
                 if (!(_fastybird_channels_report_direct_controls_callbacks[i])()) {
                     return;
                 }
@@ -102,7 +109,7 @@ void _fastybirdApiRestore(std::vector<fastybird_channel_t> channels) {
 
     #if SCHEDULER_SUPPORT
         if (_fastybird_channels_report_scheduler_callbacks.size() > 0) {
-            for (unsigned int i = 0; i < _fastybird_channels_report_scheduler_callbacks.size(); i++) {
+            for (uint8_t i = 0; i < _fastybird_channels_report_scheduler_callbacks.size(); i++) {
                 if (!(_fastybird_channels_report_scheduler_callbacks[i])()) {
                     return;
                 }
@@ -130,6 +137,7 @@ void _fastybirdOnHeartbeat() {
         _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_FREE_HEAP).c_str(),
         String(getFreeHeap()).c_str()
     );
+
     mqttSendRaw(
         _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_UPTIME).c_str(),
         String(getUptime()).c_str()

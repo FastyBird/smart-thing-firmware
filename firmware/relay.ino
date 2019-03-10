@@ -42,6 +42,10 @@ std::vector<relay_t> _relays;
 bool _relayRecursive = false;
 Ticker _relaySaveTicker;
 
+#if FASTYBIRD_SUPPORT
+    uint8_t _relay_fastybird_channel_index = 0xFF;
+#endif
+
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
@@ -930,8 +934,7 @@ void _relayProcess(bool mode) {
         // Send to Broker
         #if FASTYBIRD_SUPPORT
             fastybirdReportChannelValue(
-                _relayFastybirdGetChannelStructure(),
-                _relayFastybirdGetChannelStatePropertyStructure(),
+                _relay_fastybird_channel_index,
                 id,
                 target ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
             );
@@ -1340,7 +1343,8 @@ void relaySetup() {
         fastybirdOnConfigureRegister(_relayUpdateConfiguration);
 
         if (relayCount() > 0) {
-            fastybirdRegisterChannel(_relayFastybirdGetChannelStructure());
+            _relay_fastybird_channel_index = fastybirdRegisterChannel(_relayFastybirdGetChannelStructure());
+
             fastybirdChannelsReportConfigurationRegister(_relayFastybirdReportChannelsConfiguration);
             
             #if DIRECT_CONTROL_SUPPORT

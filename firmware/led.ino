@@ -16,6 +16,10 @@ typedef struct {
 
 std::vector<led_t> _leds;
 
+#if FASTYBIRD_SUPPORT
+    uint8_t _led_fastybird_channel_index = 0xFF;
+#endif
+
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
@@ -506,7 +510,8 @@ void ledSetup() {
     
     #if FASTYBIRD_SUPPORT
         if (ledCount() > 0) {
-            fastybirdRegisterChannel(_ledFastybirdGetChannelStructure());
+            _led_fastybird_channel_index = fastybirdRegisterChannel(_ledFastybirdGetChannelStructure());
+
             fastybirdChannelsReportConfigurationRegister(_ledFastybirdReportChannelsConfiguration);
 
             #if DIRECT_CONTROL_SUPPORT

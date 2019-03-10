@@ -633,22 +633,29 @@ bool fastybirdReportChannelScheduler(
 // -----------------------------------------------------------------------------
 
 bool fastybirdReportChannelValue(
-    fastybird_channel_t channelStructure,
-    fastybird_channel_property_t channelProperty,
+    uint8_t index,
     unsigned int channelId,
     const char * payload
 ) {
-    return _fastybirdPropagateChannelValue(channelStructure, channelProperty, channelId, payload);
+    if (index >= 0 && index < _fastybird_channels.size()) {
+        return _fastybirdPropagateChannelValue(
+            _fastybird_channels[index],
+            _fastybird_channels[index].properties[0],
+            channelId,
+            payload
+        );
+    }
+
+    return false;
 }
 
 // -----------------------------------------------------------------------------
 
 bool fastybirdReportChannelValue(
-    fastybird_channel_t channelStructure,
-    fastybird_channel_property_t channelProperty,
+    uint8_t index,
     const char * payload
 ) {
-    return fastybirdReportChannelValue(channelStructure, channelProperty, 0, payload);
+    return fastybirdReportChannelValue(index, 0, payload);
 }
 
 // -----------------------------------------------------------------------------
@@ -674,8 +681,10 @@ bool fastybirdIsThingInitialzed() {
 
 // -----------------------------------------------------------------------------
 
-void fastybirdRegisterChannel(fastybird_channel_t channel) {
+uint8_t fastybirdRegisterChannel(fastybird_channel_t channel) {
     _fastybird_channels.push_back(channel);
+
+    return (_fastybird_channels.size() - 1);
 }
 
 // -----------------------------------------------------------------------------
@@ -713,7 +722,7 @@ void fastybirdLoop() {
             if (last_init_call == 0 || (millis() - last_init_call > 500)) {
                 last_init_call = millis();
 
-                //_fastybirdInitializeSystem();
+                _fastybirdInitializeSystem();
             }
         }
     }

@@ -104,12 +104,12 @@ bool _fastybirdPropagateThingPropertiesStructure(
 
     strcpy(payload, properties[0].c_str());
 
-    for (unsigned int i = 1; i < properties.size(); i++) {
+    for (uint8_t i = 1; i < properties.size(); i++) {
         strcat(payload, ",");
         strcat(payload, properties[i].c_str());
     }
 
-    unsigned int packet_id;
+    uint8_t packet_id;
 
     packet_id = mqttSendRaw(
         _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_PROPERTIES).c_str(),
@@ -136,7 +136,7 @@ bool _fastybirdPropagateThingProperty(
     const char * property,
     const char * payload
 ) {
-    unsigned int packet_id;
+    uint8_t packet_id;
 
     packet_id = mqttSendRaw(
         _fastybirdMqttApiCreatePropertyTopicString(thingId, property).c_str(),
@@ -163,7 +163,7 @@ bool _fastybirdPropagateThingName(
     const char * thingId,
     const char * name
 ) {
-    unsigned int packet_id;
+    uint8_t packet_id;
 
     packet_id = mqttSendRaw(
         _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_NAME).c_str(),
@@ -190,7 +190,7 @@ bool _fastybirdPropagateThingHardwareField(
     const char * field,
     const char * payload
 ) {
-    unsigned int packet_id;
+    uint8_t packet_id;
 
     packet_id = mqttSendRaw(
         _fastybirdMqttApiCreateHWTopicString(thingId, field).c_str(),
@@ -286,7 +286,7 @@ bool _fastybirdPropagateThingFirmwareField(
     const char * field,
     const char * payload
 ) {
-    unsigned int packet_id;
+    uint8_t packet_id;
 
     packet_id = mqttSendRaw(
         _fastybirdMqttApiCreateFWTopicString(thingId, field).c_str(),
@@ -350,6 +350,7 @@ bool _fastybirdPropagateThingFirmwareVersion(
     return _fastybirdPropagateThingFirmwareField(thingId, "version", version);
 }
 
+
 // -----------------------------------------------------------------------------
 
 bool _fastybirdPropagateThingFirmwareVersion(
@@ -369,22 +370,35 @@ bool _fastybirdPropagateThingChannels(
     }
 
     char payload[80];
-    strcpy(payload, channels[0].type);
 
-    if (channels[0].length > 1) {
-        strcat(payload, "[]");
-    }
+    uint8_t start_index = 0;
 
-    for (unsigned int i = 1; i < channels.size(); i++) {
-        strcat(payload, ",");
-        strcat(payload, channels[i].type);
+    for (uint8_t i = 0; i < channels.size(); i++) {
+        start_index = i;
 
-        if (channels[i].length > 1) {
-            strcat(payload, "[]");
+        if (channels[i].length > 0) {
+            strcpy(payload, channels[i].type);
+
+            if (channels[i].length > 1) {
+                strcat(payload, "[]");
+            }
+
+            break;
         }
     }
 
-    unsigned int packet_id;
+    for (uint8_t i = (start_index + 1); i < channels.size(); i++) {
+        if (channels[i].length > 0) {
+            strcat(payload, ",");
+            strcat(payload, channels[i].type);
+
+            if (channels[i].length > 1) {
+                strcat(payload, "[]");
+            }
+        }
+    }
+
+    uint8_t packet_id;
 
     packet_id = mqttSendRaw(
         _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_CHANNELS).c_str(),
@@ -420,12 +434,12 @@ bool _fastybirdPropagateThingStatsStructure(
 
     strcpy(payload, stats[0].c_str());
 
-    for (unsigned int i = 1; i < stats.size(); i++) {
+    for (uint8_t i = 1; i < stats.size(); i++) {
         strcat(payload, ",");
         strcat(payload, stats[i].c_str());
     }
 
-    unsigned int packet_id;
+    uint8_t packet_id;
 
     packet_id = mqttSendRaw(
         _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_STATS_STRUCTURE).c_str(),
@@ -454,7 +468,7 @@ bool _fastybirdPropagateThingStat(
     const char * stat,
     const char * payload
 ) {
-    unsigned int packet_id;
+    uint8_t packet_id;
 
     packet_id = mqttSendRaw(
         _fastybirdMqttApiCreateStatTopicString(thingId, stat).c_str(),
@@ -493,12 +507,12 @@ bool _fastybirdPropagateThingControlConfiguration(
 
     strcpy(payload, controls[0].c_str());
 
-    for (unsigned int i = 1; i < controls.size(); i++) {
+    for (uint8_t i = 1; i < controls.size(); i++) {
         strcat(payload, ",");
         strcat(payload, controls[i].c_str());
     }
 
-    unsigned int packet_id;
+    uint8_t packet_id;
 
     packet_id = mqttSendRaw(
         _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_CONTROL).c_str(),
@@ -609,7 +623,7 @@ bool _fastybirdPropagateThingConfigurationSchema(
     const char * thingId,
     JsonArray& schema
 ) {
-    unsigned int packet_id;
+    uint8_t packet_id;
 
     if (schema.size() > 0) {
         String output;
@@ -651,7 +665,7 @@ bool _fastybirdPropagateThingConfiguration(
 
         configuration.printTo(output);
 
-        unsigned int packet_id;
+        uint8_t packet_id;
 
         packet_id = mqttSendRaw(
             _fastybirdMqttApiCreateThingTopicString(

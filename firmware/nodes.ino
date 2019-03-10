@@ -457,6 +457,168 @@ uint32_t _gateway_last_nodes_check = 0;
 // -----------------------------------------------------------------------------
 
 #if FASTYBIRD_SUPPORT
+    /**
+     * Node channel property structure
+     */
+    fastybird_channel_property_t _gatewayFastybirdGetChannelProperty(
+        const uint8_t id,
+        const uint8_t dataRegister
+    ) {
+        fastybird_channel_property_t register_property = {
+            FASTYBIRD_PROPERTY_STATE,
+            "Channel state"
+        };
+
+        uint8_t nodeId = id;
+
+        switch (dataRegister)
+        {
+            case GATEWAY_REGISTER_DI:
+                register_property.settable = false;
+                register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_BOOLEAN;
+
+                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_ON);
+                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_OFF);
+
+                register_property.mappings.push_back({
+                    FASTYBIRD_SWITCH_PAYLOAD_ON,
+                    FASTYBIRD_SWITCH_PAYLOAD_ON
+                });
+
+                register_property.mappings.push_back({
+                    FASTYBIRD_SWITCH_PAYLOAD_OFF,
+                    FASTYBIRD_SWITCH_PAYLOAD_OFF
+                });
+                break;
+
+            case GATEWAY_REGISTER_DO:
+                register_property.settable = true;
+                register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_BOOLEAN;
+
+                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_ON);
+                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_OFF);
+                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_TOGGLE);
+                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_QUERY);
+
+                register_property.mappings.push_back({
+                    FASTYBIRD_SWITCH_PAYLOAD_ON,
+                    FASTYBIRD_SWITCH_PAYLOAD_ON
+                });
+
+                register_property.mappings.push_back({
+                    FASTYBIRD_SWITCH_PAYLOAD_OFF,
+                    FASTYBIRD_SWITCH_PAYLOAD_OFF
+                });
+
+                register_property.mappings.push_back({
+                    FASTYBIRD_SWITCH_PAYLOAD_TOGGLE,
+                    FASTYBIRD_SWITCH_PAYLOAD_TOGGLE
+                });
+
+                register_property.mappings.push_back({
+                    FASTYBIRD_SWITCH_PAYLOAD_QUERY,
+                    FASTYBIRD_SWITCH_PAYLOAD_QUERY
+                });
+
+                // Add register payload callback
+                register_property.payloadCallback = ([nodeId](uint8_t id, const char * payload) {
+                    // Action to perform
+                    if (strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE) == 0) {
+                        _gatewayRequestWritingSingleDigitalRegister(nodeId, id, _gatewayReadDigitalRegisterValue(nodeId, GATEWAY_REGISTER_DO, id) ? false : true);
+
+                    } else {
+                        _gatewayRequestWritingSingleDigitalRegister(nodeId, id, strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_ON) == 0);
+                    }
+                });
+                break;
+
+            case GATEWAY_REGISTER_AI:
+                register_property.settable = false;
+                register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_FLOAT;
+                break;
+
+            case GATEWAY_REGISTER_AO:
+                register_property.settable = true;
+                register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_FLOAT;
+
+                // Add register payload callback
+                register_property.payloadCallback = ([nodeId](uint8_t id, const char * payload) {
+                    // TODO: implement it
+                    // TODO: _gatewayRequestWritingSingleAnalogRegister(nodeId, id, payload);
+                });
+                break;
+        }
+
+        return register_property;
+    }
+
+// -----------------------------------------------------------------------------
+
+    /**
+     * Node channel structure
+     */
+    fastybird_channel_t _gatewayFastybirdGetChannelStructure(
+        const uint8_t id,
+        const uint8_t dataRegister
+    ) {
+        fastybird_channel_t register_channel;
+
+        if (dataRegister == GATEWAY_REGISTER_DI) {
+            register_channel = {
+                FASTYBIRD_CHANNEL_TYPE_BINARY_SENSOR,
+                FASTYBIRD_CHANNEL_TYPE_BINARY_SENSOR,
+                _gateway_nodes[id].registers_size[dataRegister],
+                false,
+                false,
+                false,
+                false
+            };
+
+        } else if (dataRegister == GATEWAY_REGISTER_DO) {
+            register_channel = {
+                FASTYBIRD_CHANNEL_TYPE_BINARY_ACTOR,
+                FASTYBIRD_CHANNEL_TYPE_BINARY_ACTOR,
+                _gateway_nodes[id].registers_size[dataRegister],
+                false,
+                false,
+                false,
+                false
+            };
+
+        } else if (dataRegister == GATEWAY_REGISTER_AI) {
+            register_channel = {
+                FASTYBIRD_CHANNEL_TYPE_ANALOG_SENSOR,
+                FASTYBIRD_CHANNEL_TYPE_ANALOG_SENSOR,
+                _gateway_nodes[id].registers_size[dataRegister],
+                false,
+                false,
+                false,
+                false
+            };
+
+        } else if (dataRegister == GATEWAY_REGISTER_AO) {
+            register_channel = {
+                FASTYBIRD_CHANNEL_TYPE_ANALOG_ACTOR,
+                FASTYBIRD_CHANNEL_TYPE_ANALOG_ACTOR,
+                _gateway_nodes[id].registers_size[dataRegister],
+                false,
+                false,
+                false,
+                false
+            };
+        }
+
+        if (_gateway_nodes[id].registers_size[dataRegister] > 0) {
+            fastybird_channel_property_t register_property = _gatewayFastybirdGetChannelProperty(id, dataRegister);
+
+            register_channel.properties.push_back(register_property);
+        }
+
+        return register_channel;
+    }
+
+// -----------------------------------------------------------------------------
+
     void _gatewayRegisterFastybirdNode(
         const uint8_t id
     ) {
@@ -479,29 +641,10 @@ uint32_t _gateway_last_nodes_check = 0;
             false
         };
 
-        if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] > 0) {
-            register_node.channels.push_back({
-                FASTYBIRD_CHANNEL_TYPE_BINARY_SENSOR,
-                _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI],
-                false
-            });
-        }
-
-        if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] > 0) {
-            register_node.channels.push_back({
-                FASTYBIRD_CHANNEL_TYPE_SWITCH,
-                _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO],
-                true
-            });
-        }
-
-        if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] > 0) {
-            register_node.channels.push_back({
-                FASTYBIRD_CHANNEL_TYPE_ANALOG_SENSOR,
-                _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI],
-                false
-            });
-        }
+        register_node.channels.push_back(_gatewayFastybirdGetChannelStructure(id, GATEWAY_REGISTER_DI));
+        register_node.channels.push_back(_gatewayFastybirdGetChannelStructure(id, GATEWAY_REGISTER_DO));
+        register_node.channels.push_back(_gatewayFastybirdGetChannelStructure(id, GATEWAY_REGISTER_AI));
+        register_node.channels.push_back(_gatewayFastybirdGetChannelStructure(id, GATEWAY_REGISTER_AO));
 
         /*
         for (uint8_t i = 0; i < _gateway_nodes[nodeIndex].settings.size(); i++) {
@@ -533,6 +676,85 @@ void _gatewayBootup()
 
 // -----------------------------------------------------------------------------
 
+#if FASTYBIRD_SUPPORT
+    void _gatewayReportAnalogRegisterValue(
+        const uint8_t id,
+        const uint8_t dataRegister,
+        const uint8_t address,
+        const uint8_t channel
+    ) {
+        String payload;
+
+        switch (_gatewayGetAnalogRegistersDataType(id, dataRegister, address))
+        {
+            case GATEWAY_DATA_TYPE_UINT8:
+                uint8_t uint8_value;
+
+                _gatewayReadAnalogRegisterValue(id, dataRegister, address, uint8_value);
+
+                payload = String(uint8_value);
+                break;
+
+            case GATEWAY_DATA_TYPE_UINT16:
+                uint16_t uint16_value;
+
+                _gatewayReadAnalogRegisterValue(id, dataRegister, address, uint16_value);
+
+                payload = String(uint16_value);
+                break;
+
+            case GATEWAY_DATA_TYPE_UINT32:
+                uint32_t uint32_value;
+
+                _gatewayReadAnalogRegisterValue(id, dataRegister, address, uint32_value);
+
+                payload = String(uint32_value);
+                break;
+
+            case GATEWAY_DATA_TYPE_INT8:
+                int8_t int8_value;
+
+                _gatewayReadAnalogRegisterValue(id, dataRegister, address, int8_value);
+
+                payload = String(int8_value);
+                break;
+
+            case GATEWAY_DATA_TYPE_INT16:
+                int16_t int16_value;
+
+                _gatewayReadAnalogRegisterValue(id, dataRegister, address, int16_value);
+
+                payload = String(int16_value);
+                break;
+
+            case GATEWAY_DATA_TYPE_INT32:
+                int32_t int32_value;
+
+                _gatewayReadAnalogRegisterValue(id, dataRegister, address, int32_value);
+
+                payload = String(int32_value);
+                break;
+
+            case GATEWAY_DATA_TYPE_FLOAT32:
+                float float_value;
+
+                _gatewayReadAnalogRegisterValue(id, dataRegister, address, float_value);
+
+                payload = String(float_value);
+                break;
+        }
+
+        _fastybirdReportNodeChannelValue(
+            _gateway_nodes[id].serial_number,
+            channel,
+            address,
+            payload.c_str()
+        );
+    }
+#endif
+
+// -----------------------------------------------------------------------------
+
 bool _gatewayRegisterValueUpdated(
     const uint8_t id,
     const uint8_t dataRegister,
@@ -550,6 +772,37 @@ bool _gatewayRegisterValueUpdated(
         _gatewayCollectNode(container, id);
 
         wsSend(message);
+    #endif
+
+    #if FASTYBIRD_SUPPORT
+        switch (dataRegister)
+        {
+            case GATEWAY_REGISTER_DI:
+                _fastybirdReportNodeChannelValue(
+                    _gateway_nodes[id].serial_number,
+                    0,
+                    address,
+                    _gatewayReadDigitalRegisterValue(id, dataRegister, address) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
+                );
+                break;
+
+            case GATEWAY_REGISTER_DO:
+                _fastybirdReportNodeChannelValue(
+                    _gateway_nodes[id].serial_number,
+                    1,
+                    address,
+                    _gatewayReadDigitalRegisterValue(id, dataRegister, address) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
+                );
+                break;
+
+            case GATEWAY_REGISTER_AI:
+                _gatewayReportAnalogRegisterValue(id, dataRegister, address, 2);
+                break;
+
+            case GATEWAY_REGISTER_AO:
+                _gatewayReportAnalogRegisterValue(id, dataRegister, address, 3);
+                break;
+        }
     #endif
 }
 
@@ -1256,6 +1509,13 @@ void gatewaySetup() {
 // -----------------------------------------------------------------------------
 
 void gatewayLoop() {
+    // If system is flagged unstable we do not init nodes networks
+    #if STABILTY_CHECK_ENABLED
+        if (!stabiltyCheck()) {
+            return;
+        }
+    #endif
+
     _gatewayCheckPacketsDelays();
 
     // If some node is not initialized, get its address

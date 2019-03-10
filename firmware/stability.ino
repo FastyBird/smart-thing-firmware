@@ -26,7 +26,7 @@ bool _stability_system_stable = true;
 void stabiltyCheck(
     bool stable
 ) {
-    unsigned int value = EEPROMr.read(EEPROM_CRASH_COUNTER);
+    uint8_t value = EEPROMr.read(EEPROM_CRASH_COUNTER);
 
     if (stable) {
         value = 0;
