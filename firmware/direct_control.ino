@@ -11,8 +11,8 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 typedef struct {
     const char * channelType;
     const char * channelProperty;
-    unsigned int channels;
-    unsigned int controlsCnt;
+    uint8_t channels;
+    uint8_t controlsCnt;
 } direct_control_channel_t;
 
 std::vector<direct_control_channel_t> _direct_controls_channels;
@@ -42,9 +42,9 @@ std::vector<direct_control_channel_t> _direct_controls_channels;
 
         JsonArray &controls = data.createNestedArray("controls");
 
-        for (unsigned int i = 0; i < _direct_controls_channels.size(); i++) {
-            for (unsigned int channel_id = 0; channel_id < _direct_controls_channels[i].channels; channel_id++) {
-                for (unsigned int j = 0; j < DIRECT_CONTROL_MAX_CONTROLS; j++) {
+        for (uint8_t i = 0; i < _direct_controls_channels.size(); i++) {
+            for (uint8_t channel_id = 0; channel_id < _direct_controls_channels[i].channels; channel_id++) {
+                for (uint8_t j = 0; j < DIRECT_CONTROL_MAX_CONTROLS; j++) {
                     if (!hasSetting(directControlCreateSettingsKey("dcControlAction_", _direct_controls_channels[i].channelType, j), channel_id)) {
                         break;
                     }
@@ -81,9 +81,9 @@ std::vector<direct_control_channel_t> _direct_controls_channels;
                     DEBUG_MSG(PSTR("[DC] Received %d direct control rules\n"), configuration["controls"].size());
 
                     // Clear existing controls
-                    for (unsigned int i = 0; i < _direct_controls_channels.size(); i++) {
-                        for (unsigned int channel_id = 0; channel_id < _direct_controls_channels[i].channels; channel_id++) {
-                            for (unsigned int j = 0; j < DIRECT_CONTROL_MAX_CONTROLS; j++) {
+                    for (uint8_t i = 0; i < _direct_controls_channels.size(); i++) {
+                        for (uint8_t channel_id = 0; channel_id < _direct_controls_channels[i].channels; channel_id++) {
+                            for (uint8_t j = 0; j < DIRECT_CONTROL_MAX_CONTROLS; j++) {
                                 delSetting(directControlCreateSettingsKey("dcControlProperty_", _direct_controls_channels[i].channelType, j), channel_id);
                                 delSetting(directControlCreateSettingsKey("dcControlAction_", _direct_controls_channels[i].channelType, j), channel_id);
                                 delSetting(directControlCreateSettingsKey("dcListenTopic_", _direct_controls_channels[i].channelType, j), channel_id);
@@ -94,12 +94,12 @@ std::vector<direct_control_channel_t> _direct_controls_channels;
                         }
                     }
 
-                    for (unsigned int i = 0; i < _direct_controls_channels.size(); i++) {
+                    for (uint8_t i = 0; i < _direct_controls_channels.size(); i++) {
                         _direct_controls_channels[i].controlsCnt = 0;
                     }
 
                     JsonArray& controls = configuration["controls"].as<JsonArray&>();
-                    unsigned int control_cnt = 0;
+                    uint8_t control_cnt = 0;
 
                     for (JsonObject& control : controls) {
                         if (
@@ -111,9 +111,9 @@ std::vector<direct_control_channel_t> _direct_controls_channels;
                             && control.containsKey("listen_action")
                             && control.containsKey("expression")
                         )  {
-                            unsigned int channel_id = control["control_channel"].as<unsigned int>();
+                            uint8_t channel_id = control["control_channel"].as<uint8_t>();
 
-                            for (unsigned int i = 0; i < _direct_controls_channels.size(); i++) {
+                            for (uint8_t i = 0; i < _direct_controls_channels.size(); i++) {
                                 // Check if channel is registered
                                 if (
                                     _direct_controls_channels[i].channelType == control["control_channel_type"]
@@ -154,7 +154,7 @@ std::vector<direct_control_channel_t> _direct_controls_channels;
 String directControlCreateSettingsKey(
     const char * prefix,
     const char * channelType,
-    unsigned int channel
+    uint8_t channel
 ) {
     char buffer[100];
     
@@ -170,11 +170,11 @@ String directControlCreateSettingsKey(
 // -----------------------------------------------------------------------------
 
 void directControlReportChannelConfiguration(
-    unsigned int id,
+    uint8_t id,
     const char * channelType,
     JsonArray& directControls
 ) {
-    for (unsigned int i = 0; i < DIRECT_CONTROL_MAX_CONTROLS; i++) {
+    for (uint8_t i = 0; i < DIRECT_CONTROL_MAX_CONTROLS; i++) {
         if (!hasSetting(directControlCreateSettingsKey("dcControlAction_", channelType, i), id)) {
             break;
         }
@@ -196,12 +196,12 @@ void directControlReportChannelConfiguration(
 // -----------------------------------------------------------------------------
 
 void directControlConfigureChannelConfiguration(
-    unsigned int id,
+    uint8_t id,
     const char * channelType,
     JsonArray& configuration
 ) {
     // Clear existing direct controls
-    for (unsigned int i = 0; i < DIRECT_CONTROL_MAX_CONTROLS; i++) {
+    for (uint8_t i = 0; i < DIRECT_CONTROL_MAX_CONTROLS; i++) {
         delSetting(directControlCreateSettingsKey("dcControlProperty_", channelType, i), id);
         delSetting(directControlCreateSettingsKey("dcControlAction_", channelType, i), id);
         delSetting(directControlCreateSettingsKey("dcListenTopic_", channelType, i), id);
@@ -209,7 +209,7 @@ void directControlConfigureChannelConfiguration(
         delSetting(directControlCreateSettingsKey("dcExpression_", channelType, i), id);
     }
     
-    unsigned int i = 0;
+    uint8_t i = 0;
 
     // Store new direct controls configuration
     for (JsonObject& control : configuration) {
@@ -243,7 +243,7 @@ void directControlConfigureChannelConfiguration(
 void directControlRegisterChannel(
     const char * channelType,
     const char * channelProperty,
-    unsigned int channels
+    uint8_t channels
 ) {
     direct_control_channel_t channel = {
         channelType,

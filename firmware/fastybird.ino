@@ -17,9 +17,9 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 bool _fastybird_initialized = false;
-unsigned int _fastybird_thing_advertisement_progress = FASTYBIRD_PUB_CONNECTION;
 
-unsigned int _fastybird_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_NAME;
+uint8_t _fastybird_thing_advertisement_progress = FASTYBIRD_PUB_CONNECTION;
+uint8_t _fastybird_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_NAME;
 
 std::vector<fastybird_channel_t> _fastybird_channels;
 
@@ -66,10 +66,12 @@ std::vector<fastybird_channel_t> _fastybird_channels;
 /**
  * Call configuration update for each module
  */
-void _fastybirdConfigureModules(JsonObject& configuration) {
+void _fastybirdConfigureModules(
+    JsonObject& configuration
+) {
     DEBUG_MSG(PSTR("[FASTYBIRD] Sending configuration to modules\n"));
 
-    for (unsigned int i = 0; i < _fastybird_on_configure_callbacks.size(); i++) {
+    for (uint8_t i = 0; i < _fastybird_on_configure_callbacks.size(); i++) {
         (_fastybird_on_configure_callbacks[i])(configuration);
     }
 
@@ -138,7 +140,8 @@ bool _fastybirdInitializeChannel(
 
     std::vector<String> channel_controls;
 
-    switch (_fastybird_channel_advertisement_progress) {
+    switch (_fastybird_channel_advertisement_progress)
+    {
         case FASTYBIRD_PUB_CHANNEL_NAME:
             if (!_fastybirdPropagateChannelName(channelStructure, channelStructure.name)) {
                 return false;
@@ -288,7 +291,8 @@ void _fastybirdInitializeSystem() {
     std::vector<String> thing_stats;
     std::vector<String> thing_controls;
 
-    switch (_fastybird_thing_advertisement_progress) {
+    switch (_fastybird_thing_advertisement_progress)
+    {
         case FASTYBIRD_PUB_CONNECTION:
             // Notify cloud broker that thing is sending initialization sequences
             if (!_fastybirdPropagateThingProperty(FASTYBIRD_PROPERTY_STATE, FASTYBIRD_STATUS_INIT)) {
@@ -444,7 +448,7 @@ void _fastybirdInitializeSystem() {
 
         case FASTYBIRD_PUB_CONFIGURATION_SCHEMA:
             #if FASTYBIRD_ENABLE_CONFIGURATION
-                for (unsigned int i = 0; i < _fastybird_report_configuration_schema_callbacks.size(); i++) {
+                for (uint8_t i = 0; i < _fastybird_report_configuration_schema_callbacks.size(); i++) {
                     (_fastybird_report_configuration_schema_callbacks[i])(configurationSchema);
                 }
 
@@ -460,7 +464,7 @@ void _fastybirdInitializeSystem() {
 
         case FASTYBIRD_PUB_INITIALIZE_CHANNELS:
             if (_fastybird_channels.size() > 0) {
-                for (unsigned int i = 0; i < _fastybird_channels.size(); i++) {
+                for (uint8_t i = 0; i < _fastybird_channels.size(); i++) {
                     if (_fastybird_channels[i].initialized) {
                         continue;
                     }
@@ -498,7 +502,7 @@ void _fastybirdInitializeSystem() {
 
         case FASTYBIRD_PUB_CHANNELS_CONFIGURATION:
             if (_fastybird_channels_report_configuration_callbacks.size() > 0) {
-                for (unsigned int i = 0; i < _fastybird_channels_report_configuration_callbacks.size(); i++) {
+                for (uint8_t i = 0; i < _fastybird_channels_report_configuration_callbacks.size(); i++) {
                     if (!(_fastybird_channels_report_configuration_callbacks[i])()) {
                         return;
                     }
@@ -519,7 +523,7 @@ void _fastybirdInitializeSystem() {
         #if DIRECT_CONTROL_SUPPORT
         case FASTYBIRD_PUB_CHANNELS_DIRECT_CONTROL:
             if (_fastybird_channels_report_direct_controls_callbacks.size() > 0) {
-                for (unsigned int i = 0; i < _fastybird_channels_report_direct_controls_callbacks.size(); i++) {
+                for (uint8_t i = 0; i < _fastybird_channels_report_direct_controls_callbacks.size(); i++) {
                     if (!(_fastybird_channels_report_direct_controls_callbacks[i])()) {
                         return;
                     }
@@ -537,7 +541,7 @@ void _fastybirdInitializeSystem() {
         #if SCHEDULER_SUPPORT
         case FASTYBIRD_PUB_CHANNELS_SCHEDULE:
             if (_fastybird_channels_report_scheduler_callbacks.size() > 0) {
-                for (unsigned int i = 0; i < _fastybird_channels_report_scheduler_callbacks.size(); i++) {
+                for (uint8_t i = 0; i < _fastybird_channels_report_scheduler_callbacks.size(); i++) {
                     if (!(_fastybird_channels_report_scheduler_callbacks[i])()) {
                         return;
                     }
@@ -562,7 +566,7 @@ bool fastybirdReportConfiguration() {
 
     JsonObject& configuration = jsonBuffer.createObject();
 
-    for (unsigned int i = 0; i < _fastybird_report_configuration_callbacks.size(); i++) {
+    for (uint8_t i = 0; i < _fastybird_report_configuration_callbacks.size(); i++) {
         (_fastybird_report_configuration_callbacks[i])(configuration);
     }
 
@@ -576,65 +580,83 @@ bool fastybirdReportConfiguration() {
 // -----------------------------------------------------------------------------
 
 bool fastybirdReportChannelConfiguration(
-    fastybird_channel_t channelStructure,
-    String configuration,
-    unsigned int channelId
+    const uint8_t index,
+    const uint8_t channelId,
+    String configuration
 ) {
-    return _fastybirdPropagateChannelConfiguration(channelStructure, channelId, configuration);
+    if (index >= 0 && index < _fastybird_channels.size()) {
+        return _fastybirdPropagateChannelConfiguration(
+            _fastybird_channels[index],
+            channelId,
+            configuration
+        );
+    }
 }
 
 // -----------------------------------------------------------------------------
 
 bool fastybirdReportChannelConfiguration(
-    fastybird_channel_t channelStructure,
+    const uint8_t index,
     String configuration
 ) {
-    return fastybirdReportChannelConfiguration(channelStructure, configuration, 0);
+    return fastybirdReportChannelConfiguration(index, 0, configuration);
 }
 
 // -----------------------------------------------------------------------------
 
 bool fastybirdReportChannelDirectControl(
-    fastybird_channel_t channelStructure,
-    String directControls,
-    unsigned int channelId
-) {
-    return _fastybirdPropagateChannelDirectControlConfiguration(channelStructure, channelId, directControls);
-}
-
-// -----------------------------------------------------------------------------
-
-bool fastybirdReportChannelDirectControl(
-    fastybird_channel_t channelStructure,
+    const uint8_t index,
+    const uint8_t channelId,
     String directControls
 ) {
-    return fastybirdReportChannelDirectControl(channelStructure, directControls, 0);
+    if (index >= 0 && index < _fastybird_channels.size()) {
+        return _fastybirdPropagateChannelDirectControlConfiguration(
+            _fastybird_channels[index],
+            channelId,
+            directControls
+        );
+    }
 }
 
 // -----------------------------------------------------------------------------
 
-bool fastybirdReportChannelScheduler(
-    fastybird_channel_t channelStructure,
-    String schedules,
-    unsigned int channelId
+bool fastybirdReportChannelDirectControl(
+    const uint8_t index,
+    String directControls
 ) {
-    return _fastybirdPropagateChannelSchedulerConfiguration(channelStructure, channelId, schedules);
+    return fastybirdReportChannelDirectControl(index, 0, directControls);
 }
 
 // -----------------------------------------------------------------------------
 
 bool fastybirdReportChannelScheduler(
-    fastybird_channel_t channelStructure,
+    const uint8_t index,
+    const uint8_t channelId,
     String schedules
 ) {
-    return fastybirdReportChannelScheduler(channelStructure, schedules, 0);
+    if (index >= 0 && index < _fastybird_channels.size()) {
+        return _fastybirdPropagateChannelSchedulerConfiguration(
+            _fastybird_channels[index],
+            channelId,
+            schedules
+        );
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+bool fastybirdReportChannelScheduler(
+    const uint8_t index,
+    String schedules
+) {
+    return fastybirdReportChannelScheduler(index, 0, schedules);
 }
 
 // -----------------------------------------------------------------------------
 
 bool fastybirdReportChannelValue(
-    uint8_t index,
-    unsigned int channelId,
+    const uint8_t index,
+    const uint8_t channelId,
     const char * payload
 ) {
     if (index >= 0 && index < _fastybird_channels.size()) {
@@ -652,7 +674,7 @@ bool fastybirdReportChannelValue(
 // -----------------------------------------------------------------------------
 
 bool fastybirdReportChannelValue(
-    uint8_t index,
+    const uint8_t index,
     const char * payload
 ) {
     return fastybirdReportChannelValue(index, 0, payload);
@@ -664,7 +686,7 @@ void fastybirdResetThingInitialization() {
     _fastybird_initialized = false;
     _fastybird_thing_advertisement_progress = FASTYBIRD_PUB_CONNECTION;
 
-    for (unsigned int i = 0; i < _fastybird_channels.size(); i++) {
+    for (uint8_t i = 0; i < _fastybird_channels.size(); i++) {
         _fastybird_channels[i].initialized = false;
     }
 
@@ -681,7 +703,9 @@ bool fastybirdIsThingInitialzed() {
 
 // -----------------------------------------------------------------------------
 
-uint8_t fastybirdRegisterChannel(fastybird_channel_t channel) {
+uint8_t fastybirdRegisterChannel(
+    fastybird_channel_t channel
+) {
     _fastybird_channels.push_back(channel);
 
     return (_fastybird_channels.size() - 1);
@@ -717,7 +741,7 @@ void fastybirdSetup() {
 void fastybirdLoop() {
     if (_fastybirdIsApiReady()) {
         if (_fastybird_initialized == false) {
-            static unsigned long last_init_call = 0;
+            static uint32_t last_init_call = 0;
 
             if (last_init_call == 0 || (millis() - last_init_call > 500)) {
                 last_init_call = millis();

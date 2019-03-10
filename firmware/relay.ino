@@ -16,30 +16,31 @@ Copyright (C) 2017 - 2018 FastyBird Ltd. <info@fastybird.com>
 
 typedef struct {
     // Configuration variables
-    unsigned char pin;          // GPIO pin for the relay
-    unsigned char type;         // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
-    unsigned char reset_pin;    // GPIO to reset the relay if RELAY_TYPE_LATCHED
-    unsigned long delay_on;     // Delay to turn relay ON
-    unsigned long delay_off;    // Delay to turn relay OFF
-    unsigned char pulse;        // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
-    unsigned long pulse_ms;     // Pulse length in millis
+    uint8_t pin;            // GPIO pin for the relay
+    uint8_t type;           // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
+    uint8_t reset_pin;      // GPIO to reset the relay if RELAY_TYPE_LATCHED
+    uint32_t delay_on;      // Delay to turn relay ON
+    uint32_t delay_off;     // Delay to turn relay OFF
+    uint8_t pulse;          // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
+    uint32_t pulse_ms;      // Pulse length in millis
 
     // Status variables
-    bool current_status;        // Holds the current (physical) status of the relay
-    bool target_status;         // Holds the target status
-    unsigned long fw_start;     // Flood window start time
-    unsigned char fw_count;     // Number of changes within the current flood window
-    unsigned long change_time;  // Scheduled time to change
-    bool report;                // Whether to report to own topic
+    bool current_status;    // Holds the current (physical) status of the relay
+    bool target_status;     // Holds the target status
+    uint32_t fw_start;      // Flood window start time
+    uint8_t fw_count;       // Number of changes within the current flood window
+    uint32_t change_time;   // Scheduled time to change
+    bool report;            // Whether to report to own topic
 
     // Helping objects
-    Ticker pulseTicker;         // Holds the pulse back timer
+    Ticker pulseTicker;     // Holds the pulse back timer
 
 } relay_t;
 
 std::vector<relay_t> _relays;
 
 bool _relayRecursive = false;
+
 Ticker _relaySaveTicker;
 
 #if FASTYBIRD_SUPPORT
@@ -51,7 +52,7 @@ Ticker _relaySaveTicker;
 // -----------------------------------------------------------------------------
 
 void _relayConfigure() {
-    for (unsigned int i = 0; i < _relays.size(); i++) {
+    for (uint8_t i = 0; i < _relays.size(); i++) {
         _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
         _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_TIME).toFloat();
 
@@ -77,18 +78,18 @@ void _relayConfigure() {
 void _relayBoot() {
     _relayRecursive = true;
 
-    unsigned char bit = 1;
+    uint8_t bit = 1;
     bool trigger_save = false;
 
     // Get last statuses from EEPROM
-    unsigned char mask = EEPROMr.read(EEPROM_RELAY_STATUS);
+    uint8_t mask = EEPROMr.read(EEPROM_RELAY_STATUS);
     DEBUG_MSG(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
 
     // Walk the relays
     bool status;
 
-    for (unsigned int i = 0; i < _relays.size(); i++) {
-        unsigned char boot_mode = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
+    for (uint8_t i = 0; i < _relays.size(); i++) {
+        uint8_t boot_mode = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
 
         DEBUG_MSG(PSTR("[RELAY] Relay #%d boot mode %d\n"), i, boot_mode);
 
@@ -141,7 +142,9 @@ void _relayBoot() {
 
 // -----------------------------------------------------------------------------
 
-unsigned int _relayParsePayload(const char * payload) {
+uint8_t _relayParsePayload(
+    const char * payload
+) {
     // Payload could be "OFF", "ON", "TOGGLE"
     // or its number equivalents: 0, 1 or 2
 
@@ -159,13 +162,13 @@ unsigned int _relayParsePayload(const char * payload) {
     char * p = ltrim((char *) payload);
 
     // to lower
-    unsigned int length = strlen(p);
+    uint8_t length = strlen(p);
 
     if (length > 6) {
         length = 6;
     }
 
-    for (unsigned char i = 0; i < length; i++) {
+    for (uint8_t i = 0; i < length; i++) {
         p[i] = tolower(p[i]);
     }
 
@@ -246,7 +249,7 @@ void _relayUpdateConfiguration(
 
     if (relayCount() > 1) {
         if (configuration.containsKey("relays_sync"))  {
-            setSetting("relaysSync", configuration["relays_sync"].as<unsigned int>());
+            setSetting("relaysSync", configuration["relays_sync"].as<uint8_t>());
         }
 
     } else {
@@ -341,8 +344,7 @@ void _relayReportChannelConfigurationSchema(
 
 // -----------------------------------------------------------------------------
 
-String _relayReportChannelConfigurationSchema()
-{
+String _relayReportChannelConfigurationSchema() {
     DynamicJsonBuffer jsonBuffer;
     JsonArray& schema = jsonBuffer.createArray();
 
@@ -358,7 +360,7 @@ String _relayReportChannelConfigurationSchema()
 // -----------------------------------------------------------------------------
 
 void _relayReportChannelConfiguration(
-    unsigned int id,
+    const uint8_t id,
     JsonObject& configuration
 ) {
     configuration["relay_boot"] = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
@@ -370,7 +372,7 @@ void _relayReportChannelConfiguration(
 // -----------------------------------------------------------------------------
 
 String _relayReportChannelConfiguration(
-    unsigned int id
+    const uint8_t id
 ) {
     DynamicJsonBuffer jsonBuffer;
     JsonObject& configuration = jsonBuffer.createObject();
@@ -387,35 +389,35 @@ String _relayReportChannelConfiguration(
 // -----------------------------------------------------------------------------
 
 bool _relayConfigureChannel(
-    unsigned int relay,
+    const uint8_t id,
     JsonObject& configuration
 ) {
-    DEBUG_MSG(PSTR("[RELAY] Updating channel: %d\n"), relay);
+    DEBUG_MSG(PSTR("[RELAY] Updating channel: %d\n"), id);
 
     if (configuration.containsKey("relay_boot"))  {
-        DEBUG_MSG(PSTR("[RELAY] Setting: \"relay_boot\" to: %d\n"), configuration["relay_boot"].as<unsigned int>());
+        DEBUG_MSG(PSTR("[RELAY] Setting: \"relay_boot\" to: %d\n"), configuration["relay_boot"].as<uint8_t>());
 
-        setSetting("relayBoot", relay, configuration["relay_boot"].as<unsigned int>());
+        setSetting("relayBoot", id, configuration["relay_boot"].as<uint8_t>());
     }
 
     if (configuration.containsKey("pulse_mode"))  {
-        DEBUG_MSG(PSTR("[RELAY] Setting: \"pulse_mode\" to: %d\n"), configuration["pulse_mode"].as<unsigned int>());
+        DEBUG_MSG(PSTR("[RELAY] Setting: \"pulse_mode\" to: %d\n"), configuration["pulse_mode"].as<uint8_t>());
 
-        setSetting("relayPulseMode", relay, configuration["pulse_mode"].as<unsigned int>());
+        setSetting("relayPulseMode", id, configuration["pulse_mode"].as<uint8_t>());
     }
 
     if (configuration.containsKey("pulse_time"))  {
         if (configuration["pulse_time"].as<float>() >= 1.0 && configuration["pulse_time"].as<float>() <= 60.0) {
-            DEBUG_MSG(PSTR("[RELAY] Setting: \"pulse_time\" to: %d\n"), configuration["pulse_time"].as<unsigned int>());
+            DEBUG_MSG(PSTR("[RELAY] Setting: \"pulse_time\" to: %d\n"), configuration["pulse_time"].as<uint8_t>());
 
-            setSetting("relayPulseTime", relay, configuration["pulse_time"].as<float>());
+            setSetting("relayPulseTime", id, configuration["pulse_time"].as<float>());
         }
     }
 
     if (configuration.containsKey("on_disconnect"))  {
-        DEBUG_MSG(PSTR("[RELAY] Setting: \"on_disconnect\" to: %d\n"), configuration["on_disconnect"].as<unsigned int>());
+        DEBUG_MSG(PSTR("[RELAY] Setting: \"on_disconnect\" to: %d\n"), configuration["on_disconnect"].as<uint8_t>());
 
-        setSetting("relayOnDisc", relay, configuration["on_disconnect"].as<unsigned int>());
+        setSetting("relayOnDisc", id, configuration["on_disconnect"].as<uint8_t>());
     }
 }
 
@@ -423,7 +425,9 @@ bool _relayConfigureChannel(
 
 #if WEB_SUPPORT && WS_SUPPORT
     // Send module status to WS clients
-    void _relayWebSocketUpdate(JsonObject& root) {
+    void _relayWebSocketUpdate(
+        JsonObject& root
+    ) {
         root["module"] = "relay";
 
         // Container
@@ -432,7 +436,7 @@ bool _relayConfigureChannel(
         // Relays status container
         JsonArray& relay = container.createNestedArray("status");
 
-        for (unsigned int i = 0; i < relayCount(); i++) {
+        for (uint8_t i = 0; i < relayCount(); i++) {
             relay.add(_relays[i].target_status ? 1 : 0);
         }
     }
@@ -483,7 +487,7 @@ bool _relayConfigureChannel(
         // Channels configuration values container
         JsonArray& channels_configuration_values = channels_configuration.createNestedArray("values");
 
-        for (unsigned int i = 0; i < relayCount(); i++) {
+        for (uint8_t i = 0; i < relayCount(); i++) {
             JsonObject& channel_configuration_values = channels_configuration_values.createNestedObject();
 
             channel_configuration_values["gpio"] = _relays[i].pin;
@@ -501,7 +505,7 @@ bool _relayConfigureChannel(
         // Channels statuses
         JsonArray& channels_statuses = data.createNestedArray("channels");
 
-        for (unsigned int i = 0; i < relayCount(); i++) {
+        for (uint8_t i = 0; i < relayCount(); i++) {
             channels_statuses.add(_relays[i].target_status);
         }
     }
@@ -510,7 +514,7 @@ bool _relayConfigureChannel(
 
     // WS client requested configuration
     void _relayWSOnConfigure(
-        uint32_t clientId,
+        const uint32_t clientId,
         JsonObject& module
     ) {
         if (module.containsKey("module") && module["module"] == "relay") {
@@ -528,7 +532,7 @@ bool _relayConfigureChannel(
                     JsonObject& channels_configuration = configuration["channels"].as<JsonObject&>();
 
                     if (channels_configuration.containsKey("values")) {
-                        for (unsigned int i = 0; i < channels_configuration["values"].size(); i++) {
+                        for (uint8_t i = 0; i < channels_configuration["values"].size(); i++) {
                             _relayConfigureChannel(i, channels_configuration["values"][i]);
                         }
                     }
@@ -547,14 +551,14 @@ bool _relayConfigureChannel(
 
     // WS client called action
     void _relayWSOnAction(
-        uint32_t client_id,
+        const uint32_t client_id,
         const char * action,
         JsonObject& data
     ) {
         if (strcmp(action, "switch") == 0 && data.containsKey("channels")) {
-            for (unsigned int i = 0; i < data["channels"].size(); i++) {
+            for (uint8_t i = 0; i < data["channels"].size(); i++) {
                 // Parse value
-                unsigned long value = _relayParsePayload(data["channels"][i].as<char*>());
+                uint32_t value = _relayParsePayload(data["channels"][i].as<char*>());
 
                 // Action to perform
                 if (value == 0) {
@@ -610,7 +614,7 @@ bool _relayConfigureChannel(
             FASTYBIRD_SWITCH_PAYLOAD_QUERY
         });
 
-        property.payloadCallback = ([](unsigned int id, const char * payload) {
+        property.payloadCallback = ([](uint8_t id, const char * payload) {
             // Action to perform
             if (strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE) == 0) {
                 relayToggle(id);
@@ -639,20 +643,20 @@ bool _relayConfigureChannel(
 
         channel.configurationSchema = (_relayReportChannelConfigurationSchema());
 
-        channel.configureCallback = ([](unsigned int id, JsonObject& configuration){
+        channel.configureCallback = ([](uint8_t id, JsonObject& configuration){
             _relayConfigureChannel(id, configuration);
 
             fastybirdReportChannelConfiguration(
-                _relayFastybirdGetChannelStructure(),
-                _relayReportChannelConfiguration(id),
-                id
+                _relay_fastybird_channel_index,
+                id,
+                _relayReportChannelConfiguration(id)
             );
 
             DEBUG_MSG(PSTR("[RELAY] Configuration changes were saved\n"));
         });
 
         #if DIRECT_CONTROL_SUPPORT
-            channel.configureDirectControlsCallback = ([](unsigned int id, JsonArray& configuration){
+            channel.configureDirectControlsCallback = ([](uint8_t id, JsonArray& configuration){
                 directControlConfigureChannelConfiguration(id, FASTYBIRD_CHANNEL_TYPE_SWITCH, configuration);
 
                 String output;
@@ -665,9 +669,9 @@ bool _relayConfigureChannel(
                 direct_controls.printTo(output);
 
                 fastybirdReportChannelDirectControl(
-                    _relayFastybirdGetChannelStructure(),
-                    output,
-                    id
+                    _relay_fastybird_channel_index,
+                    id,
+                    output
                 );
 
                 DEBUG_MSG(PSTR("[RELAY] Direct controls configuration changes were saved\n"));
@@ -677,7 +681,7 @@ bool _relayConfigureChannel(
         #endif
 
         #if SCHEDULER_SUPPORT
-            channel.configureSchedulesCallback = ([](unsigned int id, JsonArray& configuration){
+            channel.configureSchedulesCallback = ([](uint8_t id, JsonArray& configuration){
                 schConfigureChannelConfiguration(id, FASTYBIRD_CHANNEL_TYPE_SWITCH, configuration);
 
                 String output;
@@ -690,9 +694,9 @@ bool _relayConfigureChannel(
                 schedules.printTo(output);
 
                 fastybirdReportChannelScheduler(
-                    _relayFastybirdGetChannelStructure(),
-                    output,
-                    id
+                    _relay_fastybird_channel_index,
+                    id,
+                    output
                 );
 
                 DEBUG_MSG(PSTR("[RELAY] Scheduler configuration changes were saved\n"));
@@ -707,12 +711,12 @@ bool _relayConfigureChannel(
 // -----------------------------------------------------------------------------
 
     bool _relayFastybirdReportChannelsConfiguration() {
-        for (unsigned int i = 0; i < relayCount(); i++) {
+        for (uint8_t i = 0; i < relayCount(); i++) {
             if (
                 !fastybirdReportChannelConfiguration(
-                    _relayFastybirdGetChannelStructure(),
-                    _relayReportChannelConfiguration(i),
-                    i
+                    _relay_fastybird_channel_index,
+                    i,
+                    _relayReportChannelConfiguration(i)
                 )
             ) {
                 return false;
@@ -729,7 +733,7 @@ bool _relayConfigureChannel(
             String output;
             DynamicJsonBuffer jsonBuffer;
 
-            for (unsigned int i = 0; i < relayCount(); i++) {
+            for (uint8_t i = 0; i < relayCount(); i++) {
                 JsonArray& direct_controls = jsonBuffer.createArray();
 
                 directControlReportChannelConfiguration(i, FASTYBIRD_CHANNEL_TYPE_SWITCH, direct_controls);
@@ -738,9 +742,9 @@ bool _relayConfigureChannel(
 
                 if (
                     !fastybirdReportChannelDirectControl(
-                        _relayFastybirdGetChannelStructure(),
-                        output,
-                        i
+                        _relay_fastybird_channel_index,
+                        i,
+                        output
                     )
                 ) {
                     return false;
@@ -756,7 +760,7 @@ bool _relayConfigureChannel(
             String output;
             DynamicJsonBuffer jsonBuffer;
 
-            for (unsigned int i = 0; i < relayCount(); i++) {
+            for (uint8_t i = 0; i < relayCount(); i++) {
                 JsonArray& schedules = jsonBuffer.createArray();
                 
                 schReportChannelConfiguration(i, FASTYBIRD_CHANNEL_TYPE_SWITCH, schedules);
@@ -765,9 +769,9 @@ bool _relayConfigureChannel(
 
                 if (
                     !fastybirdReportChannelScheduler(
-                        _relayFastybirdGetChannelStructure(),
-                        output,
-                        i
+                        _relay_fastybird_channel_index,
+                        i,
+                        output
                     )
                 ) {
                     return false;
@@ -784,7 +788,7 @@ bool _relayConfigureChannel(
 // -----------------------------------------------------------------------------
 
 void _relayProviderStatus(
-    unsigned int id,
+    const uint8_t id,
     bool status
 ) {
     // Check relay ID
@@ -801,9 +805,9 @@ void _relayProviderStatus(
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
         // Calculate mask
-        unsigned char mask=0;
+        uint8_t mask=0;
 
-        for (unsigned int i = 0; i < _relays.size(); i++) {
+        for (uint8_t i = 0; i < _relays.size(); i++) {
             if (_relays[i].current_status) {
                 mask = mask + (1 << i);
             }
@@ -905,10 +909,12 @@ void _relayProviderStatus(
  * that have to change to the requested mode
  * @bool mode Requested mode
  */
-void _relayProcess(bool mode) {
-    unsigned long current_time = millis();
+void _relayProcess(
+    const bool mode
+) {
+    uint32_t current_time = millis();
 
-    for (unsigned int id = 0; id < _relays.size(); id++) {
+    for (uint8_t id = 0; id < _relays.size(); id++) {
         bool target = _relays[id].target_status;
 
         // Only process the relays we have to change
@@ -945,7 +951,7 @@ void _relayProcess(bool mode) {
 
             // We will trigger a commit only if
             // we care about current relay status on boot
-            unsigned char boot_mode = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
+            uint8_t boot_mode = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
             bool do_commit = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
 
             _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave, do_commit);
@@ -963,7 +969,9 @@ void _relayProcess(bool mode) {
 // MODULE API
 // -----------------------------------------------------------------------------
 
-void relayPulse(unsigned char id) {
+void relayPulse(
+    const uint8_t id
+) {
     _relays[id].pulseTicker.detach();
 
     byte mode = _relays[id].pulse;
@@ -972,7 +980,7 @@ void relayPulse(unsigned char id) {
         return;
     }
 
-    unsigned long ms = _relays[id].pulse_ms;
+    uint32_t ms = _relays[id].pulse_ms;
 
     if (ms == 0) {
         return;
@@ -994,7 +1002,11 @@ void relayPulse(unsigned char id) {
 
 // -----------------------------------------------------------------------------
 
-bool relayStatus(unsigned char id, bool status, bool report) {
+bool relayStatus(
+    const uint8_t id,
+    const bool status,
+    const bool report
+) {
     if (id >= _relays.size()) {
         return false;
     }
@@ -1020,9 +1032,9 @@ bool relayStatus(unsigned char id, bool status, bool report) {
         relayPulse(id);
 
     } else {
-        unsigned long current_time = millis();
-        unsigned long fw_end = _relays[id].fw_start + 1000 * RELAY_FLOOD_WINDOW;
-        unsigned long delay = status ? _relays[id].delay_on : _relays[id].delay_off;
+        uint32_t current_time = millis();
+        uint32_t fw_end = _relays[id].fw_start + 1000 * RELAY_FLOOD_WINDOW;
+        uint32_t delay = status ? _relays[id].delay_on : _relays[id].delay_off;
 
         _relays[id].fw_count++;
         _relays[id].change_time = current_time + delay;
@@ -1062,7 +1074,9 @@ bool relayStatus(unsigned char id, bool status, bool report) {
 
 // -----------------------------------------------------------------------------
 
-void relaySync(unsigned int id) {
+void relaySync(
+    const uint8_t id
+) {
     // No sync if none or only one relay
     if (_relays.size() < 2) {
         return;
@@ -1081,7 +1095,7 @@ void relaySync(unsigned int id) {
 
     // If RELAY_SYNC_SAME all relays should have the same state
     if (relaySync == RELAY_SYNC_SAME) {
-        for (unsigned short i=0; i<_relays.size(); i++) {
+        for (uint8_t i = 0; i<_relays.size(); i++) {
             if (i != id) {
                 relayStatus(i, status);
             }
@@ -1090,7 +1104,7 @@ void relaySync(unsigned int id) {
     // If NONE_OR_ONE or ONE and setting ON we should set OFF all the others
     } else if (status) {
         if (relaySync != RELAY_SYNC_ANY) {
-            for (unsigned short i=0; i<_relays.size(); i++) {
+            for (uint8_t i = 0; i<_relays.size(); i++) {
                 if (i != id) {
                     relayStatus(i, false);
                 }
@@ -1100,7 +1114,7 @@ void relaySync(unsigned int id) {
     // If ONLY_ONE and setting OFF we should set ON the other one
     } else {
         if (relaySync == RELAY_SYNC_ONE) {
-            unsigned char i = (id + 1) % _relays.size();
+            uint8_t i = (id + 1) % _relays.size();
             relayStatus(i, true);
         }
     }
@@ -1111,25 +1125,27 @@ void relaySync(unsigned int id) {
 
 // -----------------------------------------------------------------------------
 
-unsigned int relayCount() {
+uint8_t relayCount() {
     return _relays.size();
 }
 
 // -----------------------------------------------------------------------------
 
-void relaySave(bool doCommit) {
+void relaySave(
+    const bool doCommit
+) {
     // Relay status is stored in a single byte
     // This means that, atm,
     // we are only storing the status of the first 8 relays.
-    unsigned char bit = 1;
-    unsigned char mask = 0;
-    unsigned char count = _relays.size();
+    uint8_t bit = 1;
+    uint8_t mask = 0;
+    uint8_t count = _relays.size();
 
     if (count > 8) {
         count = 8;
     }
 
-    for (unsigned int i = 0; i < count; i++) {
+    for (uint8_t i = 0; i < count; i++) {
         if (relayStatus(i)) {
             mask += bit;
         }
@@ -1162,7 +1178,10 @@ void relaySave() {
 
 // -----------------------------------------------------------------------------
 
-void relayToggle(unsigned char id, bool report) {
+void relayToggle(
+    const uint8_t id,
+    const bool report
+) {
     if (id >= _relays.size()) {
         return;
     }
@@ -1172,19 +1191,26 @@ void relayToggle(unsigned char id, bool report) {
 
 // -----------------------------------------------------------------------------
 
-void relayToggle(unsigned char id) {
+void relayToggle(
+    const uint8_t id
+) {
     relayToggle(id, true);
 }
 
 // -----------------------------------------------------------------------------
 
-bool relayStatus(unsigned char id, bool status) {
+bool relayStatus(
+    const uint8_t id,
+    const bool status
+) {
     return relayStatus(id, status, true);
 }
 
 // -----------------------------------------------------------------------------
 
-bool relayStatus(unsigned char id) {
+bool relayStatus(
+    const uint8_t id
+) {
     // Check relay ID
     if (id >= _relays.size()) {
         return false;
@@ -1228,7 +1254,7 @@ void relaySetup() {
     #if BUTTON_SUPPORT
         #if RELAY1_BTN > 0
             buttonOnEventRegister(
-                [](unsigned int event) {
+                [](uint8_t event) {
                     if (event == RELAY_SWITCH_BTN_EVENT) {
                         relayToggle(0);
                     }
@@ -1239,7 +1265,7 @@ void relaySetup() {
 
         #if RELAY2_BTN > 0
             buttonOnEventRegister(
-                [](unsigned int event) {
+                [](uint8_t event) {
                     if (event == RELAY_SWITCH_BTN_EVENT) {
                         relayToggle(1);
                     }
@@ -1250,7 +1276,7 @@ void relaySetup() {
 
         #if RELAY3_BTN > 0
             buttonOnEventRegister(
-                [](unsigned int event) {
+                [](uint8_t event) {
                     if (event == RELAY_SWITCH_BTN_EVENT) {
                         relayToggle(2);
                     }
@@ -1261,7 +1287,7 @@ void relaySetup() {
 
         #if RELAY4_BTN > 0
             buttonOnEventRegister(
-                [](unsigned int event) {
+                [](uint8_t event) {
                     if (event == RELAY_SWITCH_BTN_EVENT) {
                         relayToggle(3);
                     }
@@ -1272,7 +1298,7 @@ void relaySetup() {
 
         #if RELAY5_BTN > 0
             buttonOnEventRegister(
-                [](unsigned int event) {
+                [](uint8_t event) {
                     if (event == RELAY_SWITCH_BTN_EVENT) {
                         relayToggle(4);
                     }
@@ -1283,7 +1309,7 @@ void relaySetup() {
 
         #if RELAY6_BTN > 0
             buttonOnEventRegister(
-                [](unsigned int event) {
+                [](uint8_t event) {
                     if (event == RELAY_SWITCH_BTN_EVENT) {
                         relayToggle(5);
                     }
@@ -1294,7 +1320,7 @@ void relaySetup() {
 
         #if RELAY7_BTN > 0
             buttonOnEventRegister(
-                [](unsigned int event) {
+                [](uint8_t event) {
                     if (event == RELAY_SWITCH_BTN_EVENT) {
                         relayToggle(6);
                     }
@@ -1305,7 +1331,7 @@ void relaySetup() {
 
         #if RELAY8_BTN > 0
             buttonOnEventRegister(
-                [](unsigned int event) {
+                [](uint8_t event) {
                     if (event == RELAY_SWITCH_BTN_EVENT) {
                         relayToggle(7);
                     }
@@ -1318,7 +1344,7 @@ void relaySetup() {
     // Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
     // No delay_on or off for these devices to easily allow having more than
     // 8 channels. This behaviour will be recovered with v2.
-    for (unsigned int i=0; i < DUMMY_RELAY_COUNT; i++) {
+    for (uint8_t i = 0; i < DUMMY_RELAY_COUNT; i++) {
         _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0});
     }
 

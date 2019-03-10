@@ -9,9 +9,9 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #if LED_SUPPORT
 
 typedef struct {
-    unsigned int pin;
+    uint8_t pin;
     bool reverse;
-    unsigned int mode;
+    uint8_t mode;
 } led_t;
 
 std::vector<led_t> _leds;
@@ -28,7 +28,7 @@ std::vector<led_t> _leds;
  * Get status of given LED
  */
 bool _ledStatus(
-    unsigned int id
+    const uint8_t id
 ) {
     if (id >= ledCount()) {
         return false;
@@ -45,8 +45,8 @@ bool _ledStatus(
  * Set status of given LED
  */
 bool _ledStatus(
-    unsigned int id,
-    bool status
+    const uint8_t id,
+    const bool status
 ) {
     if (id >=ledCount()) {
         return false;
@@ -63,7 +63,7 @@ bool _ledStatus(
  * Toggle status of given LED
  */
 bool _ledToggle(
-    unsigned int id
+    const uint8_t id
 ) {
     if (id >= ledCount()) {
         return false;
@@ -77,8 +77,8 @@ bool _ledToggle(
 /**
  * Get mode of given LED
  */
-unsigned int _ledMode(
-    unsigned int id
+uint8_t _ledMode(
+    const uint8_t id
 ) {
     if (id >= ledCount()) {
         return false;
@@ -93,8 +93,8 @@ unsigned int _ledMode(
  * Set mode of given LED
  */
 void _ledMode(
-    unsigned int id,
-    unsigned int mode
+    const uint8_t id,
+    const uint8_t mode
 ) {
     if (id >= ledCount()) {
         return;
@@ -106,15 +106,15 @@ void _ledMode(
 // -----------------------------------------------------------------------------
 
 void _ledBlink(
-    unsigned int id,
-    unsigned long delayOff,
-    unsigned long delayOn
+    const uint8_t id,
+    const uint32_t delayOff,
+    const uint32_t delayOn
 ) {
     if (id >= ledCount()) {
         return;
     }
 
-    static unsigned long next = millis();
+    static uint32_t next = millis();
 
     if (next < millis()) {
         next += (_ledToggle(id) ? delayOn : delayOff);
@@ -127,7 +127,7 @@ void _ledBlink(
  * Initialize all configured LEDs
  */
 void _ledInitialize() {
-    for (unsigned int i = 0; i < ledCount(); i++) {
+    for (uint8_t i = 0; i < ledCount(); i++) {
         _ledMode(i, getSetting("ledMode", i, _ledMode(i)).toInt());
     }
 }
@@ -170,8 +170,7 @@ void _ledReportChannelConfigurationSchema(
 
 // -----------------------------------------------------------------------------
 
-String _ledReportChannelConfigurationSchema()
-{
+String _ledReportChannelConfigurationSchema() {
     DynamicJsonBuffer jsonBuffer;
     JsonArray& schema = jsonBuffer.createArray();
 
@@ -187,7 +186,7 @@ String _ledReportChannelConfigurationSchema()
 // -----------------------------------------------------------------------------
 
 void _ledReportChannelConfiguration(
-    unsigned int id,
+    const uint8_t id,
     JsonObject& configuration
 ) {
     configuration["led_mode"] = _ledMode(id);
@@ -196,7 +195,7 @@ void _ledReportChannelConfiguration(
 // -----------------------------------------------------------------------------
 
 String _ledReportChannelConfiguration(
-    unsigned int id
+    const uint8_t id
 ) {
     DynamicJsonBuffer jsonBuffer;
     JsonObject& configuration = jsonBuffer.createObject();
@@ -214,13 +213,13 @@ String _ledReportChannelConfiguration(
 
 // Update module channel configuration via WS or MQTT etc.
 void _ledConfigureChannel(
-    unsigned int id,
+    const uint8_t id,
     JsonObject& configuration
 ) {
     if (configuration.containsKey("led_mode"))  {
-        setSetting("ledMode", id, configuration["led_mode"].as<unsigned int>());
+        setSetting("ledMode", id, configuration["led_mode"].as<uint8_t>());
 
-        _ledMode(id, configuration["led_mode"].as<unsigned int>());
+        _ledMode(id, configuration["led_mode"].as<uint8_t>());
     }
 }
 
@@ -254,7 +253,7 @@ void _ledConfigureChannel(
             FASTYBIRD_LED_PAYLOAD_TOGGLE
         });
 
-        property.payloadCallback = ([](unsigned int id, const char * payload) {
+        property.payloadCallback = ([](uint8_t id, const char * payload) {
             // Action to perform
             if (strcmp(payload, FASTYBIRD_LED_PAYLOAD_TOGGLE) == 0) {
                 _ledToggle(id);
@@ -283,20 +282,20 @@ void _ledConfigureChannel(
 
         channel.configurationSchema = _ledReportChannelConfigurationSchema();
 
-        channel.configureCallback = ([](unsigned int id, JsonObject& configuration){
+        channel.configureCallback = ([](uint8_t id, JsonObject& configuration){
             _ledConfigureChannel(id, configuration);
 
             fastybirdReportChannelConfiguration(
-                _ledFastybirdGetChannelStructure(),
-                _ledReportChannelConfiguration(id),
-                id
+                _led_fastybird_channel_index,
+                id,
+                _ledReportChannelConfiguration(id)
             );
 
             DEBUG_MSG(PSTR("[LED] Configuration changes were saved\n"));
         });
 
         #if DIRECT_CONTROL_SUPPORT
-            channel.configureDirectControlsCallback = ([](unsigned int id, JsonArray& configuration){
+            channel.configureDirectControlsCallback = ([](uint8_t id, JsonArray& configuration){
                 directControlConfigureChannelConfiguration(id, FASTYBIRD_CHANNEL_TYPE_LED, configuration);
 
                 String output;
@@ -309,9 +308,9 @@ void _ledConfigureChannel(
                 direct_controls.printTo(output);
 
                 fastybirdReportChannelDirectControl(
-                    _ledFastybirdGetChannelStructure(),
-                    output,
-                    id
+                    _led_fastybird_channel_index,
+                    id,
+                    output
                 );
 
                 DEBUG_MSG(PSTR("[LED] Direct controls configuration changes were saved\n"));
@@ -324,12 +323,12 @@ void _ledConfigureChannel(
 // -----------------------------------------------------------------------------
 
     bool _ledFastybirdReportChannelsConfiguration() {
-        for (unsigned int i = 0; i < ledCount(); i++) {
+        for (uint8_t i = 0; i < ledCount(); i++) {
             if (
                 !fastybirdReportChannelConfiguration(
-                    _ledFastybirdGetChannelStructure(),
-                    _ledReportChannelConfiguration(i),
-                    i
+                    _led_fastybird_channel_index,
+                    i,
+                    _ledReportChannelConfiguration(i)
                 )
             ) {
                 return false;
@@ -346,7 +345,7 @@ void _ledConfigureChannel(
             String output;
             DynamicJsonBuffer jsonBuffer;
 
-            for (unsigned int i = 0; i < ledCount(); i++) {
+            for (uint8_t i = 0; i < ledCount(); i++) {
                 JsonArray& direct_controls = jsonBuffer.createArray();
 
                 directControlReportChannelConfiguration(i, FASTYBIRD_CHANNEL_TYPE_LED, direct_controls);
@@ -355,9 +354,9 @@ void _ledConfigureChannel(
 
                 if (
                     !fastybirdReportChannelDirectControl(
-                        _ledFastybirdGetChannelStructure(),
-                        output,
-                        i
+                        _led_fastybird_channel_index,
+                        i,
+                        output
                     )
                 ) {
                     return false;
@@ -400,7 +399,7 @@ void _ledConfigureChannel(
 
         JsonArray& channels_configuration_values = channels_configuration.createNestedArray("values");
 
-        for (unsigned int i = 0; i < ledCount(); i++) {
+        for (uint8_t i = 0; i < ledCount(); i++) {
             JsonObject& channel_configuration_values = channels_configuration_values.createNestedObject();
 
             _ledReportChannelConfiguration(i, channel_configuration_values);
@@ -412,7 +411,7 @@ void _ledConfigureChannel(
         // Channels statuses
         JsonArray& channels_statuses = data.createNestedArray("channels");
 
-        for (unsigned int i = 0; i < ledCount(); i++) {
+        for (uint8_t i = 0; i < ledCount(); i++) {
             channels_statuses.add(_ledStatus(i));
         }
     }
@@ -421,7 +420,7 @@ void _ledConfigureChannel(
 
     // WS client requested configuration update
     void _ledWSOnConfigure(
-        uint32_t clientId,
+        const uint32_t clientId,
         JsonObject& root
     ) {
         if (ledCount() == 0) {
@@ -435,7 +434,7 @@ void _ledConfigureChannel(
                 JsonObject& configuration = root["config"];
 
                 if (configuration.containsKey("channels")) {
-                    for (unsigned int i = 0; i < ledCount(); i++) {
+                    for (uint8_t i = 0; i < ledCount(); i++) {
                         _ledConfigureChannel(i, configuration["channels"][i]);
                     }
                 }
@@ -454,7 +453,7 @@ void _ledConfigureChannel(
 // MODULE API
 // -----------------------------------------------------------------------------
 
-unsigned int ledCount() {
+uint8_t ledCount() {
     return _leds.size();
 }
 
@@ -495,7 +494,7 @@ void ledSetup() {
         _leds.push_back((led_t) { LED8_PIN, LED8_PIN_INVERSE, LED8_MODE });
     #endif
 
-    for (unsigned int i = 0; i < ledCount(); i++) {
+    for (uint8_t i = 0; i < ledCount(); i++) {
         pinMode(_leds[i].pin, OUTPUT);
 
         _ledStatus(i, false);
@@ -530,7 +529,7 @@ void ledSetup() {
 // -----------------------------------------------------------------------------
 
 void ledLoop() {
-    for (unsigned int i = 0; i < ledCount(); i++) {
+    for (uint8_t i = 0; i < ledCount(); i++) {
         #if WIFI_SUPPORT
             if (_ledMode(i) == LED_MODE_WIFI) {
                 if (wifiState() & WIFI_STATE_STA) {

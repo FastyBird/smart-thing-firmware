@@ -83,6 +83,7 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
 
     // write stack trace to EEPROM and avoid overwriting settings
     int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
+
     for (uint32_t i = stack_start; i < stack_end; i++) {
         if (current_address >= settings_start) break;
         byte* byteValue = (byte*) i;
@@ -98,6 +99,7 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
  */
 void crashClear() {
     uint32_t crash_time = 0xFFFFFFFF;
+
     EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
     EEPROMr.commit();
 }
@@ -106,9 +108,10 @@ void crashClear() {
  * Print out crash information that has been previusly saved in EEPROM
  */
 void crashDump() {
-
     uint32_t crash_time;
+
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
+
     if ((crash_time == 0) || (crash_time == 0xFFFFFFFF)) {
         DEBUG_MSG(PSTR("[DEBUG] No crash info\n"));
         return;
@@ -119,6 +122,7 @@ void crashDump() {
     DEBUG_MSG(PSTR("[DEBUG] Exception cause: %u\n"), EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
 
     uint32_t epc1, epc2, epc3, excvaddr, depc;
+
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, epc1);
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, epc2);
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, epc3);
@@ -129,6 +133,7 @@ void crashDump() {
     DEBUG_MSG(PSTR("[DEBUG] excvaddr=0x%08x depc=0x%08x\n"), excvaddr, depc);
 
     uint32_t stack_start, stack_end;
+
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
     EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
 
@@ -143,15 +148,17 @@ void crashDump() {
 
     for (int16_t i = 0; i < stack_len; i += 0x10) {
         DEBUG_MSG(PSTR("%08x: "), stack_start + i);
+
         for (byte j = 0; j < 4; j++) {
             EEPROMr.get(current_address, stack_trace);
             DEBUG_MSG(PSTR("%08x "), stack_trace);
             current_address += 4;
         }
+
         DEBUG_MSG(PSTR("\n[DEBUG] "));
     }
-    DEBUG_MSG(PSTR("<<<stack<<<\n"));
 
+    DEBUG_MSG(PSTR("<<<stack<<<\n"));
 }
 
 #endif // DEBUG_SUPPORT

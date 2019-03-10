@@ -26,9 +26,9 @@ std::vector<button_t> _buttons;
 // -----------------------------------------------------------------------------
 
 uint8_t _buttonMapEvent(
-    uint8_t event,
-    uint8_t count,
-    uint16_t length
+    const uint8_t event,
+    const uint8_t count,
+    const uint16_t length
 ) {
     if (event == EVENT_PRESSED) {
         return BUTTON_EVENT_PRESSED;
@@ -97,7 +97,7 @@ void _buttonUpdateConfiguration(
     JsonObject& configuration
 ) {
     if (configuration.containsKey("btn_delay"))  {
-        setSetting("btnDelay", configuration["btn_delay"].as<unsigned int>());
+        setSetting("btnDelay", configuration["btn_delay"].as<uint8_t>());
     }
 }
 
@@ -201,7 +201,7 @@ void _buttonUpdateConfiguration(
 
     // WS client requested configuration update
     void _buttonWSOnConfigure(
-        uint32_t clientId, 
+        const uint32_t clientId, 
         JsonObject& module
     ) {
         if (module.containsKey("module") && module["module"] == "btn") {
@@ -226,15 +226,15 @@ void _buttonUpdateConfiguration(
 // -----------------------------------------------------------------------------
 
 void _buttonEvent(
-    unsigned int id,
-    unsigned int event
+    const uint8_t id,
+    const uint8_t event
 ) {
     if (id >= _buttons.size() || event == 0) {
         return;
     }
 
     // Button event was fired
-    for (unsigned int i = 0; i < _buttons[id].callbacks.size(); i++) {
+    for (uint8_t i = 0; i < _buttons[id].callbacks.size(); i++) {
         _buttons[id].callbacks[i](event);
     }
 
@@ -256,7 +256,7 @@ void _buttonEvent(
 
 void buttonOnEventRegister(
     button_on_event_callback_f callback,
-    unsigned int id
+    const uint8_t id
 ) {
     if (id >= buttonCount()) {
         return;
@@ -276,7 +276,7 @@ int buttonCount() {
 // -----------------------------------------------------------------------------
 
 void buttonSetup() {
-    unsigned long btn_delay = BUTTON_DBLCLICK_DELAY;
+    uint32_t btn_delay = BUTTON_DBLCLICK_DELAY;
 
     #if BUTTON1_PIN != GPIO_NONE
     {
@@ -350,12 +350,12 @@ void buttonSetup() {
 // -----------------------------------------------------------------------------
 
 void buttonLoop() {
-    for (unsigned int i = 0; i < _buttons.size(); i++) {
-        if (unsigned int event = _buttons[i].button->loop()) {
-            unsigned int count = _buttons[i].button->getEventCount();
-            unsigned long length = _buttons[i].button->getEventLength();
+    for (uint8_t i = 0; i < _buttons.size(); i++) {
+        if (uint8_t event = _buttons[i].button->loop()) {
+            uint8_t count = _buttons[i].button->getEventCount();
+            uint32_t length = _buttons[i].button->getEventLength();
 
-            unsigned int mapped = _buttonMapEvent(event, count, length);
+            uint8_t mapped = _buttonMapEvent(event, count, length);
 
             _buttonEvent(i, mapped);
         }
