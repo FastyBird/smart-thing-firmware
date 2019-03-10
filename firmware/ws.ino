@@ -27,7 +27,7 @@ std::vector<ws_on_configure_callback_f> _ws_on_configure_callbacks;
 
 typedef struct {
     IPAddress ip;
-    unsigned long timestamp = 0;
+    uint32_t timestamp = 0;
 } ws_ticket_t;
 
 ws_ticket_t _ticket[WS_BUFFER_SIZE];
@@ -36,7 +36,9 @@ ws_ticket_t _ticket[WS_BUFFER_SIZE];
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-void _onAuth(AsyncWebServerRequest * request) {
+void _onAuth(
+    AsyncWebServerRequest * request
+) {
     webLog(request);
 
     if (!webAuthenticate(request)) {
@@ -45,8 +47,8 @@ void _onAuth(AsyncWebServerRequest * request) {
 
     IPAddress ip = request->client()->remoteIP();
 
-    unsigned long now = millis();
-    unsigned short index;
+    uint32_t now = millis();
+    uint16_t index;
 
     for (index = 0; index < WS_BUFFER_SIZE; index++) {
         if (_ticket[index].ip == ip) {
@@ -75,11 +77,13 @@ void _onAuth(AsyncWebServerRequest * request) {
 
 // -----------------------------------------------------------------------------
 
-bool _wsAuth(AsyncWebSocketClient * client) {
+bool _wsAuth(
+    AsyncWebSocketClient * client
+) {
     IPAddress ip = client->remoteIP();
 
-    unsigned long now = millis();
-    unsigned short index = 0;
+    uint32_t now = millis();
+    uint16_t index = 0;
 
     for (index = 0; index < WS_BUFFER_SIZE; index++) {
         if (_ticket[index].ip == ip && (now - _ticket[index].timestamp < WS_TIMEOUT)) {
@@ -100,7 +104,11 @@ bool _wsAuth(AsyncWebSocketClient * client) {
 
 // -----------------------------------------------------------------------------
 
-void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
+void _wsParse(
+    AsyncWebSocketClient * client,
+    uint8_t * payload,
+    size_t length
+) {
     // Get client ID
     uint32_t client_id = client->id();
 
@@ -143,8 +151,8 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                     if (root["config"].is<JsonArray>()) {
                         DEBUG_MSG(PSTR("[WEBSOCKET] Parsing multi modules configuration\n"));
 
-                        for (unsigned int i = 0; i < root["config"].size(); i++) {
-                            for (unsigned int j = 0; j < _ws_on_configure_callbacks.size(); j++) {
+                        for (uint8_t i = 0; i < root["config"].size(); i++) {
+                            for (uint8_t j = 0; j < _ws_on_configure_callbacks.size(); j++) {
                                 (_ws_on_configure_callbacks[j])(client_id, root["config"][i]);
                             }
                         }
@@ -153,7 +161,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                     } else {
                         DEBUG_MSG(PSTR("[WEBSOCKET] Parsing single module configuration\n"));
 
-                        for (unsigned int i = 0; i < _ws_on_configure_callbacks.size(); i++) {
+                        for (uint8_t i = 0; i < _ws_on_configure_callbacks.size(); i++) {
                             (_ws_on_configure_callbacks[i])(client_id, configuration);
                         }
                     }
@@ -174,7 +182,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
                 if (data.success()) {
                     // Callbacks
-                    for (unsigned int i = 0; i < _ws_on_action_callbacks.size(); i++) {
+                    for (uint8_t i = 0; i < _ws_on_action_callbacks.size(); i++) {
                         (_ws_on_action_callbacks[i])(client_id, action, data);
                     }
                 }
@@ -183,7 +191,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
                 JsonObject& data = jsonBuffer.createObject();
 
                 // Callbacks
-                for (unsigned int i = 0; i < _ws_on_action_callbacks.size(); i++) {
+                for (uint8_t i = 0; i < _ws_on_action_callbacks.size(); i++) {
                     (_ws_on_action_callbacks[i])(client_id, action, data);
                 }
             }
@@ -198,7 +206,7 @@ void _wsEvent(
     AsyncWebSocketClient * client,
     AwsEventType type,
     void * arg,
-    uint8_t *data,
+    uint8_t * data,
     size_t len
 ) {
     if (type == WS_EVT_CONNECT) {
@@ -256,8 +264,10 @@ void _wsEvent(
 // MODULE API
 // -----------------------------------------------------------------------------
 
-void wsSendStatusToClients(uint32_t client_id) {
-    for (unsigned int i = 0; i < _ws_on_connect_callbacks.size(); i++) {
+void wsSendStatusToClients(
+    uint32_t clientId
+) {
+    for (uint8_t i = 0; i < _ws_on_connect_callbacks.size(); i++) {
         wsSend(_ws_on_connect_callbacks[i]);
     }
 }
@@ -265,7 +275,7 @@ void wsSendStatusToClients(uint32_t client_id) {
 // -----------------------------------------------------------------------------
 
 void wsSendStatusToClients() {
-    for (unsigned int i = 0; i < _ws_on_connect_callbacks.size(); i++) {
+    for (uint8_t i = 0; i < _ws_on_connect_callbacks.size(); i++) {
         wsSend(_ws_on_connect_callbacks[i]);
     }
 }
@@ -284,31 +294,41 @@ bool wsConnected() {
 
 // -----------------------------------------------------------------------------
 
-void wsOnConnectRegister(ws_on_connect_callback_f callback) {
+void wsOnConnectRegister(
+    ws_on_connect_callback_f callback
+) {
     _ws_on_connect_callbacks.push_back(callback);
 }
 
 // -----------------------------------------------------------------------------
 
-void wsOnUpdateRegister(ws_on_update_callback_f callback) {
+void wsOnUpdateRegister(
+    ws_on_update_callback_f callback
+) {
     _ws_on_update_callbacks.push_back(callback);
 }
 
 // -----------------------------------------------------------------------------
 
-void wsOnConfigureRegister(ws_on_configure_callback_f callback) {
+void wsOnConfigureRegister(
+    ws_on_configure_callback_f callback
+) {
     _ws_on_configure_callbacks.push_back(callback);
 }
 
 // -----------------------------------------------------------------------------
 
-void wsOnActionRegister(ws_on_action_callback_f callback) {
+void wsOnActionRegister(
+    ws_on_action_callback_f callback
+) {
     _ws_on_action_callbacks.push_back(callback);
 }
 
 // -----------------------------------------------------------------------------
 
-void wsSend(ws_on_connect_callback_f callback) {
+void wsSend(
+    ws_on_connect_callback_f callback
+) {
     if (wsConnected()) {
         DynamicJsonBuffer jsonBuffer;
 
@@ -328,7 +348,9 @@ void wsSend(ws_on_connect_callback_f callback) {
 
 // -----------------------------------------------------------------------------
 
-void wsSend(const char * payload) {
+void wsSend(
+    const char * payload
+) {
     if (wsConnected()) {
         _ws_client.textAll(payload);
     }
@@ -336,7 +358,9 @@ void wsSend(const char * payload) {
 
 // -----------------------------------------------------------------------------
 
-void wsSend(JsonObject& payload) {
+void wsSend(
+    JsonObject& payload
+) {
     if (wsConnected() && payload.size() > 0) {
         String output;
 
@@ -348,7 +372,9 @@ void wsSend(JsonObject& payload) {
 
 // -----------------------------------------------------------------------------
 
-void wsSend_P(PGM_P payload) {
+void wsSend_P(
+    PGM_P payload
+) {
     if (wsConnected()) {
         char buffer[strlen_P(payload)];
 
@@ -358,7 +384,10 @@ void wsSend_P(PGM_P payload) {
     }
 }
 
-void wsSend(uint32_t client_id, ws_on_connect_callback_f callback) {
+void wsSend(
+    uint32_t clientId,
+    ws_on_connect_callback_f callback
+) {
     DynamicJsonBuffer jsonBuffer;
 
     JsonObject& root = jsonBuffer.createObject();
@@ -371,23 +400,29 @@ void wsSend(uint32_t client_id, ws_on_connect_callback_f callback) {
 
     jsonBuffer.clear();
 
-    _ws_client.text(client_id, (char *) output.c_str());
+    _ws_client.text(clientId, (char *) output.c_str());
 }
 
 // -----------------------------------------------------------------------------
 
-void wsSend(uint32_t client_id, const char * payload) {
-    _ws_client.text(client_id, payload);
+void wsSend(
+    uint32_t clientId,
+    const char * payload
+) {
+    _ws_client.text(clientId, payload);
 }
 
 // -----------------------------------------------------------------------------
 
-void wsSend_P(uint32_t client_id, PGM_P payload) {
+void wsSend_P(
+    uint32_t clientId,
+    PGM_P payload
+) {
     char buffer[strlen_P(payload)];
 
     strcpy_P(buffer, payload);
 
-    wsSend(client_id, buffer);
+    wsSend(clientId, buffer);
 }
 
 // -----------------------------------------------------------------------------
@@ -413,7 +448,7 @@ void wsSetup() {
 // -----------------------------------------------------------------------------
 
 void wsLoop() {
-    static unsigned long last = 0;
+    static uint32_t last = 0;
 
     if (!wsConnected()) {
         return;
@@ -422,7 +457,7 @@ void wsLoop() {
     if (millis() - last > WS_UPDATE_INTERVAL) {
         last = millis();
 
-        for (unsigned int i = 0; i < _ws_on_update_callbacks.size(); i++) {
+        for (uint8_t i = 0; i < _ws_on_update_callbacks.size(); i++) {
             wsSend(_ws_on_update_callbacks[i]);
         }
     }
