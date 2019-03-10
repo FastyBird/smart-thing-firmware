@@ -83,9 +83,6 @@ const char firmware_modules[] PROGMEM =
     #if SENSOR_SUPPORT
         "SENSOR "
     #endif
-    #if SPIFFS_SUPPORT
-        "SPIFFS "
-    #endif
     #if WIFI_SUPPORT
         "WIFI "
     #endif

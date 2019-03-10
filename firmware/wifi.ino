@@ -31,11 +31,13 @@ void _wifiCheckAP() {
 
 void _wifiConfigure() {
     jw.setHostname(getIdentifier().c_str());
+
     #if USE_PASSWORD
         jw.setSoftAP(getIdentifier().c_str(), getAdminPass().c_str());
     #else
         jw.setSoftAP(getIdentifier().c_str());
     #endif
+
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
 
     wifiReconnectCheck();
@@ -83,10 +85,12 @@ void _wifiConfigure() {
 
 // -----------------------------------------------------------------------------
 
-void _wifiScan(uint32_t clientId = 0) {
+void _wifiScan(
+    const uint32_t clientId = 0
+) {
     DEBUG_MSG(PSTR("[WIFI] Start scanning\n"));
 
-    #if WEB_SUPPORT
+    #if WEB_SUPPORT && WS_SUPPORT
         DynamicJsonBuffer jsonBuffer;
 
         JsonObject& output = jsonBuffer.createObject();
@@ -107,14 +111,14 @@ void _wifiScan(uint32_t clientId = 0) {
     if (result == WIFI_SCAN_FAILED) {
         DEBUG_MSG(PSTR("[WIFI] Scan failed\n"));
 
-        #if WEB_SUPPORT
+        #if WEB_SUPPORT && WS_SUPPORT
             scanResult["result"] = String("Failed scan");
         #endif
 
     } else if (result == 0) {
         DEBUG_MSG(PSTR("[WIFI] No networks found\n"));
 
-        #if WEB_SUPPORT
+        #if WEB_SUPPORT && WS_SUPPORT
             scanResult["result"] = String("No networks found");
         #endif
 
@@ -180,7 +184,9 @@ void _wifiScan(uint32_t clientId = 0) {
 
 // -----------------------------------------------------------------------------
 
-bool _wifiClean(uint8_t num) {
+bool _wifiClean(
+    const uint8_t num
+) {
     bool changed = false;
     int i = 0;
 
@@ -249,7 +255,10 @@ void _wifiInject() {
 // -----------------------------------------------------------------------------
 
 #if DEBUG_SUPPORT
-    void _wifiDebugCallback(justwifi_messages_t code, char * parameter) {
+    void _wifiDebugCallback(
+        justwifi_messages_t code,
+        char * parameter
+    ) {
         if (code == MESSAGE_SCANNING) {
             DEBUG_MSG(PSTR("[WIFI] Scanning\n"));
         }
@@ -306,9 +315,11 @@ void _wifiInject() {
 
 // -----------------------------------------------------------------------------
 
-#if WEB_SUPPORT
+#if WEB_SUPPORT && WS_SUPPORT
     // WS client is connected - send info about module
-    void _wifiWSOnClientConnect(JsonObject& root) {
+    void _wifiWSOnClientConnect(
+        JsonObject& root
+    ) {
         JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
         JsonObject& module = modules.createNestedObject();
         
@@ -349,7 +360,7 @@ void _wifiInject() {
 
     // WS client send configuration request
     void _wifiWSOnConfigure(
-        uint32_t clientId,
+        const uint32_t clientId,
         JsonObject& module
     ) {
         if (module.containsKey("module") && module["module"] == "wifi") {
@@ -400,7 +411,7 @@ void _wifiInject() {
 
     // WS client send module action request
     void _wifiWSOnAction(
-        uint32_t clientId,
+        const uint32_t clientId,
         const char * action,
         JsonObject& data
     ) {
@@ -446,7 +457,9 @@ void wifiDisconnect() {
 
 // -----------------------------------------------------------------------------
 
-void wifiStartAP(bool only) {
+void wifiStartAP(
+    const bool only
+) {
     if (only) {
         jw.enableSTA(false);
         jw.disconnect();
@@ -535,7 +548,9 @@ uint8_t wifiState() {
 
 // -----------------------------------------------------------------------------
 
-void wifiRegister(wifi_callback_f callback) {
+void wifiRegister(
+    wifi_callback_f callback
+) {
     jw.subscribe(callback);
 }
 
@@ -553,7 +568,7 @@ void wifiSetup() {
         wifiRegister(_wifiDebugCallback);
     #endif
 
-    #if WS_SUPPORT
+    #if WEB_SUPPORT && WS_SUPPORT
         wsOnConnectRegister(_wifiWSOnClientConnect);
         wsOnConfigureRegister(_wifiWSOnConfigure);
         wsOnActionRegister(_wifiWSOnAction);

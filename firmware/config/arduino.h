@@ -135,7 +135,6 @@
 //#define SCHEDULER_SUPPORT      0
 //#define DIRECT_CONTROL_SUPPORT 0
 //#define SENSOR_SUPPORT         1
-//#define SPIFFS_SUPPORT         1
 //#define WIFI_SUPPORT           1
 //#define WEB_SUPPORT            0
 //#define WS_SUPPORT             0

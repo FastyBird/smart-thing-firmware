@@ -24,7 +24,7 @@ bool _stability_system_stable = true;
 // An unstable system will only have serial access, WiFi in AP mode and OTA
 
 void stabiltyCheck(
-    bool stable
+    const bool stable
 ) {
     uint8_t value = EEPROMr.read(EEPROM_CRASH_COUNTER);
 

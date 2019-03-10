@@ -6,7 +6,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
-#if WEB_SUPPORT
+#if WEB_SUPPORT && WS_SUPPORT
 
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -228,7 +228,7 @@ void _wsEvent(
             server->url()
         );
 
-        wsSendStatusToClients(client->id());
+        wsSendStatusToClient(client->id());
 
         client->_tempObject = new WebSocketIncommingBuffer(&_wsParse, true);
 
@@ -264,11 +264,11 @@ void _wsEvent(
 // MODULE API
 // -----------------------------------------------------------------------------
 
-void wsSendStatusToClients(
+void wsSendStatusToClient(
     uint32_t clientId
 ) {
     for (uint8_t i = 0; i < _ws_on_connect_callbacks.size(); i++) {
-        wsSend(_ws_on_connect_callbacks[i]);
+        wsSend(clientId, _ws_on_connect_callbacks[i]);
     }
 }
 

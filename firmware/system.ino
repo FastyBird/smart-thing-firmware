@@ -8,10 +8,10 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #include <EEPROM_Rotate.h>
 
-unsigned long _system_loop_delay = 0;
+uint32_t _system_loop_delay = 0;
 
 // Calculated load average 0 to 100;
-unsigned short int _system_load_average = 100;
+uint16_t _system_load_average = 100;
 
 extern "C" uint32_t _SPIFFS_start;
 extern "C" uint32_t _SPIFFS_end;
@@ -24,27 +24,27 @@ std::vector<system_on_heartbeat_callback_f> _system_on_heartbeat_callbacks;
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-unsigned int _systemBytes2sectors(
+uint8_t _systemBytes2sectors(
     size_t size
 ) {
-    return (int) (size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
+    return (uint8_t) (size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
 }
 
 // -----------------------------------------------------------------------------
 
-unsigned long _systemOTASpace() {
+uint32_t _systemOTASpace() {
     return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
 }
 
 // -----------------------------------------------------------------------------
 
-unsigned long _systemFilesystemSpace() {
+uint32_t _systemFilesystemSpace() {
     return ((uint32_t)&_SPIFFS_end - (uint32_t)&_SPIFFS_start);
 }
 
 // -----------------------------------------------------------------------------
 
-unsigned long _systemEepromSpace() {
+uint32_t _systemEepromSpace() {
     return EEPROMr.reserved() * SPI_FLASH_SEC_SIZE;
 }
 
@@ -52,10 +52,10 @@ unsigned long _systemEepromSpace() {
 
 void _systemPrintMemoryLayoutLine(
     const char * name,
-    unsigned long bytes,
+    uint32_t bytes,
     bool reset
 ) {
-    static unsigned long index = 0;
+    static uint32_t index = 0;
 
     if (reset) {
         index = 0;
@@ -65,7 +65,7 @@ void _systemPrintMemoryLayoutLine(
         return;
     }
 
-    unsigned int _sectors = _systemBytes2sectors(bytes);
+    uint8_t _sectors = _systemBytes2sectors(bytes);
 
     DEBUG_MSG(PSTR("[SYSTEM] %-20s: %8lu bytes / %4d sectors (%4d to %4d)\n"), name, bytes, _sectors, index, index + _sectors - 1);
 
@@ -76,7 +76,7 @@ void _systemPrintMemoryLayoutLine(
 
 void _systemPrintMemoryLayoutLine(
     const char * name,
-    unsigned long bytes
+    uint32_t bytes
 ) {
     _systemPrintMemoryLayoutLine(name, bytes, false);
 }
@@ -85,7 +85,7 @@ void _systemPrintMemoryLayoutLine(
 
 void _systemHeartbeat() {
     // Callbacks
-    for (unsigned int i = 0; i < _system_on_heartbeat_callbacks.size(); i++) {
+    for (uint8_t i = 0; i < _system_on_heartbeat_callbacks.size(); i++) {
         (_system_on_heartbeat_callbacks[i])();
     }
 }
@@ -93,8 +93,8 @@ void _systemHeartbeat() {
 // -----------------------------------------------------------------------------
 
 void _systemInfoOnHeartbeat() {
-    unsigned long uptime_seconds = getUptime();
-    unsigned int free_heap = getFreeHeap();
+    uint32_t uptime_seconds = getUptime();
+    uint8_t free_heap = getFreeHeap();
 
     DEBUG_MSG(PSTR("[SYSTEM] Uptime: %lu seconds\n"), uptime_seconds);
     DEBUG_MSG(PSTR("[SYSTEM] Free heap: %lu bytes\n"), free_heap);
@@ -292,7 +292,7 @@ void _systemInfo() {
     DEBUG_MSG(PSTR("[SYSTEM] Boot version: %d\n"), ESP.getBootVersion());
     DEBUG_MSG(PSTR("[SYSTEM] Boot mode: %d\n"), ESP.getBootMode());
 
-    unsigned int reason = resetReason();
+    uint8_t reason = resetReason();
 
     if (reason > 0) {
         char buffer[32];
@@ -346,7 +346,9 @@ void _systemInfo() {
 // MODULE API
 // -----------------------------------------------------------------------------
 
-void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback) {
+void systemOnHeartbeatRegister(
+    system_on_heartbeat_callback_f callback
+) {
     _system_on_heartbeat_callbacks.push_back(callback);
 }
 
@@ -376,13 +378,13 @@ void systemMemory(
 
 // -----------------------------------------------------------------------------
 
-unsigned long systemLoopDelay() {
+uint32_t systemLoopDelay() {
     return _system_loop_delay;
 }
 
 // -----------------------------------------------------------------------------
 
-unsigned long systemLoadAverage() {
+uint32_t systemLoadAverage() {
     return _system_load_average;
 }
 
@@ -414,7 +416,7 @@ void systemSetup() {
 
     #if BUTTON_SUPPORT && SYSTEM_RESET_BTN > 0
         buttonOnEventRegister(
-            [](unsigned int event) {
+            [](uint8_t event) {
                 if (event == SYSTEM_RESET_BTN_EVENT) {
                     deferredReset(100, CUSTOM_RESET_HARDWARE);
                 }
@@ -452,7 +454,7 @@ void systemLoop() {
             _systemHeartbeat();
         }
     #elif HEARTBEAT_MODE == HEARTBEAT_REPEAT
-        static unsigned long last_hbeat = 0;
+        static uint32_t last_hbeat = 0;
         if (_system_send_heartbeat || (last_hbeat == 0) || (millis() - last_hbeat > HEARTBEAT_INTERVAL)) {
             _system_send_heartbeat = false;
             last_hbeat = millis();
@@ -464,13 +466,13 @@ void systemLoop() {
     // Load Average calculation
     // -------------------------------------------------------------------------
 
-    static unsigned long last_loadcheck = 0;
-    static unsigned long load_counter_temp = 0;
+    static uint32_t last_loadcheck = 0;
+    static uint32_t load_counter_temp = 0;
     load_counter_temp++;
 
     if (millis() - last_loadcheck > LOADAVG_INTERVAL) {
-        static unsigned long load_counter = 0;
-        static unsigned long load_counter_max = 1;
+        static uint32_t load_counter = 0;
+        static uint32_t load_counter_max = 1;
 
         load_counter = load_counter_temp;
         load_counter_temp = 0;

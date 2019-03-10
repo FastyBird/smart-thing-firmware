@@ -100,7 +100,7 @@ void _onUpgradeData(
     AsyncWebServerRequest * request,
     String filename,
     size_t index,
-    uint8_t *data,
+    uint8_t * data,
     size_t len,
     bool final
 ) {
@@ -246,7 +246,9 @@ bool webAuthenticate(
 
 // -----------------------------------------------------------------------------
 
-void webOnRequestRegister(web_on_request_callback_f callback) {
+void webOnRequestRegister(
+    web_on_request_callback_f callback
+) {
     _web_on_request_callbacks.push_back(callback);
 }
 

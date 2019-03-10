@@ -57,18 +57,18 @@ String getCoreRevision() {
 // WTF
 // Calling ESP.getFreeHeap() is making the system crash on a specific
 // AiLight bulb, but anywhere else...
-unsigned int getFreeHeap() {
+uint8_t getFreeHeap() {
     if (getSetting("wtfHeap", 0).toInt() == 1) {
-        return 9999;
+        return (uint8_t) 9999;
     }
 
-    return ESP.getFreeHeap();
+    return (uint8_t) ESP.getFreeHeap();
 }
 
 // -----------------------------------------------------------------------------
 
-unsigned int getInitialFreeHeap() {
-    static unsigned int heap = 0;
+uint8_t getInitialFreeHeap() {
+    static uint8_t heap = 0;
 
     if (heap == 0) {
         heap = getFreeHeap();

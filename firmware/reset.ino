@@ -56,7 +56,7 @@ void reset() {
 // -----------------------------------------------------------------------------
 
 void deferredReset(
-    unsigned long delay,
+    uint32_t delay,
     uint8_t reason
 ) {
     _defer_reset.once_ms(delay, resetReason, reason);

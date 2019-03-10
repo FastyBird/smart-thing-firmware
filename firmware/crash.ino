@@ -61,6 +61,7 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
 
     // write crash time to EEPROM
     uint32_t crash_time = millis();
+
     EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
 
     // write reset info to EEPROM
@@ -85,8 +86,12 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
     int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
 
     for (uint32_t i = stack_start; i < stack_end; i++) {
-        if (current_address >= settings_start) break;
+        if (current_address >= settings_start) {
+            break;
+        }
+
         byte* byteValue = (byte*) i;
+
         EEPROMr.write(current_address++, *byteValue);
     }
 

@@ -89,7 +89,7 @@ void _mqttConnect() {
     }
 
     char * host = strdup(getSetting("mqttServer", MQTT_SERVER).c_str());
-    uint8_t port = getSetting("mqttPort", MQTT_PORT).toInt();
+    int port = getSetting("mqttPort", MQTT_PORT).toInt();
 
     if (_mqtt_user) {
         free(_mqtt_user);
@@ -519,19 +519,6 @@ void mqttOnDisconnectRegister(
     mqtt_on_disconnect_callback_f callback
 ) {
     _mqtt_on_disconnect_callbacks.push_back(callback);
-}
-
-// -----------------------------------------------------------------------------
-
-String buildBaseTopic() {
-    // Replace identifier
-    String _base_topic = MQTT_BASE_TOPIC;
-
-    if (!_base_topic.endsWith("/")) {
-        _base_topic = _base_topic + "/";
-    }
-
-    return _base_topic;
 }
 
 // -----------------------------------------------------------------------------

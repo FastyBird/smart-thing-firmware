@@ -1516,12 +1516,17 @@ void gatewayLoop() {
         }
     #endif
 
+    // Little delay before gateway start
+    if (millis() < NODES_GATEWAY_SEARCH_DELAY) {
+        return;
+    }
+
     _gatewayCheckPacketsDelays();
 
     // If some node is not initialized, get its address
     uint8_t node_to_initialize = _gatewayGetNodeAddressToInitialize();
 
-    if (millis() < NODES_GATEWAY_ADDRESSING_TIMEOUT) {
+    if ((millis() - NODES_GATEWAY_SEARCH_DELAY) < NODES_GATEWAY_ADDRESSING_TIMEOUT) {
         _gatewaySearchForNodes();
 
     // Check nodes presence in given interval
