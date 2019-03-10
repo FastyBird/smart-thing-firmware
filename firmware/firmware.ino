@@ -36,7 +36,7 @@ void firmwareRegisterReload(
 // -----------------------------------------------------------------------------
 
 void firmwareReload() {
-    for (unsigned int i = 0; i < _firmware_reload_callbacks.size(); i++) {
+    for (uint8_t i = 0; i < _firmware_reload_callbacks.size(); i++) {
         (_firmware_reload_callbacks[i])();
     }
 }
@@ -143,7 +143,7 @@ void setup() {
 
 void loop() {
     // Call registered loop callbacks
-    for (unsigned int i = 0; i < _firmware_loop_callbacks.size(); i++) {
+    for (uint8_t i = 0; i < _firmware_loop_callbacks.size(); i++) {
         (_firmware_loop_callbacks[i])();
     }
 }

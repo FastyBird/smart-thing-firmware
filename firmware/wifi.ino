@@ -53,7 +53,7 @@ void _wifiConfigure() {
     // Clean settings
     _wifiClean(WIFI_MAX_NETWORKS);
 
-    for (unsigned int i = 0; i < WIFI_MAX_NETWORKS; i++) {
+    for (uint8_t i = 0; i < WIFI_MAX_NETWORKS; i++) {
         if (getSetting("ssid", i, "").length() == 0) {
             break;
         }
@@ -102,7 +102,7 @@ void _wifiScan(uint32_t clientId = 0) {
         JsonArray& networks = scanResult.createNestedArray("networks");
     #endif
 
-    unsigned int result = WiFi.scanNetworks();
+    uint8_t result = WiFi.scanNetworks();
 
     if (result == WIFI_SCAN_FAILED) {
         DEBUG_MSG(PSTR("[WIFI] Scan failed\n"));
@@ -122,7 +122,7 @@ void _wifiScan(uint32_t clientId = 0) {
         DEBUG_MSG(PSTR("[WIFI] %d networks found:\n"), result);
 
         // Populate defined networks with scan data
-        for (unsigned int i = 0; i < result; ++i) {
+        for (uint8_t i = 0; i < result; ++i) {
             String ssid_scan;
             int32_t rssi_scan;
             uint8_t sec_scan;
@@ -180,7 +180,7 @@ void _wifiScan(uint32_t clientId = 0) {
 
 // -----------------------------------------------------------------------------
 
-bool _wifiClean(unsigned int num) {
+bool _wifiClean(uint8_t num) {
     bool changed = false;
     int i = 0;
 
@@ -224,23 +224,23 @@ bool _wifiClean(unsigned int num) {
 // Inject hardcoded networks
 void _wifiInject() {
     if (strlen(WIFI1_SSID)) {
-        if (!hasSetting("ssid", 0)) {
-            setSetting("ssid", 0, WIFI1_SSID);
-            setSetting("pass", 0, WIFI1_PASS);
-            setSetting("ip", 0, WIFI1_IP);
-            setSetting("gw", 0, WIFI1_GW);
-            setSetting("mask", 0, WIFI1_MASK);
-            setSetting("dns", 0, WIFI1_DNS);
+        if (!hasSetting("ssid", (uint8_t) 0)) {
+            setSetting("ssid", (uint8_t) 0, WIFI1_SSID);
+            setSetting("pass", (uint8_t) 0, WIFI1_PASS);
+            setSetting("ip", (uint8_t) 0, WIFI1_IP);
+            setSetting("gw", (uint8_t) 0, WIFI1_GW);
+            setSetting("mask", (uint8_t) 0, WIFI1_MASK);
+            setSetting("dns", (uint8_t) 0, WIFI1_DNS);
         }
 
         if (strlen(WIFI2_SSID)) {
-            if (!hasSetting("ssid", 1)) {
-                setSetting("ssid", 1, WIFI2_SSID);
-                setSetting("pass", 1, WIFI2_PASS);
-                setSetting("ip", 1, WIFI2_IP);
-                setSetting("gw", 1, WIFI2_GW);
-                setSetting("mask", 1, WIFI2_MASK);
-                setSetting("dns", 1, WIFI2_DNS);
+            if (!hasSetting("ssid", (uint8_t) 1)) {
+                setSetting("ssid", (uint8_t) 1, WIFI2_SSID);
+                setSetting("pass", (uint8_t) 1, WIFI2_PASS);
+                setSetting("ip", (uint8_t) 1, WIFI2_IP);
+                setSetting("gw", (uint8_t) 1, WIFI2_GW);
+                setSetting("mask", (uint8_t) 1, WIFI2_MASK);
+                setSetting("dns", (uint8_t) 1, WIFI2_DNS);
             }
         }
     }
@@ -329,7 +329,7 @@ void _wifiInject() {
         // Registered networks
         JsonArray& networks = data.createNestedArray("networks");
 
-        for (unsigned int i = 0; i < WIFI_MAX_NETWORKS; i++) {
+        for (uint8_t i = 0; i < WIFI_MAX_NETWORKS; i++) {
             if (!hasSetting("ssid", i)) {
                 break;
             }
@@ -361,7 +361,7 @@ void _wifiInject() {
                 }
 
                 if (configuration.containsKey("networks")) {
-                    unsigned int i = 0;
+                    uint8_t i = 0;
 
                     // Delete all other configuration
                     while (i < WIFI_MAX_NETWORKS) {
@@ -375,7 +375,7 @@ void _wifiInject() {
                         ++i;
                     }
 
-                    for (unsigned int i = 0; i < configuration["networks"].size(); i++) {
+                    for (uint8_t i = 0; i < configuration["networks"].size(); i++) {
                         setSetting("ssid", i, configuration["networks"][i]["ssid"].as<char *>());
                         setSetting("pass", i, configuration["networks"][i]["pass"].as<char *>());
                         setSetting("ip", i, configuration["networks"][i]["ip"].as<char *>());
@@ -561,7 +561,7 @@ void wifiSetup() {
 
     #if BUTTON_SUPPORT && WIFI_AP_BTN > 0
         buttonOnEventRegister(
-            [](unsigned int event) {
+            [](uint8_t event) {
                 if (event == WIFI_AP_BTN_EVENT) {
                     wifiStartAP();
                 }

@@ -21,8 +21,8 @@ bool _settings_save = false;
 // Reverse engineering EEPROM storage format
 // -----------------------------------------------------------------------------
 
-unsigned long settingsSize() {
-    unsigned int pos = SPI_FLASH_SEC_SIZE - 1;
+uint32_t settingsSize() {
+    uint8_t pos = SPI_FLASH_SEC_SIZE - 1;
 
     while (size_t len = EEPROMr.read(pos)) {
         if (0xFF == len) {
@@ -37,9 +37,9 @@ unsigned long settingsSize() {
 
 // -----------------------------------------------------------------------------
 
-unsigned int settingsKeyCount() {
-    unsigned int count = 0;
-    unsigned int pos = SPI_FLASH_SEC_SIZE - 1;
+uint8_t settingsKeyCount() {
+    uint8_t count = 0;
+    uint8_t pos = SPI_FLASH_SEC_SIZE - 1;
 
     while (size_t len = EEPROMr.read(pos)) {
         if (0xFF == len) {
@@ -58,12 +58,12 @@ unsigned int settingsKeyCount() {
 // -----------------------------------------------------------------------------
 
 String settingsKeyName(
-    unsigned int index
+    const uint8_t index
 ) {
     String s;
 
-    unsigned int count = 0;
-    unsigned int pos = SPI_FLASH_SEC_SIZE - 1;
+    uint8_t count = 0;
+    uint8_t pos = SPI_FLASH_SEC_SIZE - 1;
 
     while (size_t len = EEPROMr.read(pos)) {
         if (0xFF == len) {
@@ -75,7 +75,7 @@ String settingsKeyName(
         if (count == index) {
             s.reserve(len);
 
-            for (unsigned int i = 0 ; i < len; i++) {
+            for (uint8_t i = 0 ; i < len; i++) {
                 s += (char) EEPROMr.read(pos + i + 1);
             }
 
@@ -100,14 +100,14 @@ std::vector<String> _settingsKeys() {
     // Get sorted list of keys
     std::vector<String> keys;
 
-    unsigned int size = settingsKeyCount();
+    uint8_t size = settingsKeyCount();
 
-    for (unsigned int i = 0; i < size; i++) {
+    for (uint8_t i = 0; i < size; i++) {
         String _key = settingsKeyName(i);
 
         bool _inserted = false;
 
-        for (unsigned int j = 0; j < keys.size(); j++) {
+        for (uint8_t j = 0; j < keys.size(); j++) {
             // Check if we have to insert it before the current element
             if (keys[j].compareTo(_key) > 0) {
                 keys.insert(keys.begin() + j, _key);
@@ -143,7 +143,7 @@ bool _settingsRestoreJson(
         return false;
     }
 
-    for (unsigned int i = EEPROM_DATA_END; i < SPI_FLASH_SEC_SIZE; i++) {
+    for (uint8_t i = EEPROM_DATA_END; i < SPI_FLASH_SEC_SIZE; i++) {
         EEPROMr.write(i, 0xFF);
     }
 
@@ -198,9 +198,9 @@ bool _settingsRestoreJson(
         #endif
 
         // Write the keys line by line (not sorted)
-        unsigned long count = settingsKeyCount();
+        uint32_t count = settingsKeyCount();
 
-        for (unsigned int i = 0; i < count; i++) {
+        for (uint8_t i = 0; i < count; i++) {
             String key = settingsKeyName(i);
             String value = getSetting(key);
 
@@ -227,7 +227,7 @@ bool _settingsRestoreJson(
 
         int params = request->params();
 
-        for (unsigned int i = 0; i < params; i++) {
+        for (uint8_t i = 0; i < params; i++) {
             AsyncWebParameter* p = request->getParam(i);
             
             if (p->isFile()) {
@@ -271,7 +271,7 @@ bool _settingsRestoreJson(
     #if WS_SUPPORT
         // WS client called action
         void _settingsWSOnAction(
-            uint32_t client_id,
+            const uint32_t clientId,
             const char * action,
             JsonObject& data
         ) {
@@ -286,11 +286,11 @@ bool _settingsRestoreJson(
 
             } else if (strcmp(action, "restore") == 0) {
                 if (_settingsRestoreJson(data)) {
-                    wsSend_P(client_id, PSTR("{\"message\": \"changes_saved_need_reboot\"}"));
+                    wsSend_P(clientId, PSTR("{\"message\": \"changes_saved_need_reboot\"}"));
                     wsSend_P(PSTR("{\"action\": \"reboot\"}"));
 
                 } else {
-                    wsSend_P(client_id, PSTR("{\"message\": \"invalid_file\", \"level\": \"error\"}"));
+                    wsSend_P(clientId, PSTR("{\"message\": \"invalid_file\", \"level\": \"error\"}"));
                 }
             }
         }
@@ -316,7 +316,7 @@ void saveSettings() {
 // -----------------------------------------------------------------------------
 
 void resetSettings() {
-    for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
+    for (uint8_t i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
         EEPROMr.write(i, 0xFF);
     }
 
@@ -358,7 +358,7 @@ template<typename T> String getSetting(
 
 template<typename T> String getSetting(
     const String& key,
-    unsigned int index,
+    const uint8_t index,
     T defaultValue
 ) {
     return getSetting(key + String(index), defaultValue);
@@ -385,7 +385,7 @@ template<typename T> bool setSetting(
 
 template<typename T> bool setSetting(
     const String& key,
-    unsigned int index,
+    const uint8_t index,
     T value
 ) {
     return setSetting(key + String(index), value);
@@ -401,7 +401,10 @@ bool delSetting(
 
 // -----------------------------------------------------------------------------
 
-bool delSetting(const String& key, unsigned int index) {
+bool delSetting(
+    const String& key,
+    const uint8_t index
+) {
     return delSetting(key + String(index));
 }
 
@@ -417,7 +420,7 @@ bool hasSetting(
 
 bool hasSetting(
     const String& key,
-    unsigned int index
+    uint8_t index
 ) {
     return getSetting(key, index, "").length() != 0;
 }
@@ -456,7 +459,7 @@ void settingsSetup() {
 
     #if BUTTON_SUPPORT && SETTINGS_FACTORY_BTN > 0
         buttonOnEventRegister(
-            [](unsigned int event) {
+            [](uint8_t event) {
                 if (event == SETTINGS_FACTORY_BTN_EVENT) {
                     DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
 

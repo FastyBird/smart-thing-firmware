@@ -148,7 +148,7 @@ void _onRequest(
     AsyncWebServerRequest * request
 ){
     // Send request to subscribers
-    for (unsigned int i = 0; i < _web_on_request_callbacks.size(); i++) {
+    for (uint8_t i = 0; i < _web_on_request_callbacks.size(); i++) {
         bool response = (_web_on_request_callbacks[i])(request);
 
         if (response) {
@@ -252,7 +252,7 @@ void webOnRequestRegister(web_on_request_callback_f callback) {
 
 // -----------------------------------------------------------------------------
 
-unsigned int webPort() {
+uint8_t webPort() {
     #if NETWORK_ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
         return 443;
     #else
@@ -277,7 +277,7 @@ void webSetup() {
     snprintf_P(_web_last_modified, sizeof(_web_last_modified), PSTR("%s %s GMT"), __DATE__, __TIME__);
 
     // Create server
-    unsigned int port = webPort();
+    uint8_t port = webPort();
 
     _web_server = new AsyncWebServer(port);
 
