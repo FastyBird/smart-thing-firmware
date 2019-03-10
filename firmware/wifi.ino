@@ -566,7 +566,7 @@ void wifiSetup() {
                     wifiStartAP();
                 }
             },
-            (WIFI_AP_BTN - 1)
+            (uint8_t) (WIFI_AP_BTN - 1)
         );
     #endif
 

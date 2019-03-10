@@ -91,15 +91,15 @@ void _ntpUpdateConfiguration(
     }
 
     if (configuration.containsKey("ntp_offset"))  {
-        setSetting("ntpOffset", configuration["ntp_offset"].as<unsigned int>());
+        setSetting("ntpOffset", configuration["ntp_offset"].as<uint8_t>());
     }
 
     if (configuration.containsKey("ntp_dst"))  {
-        setSetting("ntpDST", configuration["ntp_dst"].as<unsigned int>());
+        setSetting("ntpDST", configuration["ntp_dst"].as<uint8_t>());
     }
 
     if (configuration.containsKey("ntp_region"))  {
-        setSetting("ntpRegion", configuration["ntp_region"].as<unsigned int>());
+        setSetting("ntpRegion", configuration["ntp_region"].as<uint8_t>());
     }
 }
 
@@ -140,7 +140,7 @@ void _ntpUpdateConfiguration(
 
     // WS client requested configuration update
     void _ntpWSOnConfigure(
-        uint32_t clientId,
+        const uint32_t clientId,
         JsonObject& module
     ) {
         if (module.containsKey("module") && module["module"] == "ntp") {
@@ -245,6 +245,7 @@ void _ntpUpdate() {
 
     if (ntpSynced()) {
         time_t t = now();
+
         DEBUG_MSG(PSTR("[NTP] UTC Time  : %s\n"), (char *) ntpDateTime(ntpLocal2UTC(t)).c_str());
         DEBUG_MSG(PSTR("[NTP] Local Time: %s\n"), (char *) ntpDateTime(t).c_str());
     }
@@ -264,8 +265,7 @@ bool ntpSynced() {
 
 // -----------------------------------------------------------------------------
 
-String ntpDateTimeAtom()
-{
+String ntpDateTimeAtom() {
     char buffer[28];
 
     time_t t = now();

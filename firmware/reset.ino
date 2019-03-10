@@ -17,8 +17,8 @@ uint8_t _reset_reason = 0;
 // MODULE API
 // -----------------------------------------------------------------------------
 
-unsigned int resetReason() {
-    static unsigned int status = 255;
+uint8_t resetReason() {
+    static uint8_t status = 255;
 
     if (status == 255) {
         status = EEPROMr.read(EEPROM_CUSTOM_RESET);
@@ -38,7 +38,7 @@ unsigned int resetReason() {
 // -----------------------------------------------------------------------------
 
 void resetReason(
-    unsigned int reason
+    uint8_t reason
 ) {
     _reset_reason = reason;
 
@@ -57,7 +57,7 @@ void reset() {
 
 void deferredReset(
     unsigned long delay,
-    unsigned int reason
+    uint8_t reason
 ) {
     _defer_reset.once_ms(delay, resetReason, reason);
 }

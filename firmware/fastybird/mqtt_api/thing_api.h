@@ -111,7 +111,7 @@ bool _fastybirdPropagateThingPropertiesStructure(
 
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_PROPERTIES).c_str(),
         payload
     );
@@ -138,7 +138,7 @@ bool _fastybirdPropagateThingProperty(
 ) {
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreatePropertyTopicString(thingId, property).c_str(),
         payload
     );
@@ -165,7 +165,7 @@ bool _fastybirdPropagateThingName(
 ) {
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_NAME).c_str(),
         name
     );
@@ -192,7 +192,7 @@ bool _fastybirdPropagateThingHardwareField(
 ) {
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateHWTopicString(thingId, field).c_str(),
         payload
     );
@@ -288,7 +288,7 @@ bool _fastybirdPropagateThingFirmwareField(
 ) {
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateFWTopicString(thingId, field).c_str(),
         payload
     );
@@ -400,7 +400,7 @@ bool _fastybirdPropagateThingChannels(
 
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_CHANNELS).c_str(),
         payload
     );
@@ -441,7 +441,7 @@ bool _fastybirdPropagateThingStatsStructure(
 
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_STATS_STRUCTURE).c_str(),
         payload
     );
@@ -470,7 +470,7 @@ bool _fastybirdPropagateThingStat(
 ) {
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateStatTopicString(thingId, stat).c_str(),
         payload
     );
@@ -514,7 +514,7 @@ bool _fastybirdPropagateThingControlConfiguration(
 
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_CONTROL).c_str(),
         payload
     );
@@ -522,7 +522,7 @@ bool _fastybirdPropagateThingControlConfiguration(
     if (packet_id == 0) return false;
 
     #if FASTYBIRD_ENABLE_CONFIGURATION
-        packet_id = mqttSubscribeRaw(
+        packet_id = mqttSubscribe(
             _fastybirdMqttApiCreateThingTopicString(
                 thingId,
                 FASTYBIRD_TOPIC_THING_CONTROL_RECEIVE,
@@ -548,7 +548,7 @@ bool _fastybirdPropagateThingControlConfiguration(
     #endif
 
     #if FASTYBIRD_ENABLE_RESET
-        packet_id = mqttSubscribeRaw(
+        packet_id = mqttSubscribe(
             _fastybirdMqttApiCreateThingTopicString(
                 thingId,
                 FASTYBIRD_TOPIC_THING_CONTROL_RECEIVE,
@@ -564,7 +564,7 @@ bool _fastybirdPropagateThingControlConfiguration(
     #endif
 
     #if FASTYBIRD_ENABLE_RECONNECT
-        packet_id = mqttSubscribeRaw(
+        packet_id = mqttSubscribe(
             _fastybirdMqttApiCreateThingTopicString(
                 thingId,
                 FASTYBIRD_TOPIC_THING_CONTROL_RECEIVE,
@@ -580,7 +580,7 @@ bool _fastybirdPropagateThingControlConfiguration(
     #endif
 
     #if FASTYBIRD_ENABLE_FACTORY_RESET
-        packet_id = mqttSubscribeRaw(
+        packet_id = mqttSubscribe(
             _fastybirdMqttApiCreateThingTopicString(
                 thingId,
                 FASTYBIRD_TOPIC_THING_CONTROL_RECEIVE,
@@ -630,7 +630,7 @@ bool _fastybirdPropagateThingConfigurationSchema(
 
         schema.printTo(output);
 
-        packet_id = mqttSendRaw(
+        packet_id = mqttSend(
             _fastybirdMqttApiCreateThingTopicString(
                 thingId,
                 FASTYBIRD_TOPIC_THING_CONTROL_SCHEMA,
@@ -667,7 +667,7 @@ bool _fastybirdPropagateThingConfiguration(
 
         uint8_t packet_id;
 
-        packet_id = mqttSendRaw(
+        packet_id = mqttSend(
             _fastybirdMqttApiCreateThingTopicString(
                 thingId,
                 FASTYBIRD_TOPIC_THING_CONTROL_DATA,

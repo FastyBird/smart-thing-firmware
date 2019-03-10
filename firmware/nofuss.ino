@@ -10,8 +10,8 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #include "NoFUSSClient.h"
 
-unsigned long _nofussLastCheck = 0;
-unsigned long _nofussInterval = 0;
+uint32_t _nofussLastCheck = 0;
+uint32_t _nofussInterval = 0;
 bool _nofussEnabled = false;
 
 // -----------------------------------------------------------------------------

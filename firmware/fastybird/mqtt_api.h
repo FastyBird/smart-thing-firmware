@@ -54,7 +54,7 @@ bool fastybirdMqttApiIsSameTopic(
 
 void _fastybirdMQTTOnConnect() {
     // Unsubscribe from all thing topics
-    mqttUnsubscribeRaw((fastybirdMqttApiBuildTopicPrefix(_fastybird_mqtt_thing_id) + "#").c_str());
+    mqttUnsubscribe((fastybirdMqttApiBuildTopicPrefix(_fastybird_mqtt_thing_id) + "#").c_str());
 
     fastybirdResetThingInitialization();
 }
@@ -76,7 +76,7 @@ bool _fastybirdIsApiReady() {
 void _fastybirdBeforeInitialization() {
     if (mqttConnected()) {
         // Unsubscribe from all thing topics
-        mqttUnsubscribeRaw((fastybirdMqttApiBuildTopicPrefix(_fastybird_mqtt_thing_id) + "#").c_str());
+        mqttUnsubscribe((fastybirdMqttApiBuildTopicPrefix(_fastybird_mqtt_thing_id) + "#").c_str());
     }
 }
 
@@ -124,8 +124,12 @@ void _fastybirdApiSetup() {
     mqttOnConnectRegister(_fastybirdMQTTOnConnect);
     mqttOnConnectRegister(_fastybirdMQTTOnDisconnect);
 
+    char buffer[100];
+    
+    strcpy(buffer, _fastybirdMqttApiCreatePropertyTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_PROPERTY_STATE).c_str());
+
     mqttSetWill(
-        _fastybirdMqttApiCreatePropertyTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_PROPERTY_STATE),
+        buffer,
         FASTYBIRD_STATUS_LOST
     );
 }
@@ -133,34 +137,34 @@ void _fastybirdApiSetup() {
 // -----------------------------------------------------------------------------
 
 void _fastybirdOnHeartbeat() {
-    mqttSendRaw(
+    mqttSend(
         _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_FREE_HEAP).c_str(),
         String(getFreeHeap()).c_str()
     );
 
-    mqttSendRaw(
+    mqttSend(
         _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_UPTIME).c_str(),
         String(getUptime()).c_str()
     );
 
     #if WIFI_SUPPORT
-        mqttSendRaw(
+        mqttSend(
             _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_RSSI).c_str(),
             String(WiFi.RSSI()).c_str()
         );
-        mqttSendRaw(
+        mqttSend(
             _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_SSID).c_str(),
             getNetwork().c_str()
         );
     #endif
 
-    mqttSendRaw(
+    mqttSend(
         _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_CPU_LOAD).c_str(),
         String(systemLoadAverage()).c_str()
     );
 
     #if ADC_MODE_VALUE == ADC_VCC
-        mqttSendRaw(
+        mqttSend(
             _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_VCC).c_str(),
             String(ESP.getVcc()).c_str()
         );

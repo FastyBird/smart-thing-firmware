@@ -419,7 +419,7 @@ void systemSetup() {
                     deferredReset(100, CUSTOM_RESET_HARDWARE);
                 }
             },
-            (SYSTEM_RESET_BTN - 1)
+            (uint8_t) (SYSTEM_RESET_BTN - 1)
         );
     #endif
 

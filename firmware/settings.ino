@@ -465,7 +465,7 @@ void settingsSetup() {
                     deferredReset(100, CUSTOM_RESET_FACTORY);
                 }
             },
-            (SETTINGS_FACTORY_BTN - 1)
+            (uint8_t) (SETTINGS_FACTORY_BTN - 1)
         );
     #endif
 

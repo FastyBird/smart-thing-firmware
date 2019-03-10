@@ -1259,7 +1259,7 @@ void relaySetup() {
                         relayToggle(0);
                     }
                 },
-                (RELAY1_BTN - 1)
+                (uint8_t) (RELAY1_BTN - 1)
             );
         #endif
 
@@ -1270,7 +1270,7 @@ void relaySetup() {
                         relayToggle(1);
                     }
                 },
-                (RELAY2_BTN - 1)
+                (uint8_t) (RELAY2_BTN - 1)
             );
         #endif
 
@@ -1281,7 +1281,7 @@ void relaySetup() {
                         relayToggle(2);
                     }
                 },
-                (RELAY3_BTN - 1)
+                (uint8_t) (RELAY3_BTN - 1)
             );
         #endif
 
@@ -1292,7 +1292,7 @@ void relaySetup() {
                         relayToggle(3);
                     }
                 },
-                (RELAY4_BTN - 1)
+                (uint8_t) (RELAY4_BTN - 1)
             );
         #endif
 
@@ -1303,7 +1303,7 @@ void relaySetup() {
                         relayToggle(4);
                     }
                 },
-                (RELAY5_BTN - 1)
+                (uint8_t) (RELAY5_BTN - 1)
             );
         #endif
 
@@ -1314,7 +1314,7 @@ void relaySetup() {
                         relayToggle(5);
                     }
                 },
-                (RELAY6_BTN - 1)
+                (uint8_t) (RELAY6_BTN - 1)
             );
         #endif
 
@@ -1325,7 +1325,7 @@ void relaySetup() {
                         relayToggle(6);
                     }
                 },
-                (RELAY7_BTN - 1)
+                (uint8_t) (RELAY7_BTN - 1)
             );
         #endif
 
@@ -1336,7 +1336,7 @@ void relaySetup() {
                         relayToggle(7);
                     }
                 },
-                (RELAY8_BTN - 1)
+                (uint8_t) (RELAY8_BTN - 1)
             );
         #endif
     #endif

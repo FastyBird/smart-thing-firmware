@@ -134,7 +134,7 @@ String _fastybirdMqttApiConvertChannelName(
                     String expression = getSetting(directControlCreateSettingsKey("dcExpression_", channelStructure.type, i), channel_id, "");
                     String property = getSetting(directControlCreateSettingsKey("dcControlProperty_", channelStructure.type, i), channel_id, "");
 
-                    packet_id = mqttSubscribeRaw(
+                    packet_id = mqttSubscribe(
                         getSetting(directControlCreateSettingsKey("dcListenTopic_", channelStructure.type, i), channel_id, "").c_str(),
                         [channelStructure, channel_id, listenAction, controlAction, property, expression](const char * topic, const char * payload) {
                             if (
@@ -173,7 +173,7 @@ String _fastybirdMqttApiConvertChannelName(
         for (uint8_t channel_id = 0; channel_id < channelStructure.length; channel_id++) {
             for (uint8_t dc_i = 0; dc_i < DIRECT_CONTROL_MAX_CONTROLS; dc_i++) {
                 if (hasSetting(directControlCreateSettingsKey("dcControlAction_", channelStructure.type, dc_i), channel_id)) {
-                    packet_id = mqttUnsubscribeRaw(getSetting(directControlCreateSettingsKey("dcListenTopic_", channelStructure.type, dc_i), channel_id, "").c_str());
+                    packet_id = mqttUnsubscribe(getSetting(directControlCreateSettingsKey("dcListenTopic_", channelStructure.type, dc_i), channel_id, "").c_str());
 
                     if (packet_id == 0) return false;
                 }
@@ -196,7 +196,7 @@ bool _fastybirdPropagateChannelName(
 ) {
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
@@ -228,7 +228,7 @@ bool _fastybirdPropagateChannelType(
 ) {
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
@@ -273,7 +273,7 @@ bool _fastybirdPropagateChannelProperties(
 
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
@@ -311,7 +311,7 @@ bool _fastybirdPropagateChannelProperties(
                     );
                 }
 
-                packet_id = mqttSubscribeRaw(
+                packet_id = mqttSubscribe(
                     topic.c_str(),
                     [channel, i, property](const char * topic, const char * payload) {
                         property.payloadCallback(i, payload);
@@ -351,7 +351,7 @@ bool _fastybirdPropagateChannelSize(
     char array_size[6];
     sprintf(array_size, "0-%d", (size - 1));
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
@@ -383,7 +383,7 @@ bool _fastybirdPropagateChannelPropertyName(
 ) {
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
@@ -417,7 +417,7 @@ bool _fastybirdPropagateChannelPropertySettable(
 ) {
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
@@ -451,7 +451,7 @@ bool _fastybirdPropagateChannelPropertyDataType(
 ) {
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
@@ -498,7 +498,7 @@ bool _fastybirdPropagateChannelPropertyFormat(
 
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
@@ -533,7 +533,7 @@ bool _fastybirdPropagateChannelPropertyMapping(
 ) {
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
@@ -602,7 +602,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
 
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
@@ -638,7 +638,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
                     );
                 }
 
-                packet_id = mqttSubscribeRaw(
+                packet_id = mqttSubscribe(
                     topic.c_str(),
                     [channel, i](const char * topic, const char * payload) {
                         DynamicJsonBuffer jsonBuffer;
@@ -692,7 +692,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
                     );
                 }
 
-                packet_id = mqttSubscribeRaw(
+                packet_id = mqttSubscribe(
                     topic.c_str(),
                     [channel, i](const char * topic, const char * payload) {
                         DynamicJsonBuffer jsonBuffer;
@@ -754,7 +754,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
                     );
                 }
 
-                packet_id = mqttSubscribeRaw(
+                packet_id = mqttSubscribe(
                     topic.c_str(),
                     [channel, i](const char * topic, const char * payload) {
                         DynamicJsonBuffer jsonBuffer;
@@ -808,7 +808,7 @@ bool _fastybirdPropagateChannelConfigurationSchema(
 ) {
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
@@ -865,7 +865,7 @@ bool _fastybirdPropagateChannelConfiguration(
 
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         topic.c_str(),
         payload.c_str()
     );
@@ -917,7 +917,7 @@ bool _fastybirdPropagateChannelDirectControlConfiguration(
 
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         topic.c_str(),
         payload.c_str()
     );
@@ -969,7 +969,7 @@ bool _fastybirdPropagateChannelSchedulerConfiguration(
 
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         topic.c_str(),
         payload.c_str()
     );
@@ -1022,7 +1022,7 @@ bool _fastybirdPropagateChannelValue(
 
     uint8_t packet_id;
 
-    packet_id = mqttSendRaw(
+    packet_id = mqttSend(
         topic.c_str(),
         payload
     );
