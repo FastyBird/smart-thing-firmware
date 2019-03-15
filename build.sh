@@ -19,7 +19,7 @@ stat_bytes() {
 # Script settings
 
 destination=../firmware
-version_file=espurna/config/version.h
+version_file=fastybird/config/version.h
 version=$(grep -E '^#define APP_VERSION' $version_file | awk '{print $3}' | sed 's/"//g')
 
 if ${TRAVIS:-false}; then
@@ -108,7 +108,7 @@ build_webui() {
         npm install --only=dev
     fi
 
-    # Recreate web interface (espurna/data/index.html.*.gz.h)
+    # Recreate web interface (fastybird/data/index.html.*.gz.h)
     echo "--------------------------------------------------------------"
     echo "Building web interface..."
     node node_modules/gulp/bin/gulp.js || exit
@@ -117,14 +117,14 @@ build_webui() {
 build_environments() {
     echo "--------------------------------------------------------------"
     echo "Building firmware images..."
-    mkdir -p ../firmware/espurna-$version
+    mkdir -p ../firmware/fastybird-$version
 
     for environment in $environments; do
-        echo -n "* espurna-$version-$environment.bin --- "
+        echo -n "* fastybird-$version-$environment.bin --- "
         platformio run --silent --environment $environment || exit 1
         stat_bytes .pioenvs/$environment/firmware.bin
         [[ "${TRAVIS_BUILD_STAGE_NAME}" = "Test" ]] || \
-            mv .pioenvs/$environment/firmware.bin $destination/espurna-$version/espurna-$version-$environment.bin
+            mv .pioenvs/$environment/firmware.bin $destination/fastybird-$version/fastybird-$version-$environment.bin
     done
     echo "--------------------------------------------------------------"
 }
@@ -149,7 +149,7 @@ shift $((OPTIND-1))
 
 # Welcome
 echo "--------------------------------------------------------------"
-echo "ESPURNA FIRMWARE BUILDER"
+echo "FASTYBIRD FIRMWARE BUILDER"
 echo "Building for version ${version}" ${git_revision:+($git_revision)}
 
 # Environments to build

@@ -83,6 +83,9 @@ const char firmware_modules[] PROGMEM =
     #if SENSOR_SUPPORT
         "SENSOR "
     #endif
+    #if SPIFFS_SUPPORT
+        "SPIFFS "
+    #endif
     #if WIFI_SUPPORT
         "WIFI "
     #endif
@@ -208,7 +211,7 @@ const int gateway_packets_misc[] PROGMEM = {
 
 #if SENSOR_SUPPORT
 
-PROGMEM const char espurna_sensors[] =
+PROGMEM const char firmware_sensors[] =
     #if AM2320_SUPPORT
         "AM2320_I2C "
     #endif

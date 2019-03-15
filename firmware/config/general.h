@@ -165,6 +165,14 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 // -----------------------------------------------------------------------------
+// SPIFFS
+// -----------------------------------------------------------------------------
+
+#ifndef SPIFFS_SUPPORT
+#define SPIFFS_SUPPORT                  0                           // Do not add support for SPIFFS by default
+#endif
+
+// -----------------------------------------------------------------------------
 // OTA
 // -----------------------------------------------------------------------------
 
@@ -299,6 +307,10 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #ifndef WEB_SUPPORT
 #define WEB_SUPPORT                     1                           // Enable web support
+#endif
+
+#ifndef WEB_EMBEDDED
+#define WEB_EMBEDDED                    1                           // Build the firmware with the web interface embedded in
 #endif
 
 // This is not working at the moment!!

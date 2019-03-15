@@ -250,7 +250,7 @@ bool _settingsRestoreJson(
     ) {
         String url = request->url();
 
-        if (url.equals("/config")) {
+        if (url.equals("/control/config")) {
             if (request->method() == HTTP_GET) {
                 _settingsOnGetConfig(request);
 

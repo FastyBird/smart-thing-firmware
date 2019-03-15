@@ -135,6 +135,9 @@ typedef union {
 
 uint8_t _gateway_reading_node_index = 0;
 uint32_t _gateway_last_nodes_check = 0;
+uint32_t _gateway_last_nodes_scan = 0;
+
+uint32_t _gateway_nodes_scan_client_id = 0;
 
 #include "./pjon/addressing.h"
 #include "./pjon/initialization.h"
@@ -450,6 +453,9 @@ uint32_t _gateway_last_nodes_check = 0;
                     }
                 }
             }
+
+        } else if (strcmp(action, "scan") == 0) {
+            _gateway_nodes_scan_client_id = clientId;
         }
     }
 #endif
@@ -1526,7 +1532,9 @@ void gatewayLoop() {
     // If some node is not initialized, get its address
     uint8_t node_to_initialize = _gatewayGetNodeAddressToInitialize();
 
-    if ((millis() - NODES_GATEWAY_SEARCH_DELAY) < NODES_GATEWAY_ADDRESSING_TIMEOUT) {
+    if (_gateway_last_nodes_scan == 0 || (_gateway_last_nodes_scan - NODES_GATEWAY_SEARCH_DELAY) < NODES_GATEWAY_ADDRESSING_TIMEOUT) {
+        _gateway_last_nodes_scan = millis();
+
         _gatewaySearchForNodes();
 
     // Check nodes presence in given interval

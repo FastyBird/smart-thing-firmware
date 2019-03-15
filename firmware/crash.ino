@@ -57,7 +57,7 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
     }
 
     // This method assumes EEPROM has already been initialized
-    // which is the first thing ESPurna does
+    // which is the first thing firmware does
 
     // write crash time to EEPROM
     uint32_t crash_time = millis();

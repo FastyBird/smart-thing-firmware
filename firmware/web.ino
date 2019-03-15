@@ -15,6 +15,10 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
 
+#if WEB_EMBEDDED
+    #include "static/index.html.gz.h"
+#endif
+
 #if NETWORK_ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
     #include "static/server.cer.h"
     #include "static/server.key.h"
@@ -46,7 +50,9 @@ void _onDiscover(
     AsyncResponseStream *response = request->beginResponseStream("text/json");
 
     DynamicJsonBuffer jsonBuffer;
+
     JsonObject &root = jsonBuffer.createObject();
+
     root["manufacturer"] = FIRMWARE_MANUFACTURER;
     root["version"] = FIRMWARE_VERSION;
     root["hostname"] = getIdentifier();
@@ -141,6 +147,66 @@ void _onUpgradeData(
         DEBUG_MSG(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
     }
 }
+
+// -----------------------------------------------------------------------------
+
+#if WEB_EMBEDDED
+    void _onHome(
+        AsyncWebServerRequest *request
+    ) {
+        webLog(request);
+
+        if (request->header("If-Modified-Since").equals(_web_last_modified)) {
+            request->send(304);
+
+        } else {
+            #if ASYNC_TCP_SSL_ENABLED
+                // Chunked response, we calculate the chunks based on free heap (in multiples of 32)
+                // This is necessary when a TLS connection is open since it sucks too much memory
+                DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), getFreeHeap());
+
+                size_t max = (getFreeHeap() / 3) & 0xFFE0;
+
+                AsyncWebServerResponse *response = request->beginChunkedResponse("text/html", [max](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+                    // Get the chunk based on the index and maxLen
+                    size_t len = webui_image_len - index;
+
+                    if (len > maxLen) {
+                        len = maxLen;
+                    }
+
+                    if (len > max) {
+                        len = max;
+                    }
+
+                    if (len > 0) {
+                        memcpy_P(buffer, webui_image + index, len);
+                    }
+
+                    DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / webui_image_len), max);
+
+                    if (len == 0) {
+                        DEBUG_MSG_P(PSTR("\n"));
+                    }
+
+                    // Return the actual length of the chunk (0 for end of file)
+                    return len;
+                });
+
+            #else
+                AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", webui_image, webui_image_len);
+            #endif
+
+            response->addHeader("Content-Encoding", "gzip");
+            response->addHeader("Last-Modified", _web_last_modified);
+            response->addHeader("X-XSS-Protection", "1; mode=block");
+            response->addHeader("X-Content-Type-Options", "nosniff");
+            response->addHeader("X-Frame-Options", "deny");
+
+            request->send(response);
+        }
+    }
+#endif
 
 // -----------------------------------------------------------------------------
 
@@ -286,9 +352,14 @@ void webSetup() {
     // Rewrites
     _web_server->rewrite("/", "/index.html");
 
+    // Serve home (basic authentication protection)
+    #if WEB_EMBEDDED
+        _web_server->on("/index.html", HTTP_GET, _onHome);
+    #endif
+
     // Other entry points
-    _web_server->on("/reset", HTTP_GET, _onReset);
-    _web_server->on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
+    _web_server->on("/control/reset", HTTP_GET, _onReset);
+    _web_server->on("/control/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
     _web_server->on("/discover", HTTP_GET, _onDiscover);
 
     // Serve static files
