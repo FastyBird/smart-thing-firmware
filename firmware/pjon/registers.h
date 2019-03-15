@@ -159,6 +159,19 @@ bool _gatewayReadDigitalRegisterValue(
 
 // -----------------------------------------------------------------------------
 
+bool _gatewayReadDigitalRegisterTargetValue(
+    const uint8_t id,
+    const uint8_t address
+) {
+    if (_gatewayIsRegistersAddressCorrect(id, GATEWAY_REGISTER_DO, address)) {
+        return _gateway_nodes[id].digital_outputs[address].target_value;
+    }
+
+    return false;
+}
+
+// -----------------------------------------------------------------------------
+
 void _gatewayReadAnalogRegisterValue(
     const uint8_t id,
     const uint8_t dataRegister,
@@ -881,6 +894,105 @@ void _gatewayWriteMultipleAnalogOutputsHandler(
 
     _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
     _gateway_nodes[id].packet.sending_time = 0;
+}
+
+// -----------------------------------------------------------------------------
+
+/**
+ * Walks the relay vector processing only those relays
+ * that have to change to the requested mode
+ * @bool mode Requested mode
+ */
+void _gatewayDigitalRegisterProcess(
+    const bool mode
+) {
+    uint32_t current_time = millis();
+
+    for (uint8_t id = 0; id < NODES_GATEWAY_MAX_NODES; id++) {
+        for (uint8_t address = 0; address < _gateway_nodes[id].digital_outputs.size(); address++) {
+            bool target = _gateway_nodes[id].digital_outputs[address].target_value;
+
+            // Only process the addresses we have to change
+            if (target == _gateway_nodes[id].digital_outputs[address].value) {
+                continue;
+            }
+
+            // Only process the addresses we have to change to the requested mode
+            if (target != mode) {
+                continue;
+            }
+
+            // Only process if the change_time has arrived
+            if (current_time < _gateway_nodes[id].digital_outputs[address].change_time) {
+                continue;
+            }
+
+            DEBUG_MSG(PSTR("[GATEWAY] #%d:DO:%d set to %s\n"), id, address, target ? "ON" : "OFF");
+
+            // Call the provider to perform the action
+            _gatewayRequestWritingSingleDigitalRegister(id, address, target);
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// MODULE API
+// -----------------------------------------------------------------------------
+
+bool gatewayDigitalRegisterStatus(
+    const uint8_t id,
+    const uint8_t address,
+    const bool value
+) {
+    bool changed = false;
+
+    if (!_gatewayIsRegistersAddressCorrect(id, GATEWAY_REGISTER_DO, address)) {
+        return false;
+    }
+
+    if (_gatewayReadDigitalRegisterValue(id, GATEWAY_REGISTER_DO, address) == value) {
+        if (_gatewayReadDigitalRegisterTargetValue(id, address) != value) {
+            DEBUG_MSG(PSTR("[GATEWAY] #%d:DO:%d scheduled change cancelled\n"), id, address);
+
+            _gateway_nodes[id].digital_outputs[address].target_value = value;
+
+            changed = true;
+        }
+
+    } else {
+        uint32_t current_time = millis();
+
+        uint32_t fw_end = _gateway_nodes[id].digital_outputs[address].fw_start + 1000 * NODES_GATEWAY_FLOOD_WINDOW;
+        uint32_t delay = value ? _gateway_nodes[id].digital_outputs[address].delay_on : _gateway_nodes[id].digital_outputs[address].delay_off;
+
+        _gateway_nodes[id].digital_outputs[address].fw_count++;
+        _gateway_nodes[id].digital_outputs[address].change_time = current_time + delay;
+
+        // If current_time is off-limits the floodWindow...
+        if (current_time < _gateway_nodes[id].digital_outputs[address].fw_start || fw_end <= current_time) {
+            // We reset the floodWindow
+            _gateway_nodes[id].digital_outputs[address].fw_start = current_time;
+            _gateway_nodes[id].digital_outputs[address].fw_count = 1;
+
+        // If current_time is in the floodWindow and there have been too many requests...
+        } else if (_gateway_nodes[id].digital_outputs[address].fw_count >= NODES_GATEWAY_FLOOD_CHANGES) {
+            // We schedule the changes to the end of the floodWindow
+            // unless it's already delayed beyond that point
+            if (fw_end - delay > current_time) {
+                _gateway_nodes[id].digital_outputs[address].change_time = fw_end;
+            }
+        }
+
+        _gateway_nodes[id].digital_outputs[address].target_value = value;
+
+        DEBUG_MSG(PSTR("[GATEWAY] #%d:DO:%d scheduled %s in %u ms\n"),
+                id, address, value ? "ON" : "OFF",
+                (_gateway_nodes[id].digital_outputs[address].change_time - current_time));
+
+        changed = true;
+    }
+
+    return changed;
 }
 
 #endif // NODES_GATEWAY_SUPPORT

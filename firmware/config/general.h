@@ -775,3 +775,11 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #ifndef NODES_GATEWAY_SEARCH_DELAY
 #define NODES_GATEWAY_SEARCH_DELAY                  60000           // The system is considered stable after these many millis
 #endif
+
+#ifndef NODES_GATEWAY_FLOOD_WINDOW
+#define NODES_GATEWAY_FLOOD_WINDOW                  3               // Register change requests flood protection window - in seconds
+#endif
+
+#ifndef NODES_GATEWAY_FLOOD_CHANGES
+#define NODES_GATEWAY_FLOOD_CHANGES                 5               // Allowed actual registers changes inside requests flood protection window
+#endif

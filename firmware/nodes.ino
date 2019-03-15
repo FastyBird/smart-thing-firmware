@@ -49,6 +49,14 @@ struct gateway_register_reading_t {
 typedef struct {
     const char *    name;
     bool            value;
+    bool            target_value;           // Holds the target status
+
+    uint32_t        delay_on;               // Delay to turn relay ON
+    uint32_t        delay_off;              // Delay to turn relay OFF
+
+    uint32_t        fw_start;               // Flood window start time
+    uint8_t         fw_count;               // Number of changes within the current flood window
+    uint32_t        change_time;            // Scheduled time to change
 } gateway_digital_register_t;
 
 typedef struct {
@@ -437,7 +445,7 @@ uint32_t _gateway_nodes_scan_client_id = 0;
 
                     if (strcmp("digital_output", data["register"].as<const char *>()) == 0) {
                         if (data["address"].as<uint8_t>() < _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DO]) {
-                            _gatewayRequestWritingSingleDigitalRegister(i, data["address"].as<uint8_t>(), data["value"].as<bool>());
+                            gatewayDigitalRegisterStatus(i, data["address"].as<uint8_t>(), data["value"].as<bool>());
 
                         } else {
                             DEBUG_MSG(PSTR("[GATEWAY][ERR] Register address: %d is out of range: 0 - %d\n"), data["address"].as<uint8_t>(), _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DO]);
@@ -1349,7 +1357,7 @@ void _gatewayReceiveHandler(
     // Get packet identifier from payload
     uint8_t packet_id = (uint8_t) payload[0];
 
-    DEBUG_MSG(PSTR("[GATEWAY] Received packet: %s for node with address: %d\n"), _gatewayPacketName(packet_id).c_str(), sender_address);
+    //DEBUG_MSG(PSTR("[GATEWAY] Received packet: %s for node with address: %d\n"), _gatewayPacketName(packet_id).c_str(), sender_address);
 
     // Node is trying to acquire address
     if (_gatewayIsPacketInGroup(packet_id, gateway_packets_addresing, GATEWAY_PACKET_ADDRESS_MAX)) {
@@ -1365,22 +1373,22 @@ void _gatewayReceiveHandler(
 
         // Check if gateway is waiting for reply from node (initiliazation sequence)
         if (_gateway_nodes[(sender_address - 1)].packet.waiting_for == GATEWAY_PACKET_NONE) {
-            DEBUG_MSG(
-                PSTR("[GATEWAY][ERR] Received packet for node with address: %d but gateway is not waiting for packet from this node\n"),
-                sender_address
-            );
+            //DEBUG_MSG(
+            //    PSTR("[GATEWAY][ERR] Received packet for node with address: %d but gateway is not waiting for packet from this node\n"),
+            //    sender_address
+            //);
 
             return;
         }
 
         // Check if gateway is waiting for reply from node (initiliazation sequence)
         if (_gateway_nodes[(sender_address - 1)].packet.waiting_for != packet_id) {
-            DEBUG_MSG(
-                PSTR("[GATEWAY][ERR] Received packet: %s for node with address: %d but gateway is waiting for: %s\n"),
-                _gatewayPacketName(packet_id).c_str(),
-                sender_address,
-                _gatewayPacketName(_gateway_nodes[(sender_address - 1)].packet.waiting_for).c_str()
-            );
+            //DEBUG_MSG(
+            //    PSTR("[GATEWAY][ERR] Received packet: %s for node with address: %d but gateway is waiting for: %s\n"),
+            //    _gatewayPacketName(packet_id).c_str(),
+            //    sender_address,
+            //    _gatewayPacketName(_gateway_nodes[(sender_address - 1)].packet.waiting_for).c_str()
+            //);
 
             return;
         }
@@ -1551,6 +1559,9 @@ void gatewayLoop() {
     } else {
         _gatewayReadNodes();
     }
+
+    _gatewayDigitalRegisterProcess(false);
+    _gatewayDigitalRegisterProcess(true);
 
     _gateway_bus.receive(50000);
     _gateway_bus.update();
