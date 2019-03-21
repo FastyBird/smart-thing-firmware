@@ -100,6 +100,8 @@ void setup() {
         #endif
     #endif
 
+    crashSetup();
+
     #if RELAY_PROVIDER != RELAY_PROVIDER_NONE
         relaySetup();
     #endif

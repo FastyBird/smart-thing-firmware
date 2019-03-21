@@ -4,8 +4,6 @@
 // https://github.com/krzychb/EspSaveCrash
 // -----------------------------------------------------------------------------
 
-#if DEBUG_SUPPORT
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <EEPROM_Rotate.h>
@@ -49,8 +47,11 @@ extern "C" {
  * This function is called automatically if ESP8266 suffers an exception
  * It should be kept quick / consise to be able to execute before hardware wdt may kick in
  */
-extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack_start, uint32_t stack_end ) {
-
+extern "C" void custom_crash_callback(
+    struct rst_info * rst_info,
+    uint32_t stack_start,
+    uint32_t stack_end
+) {
     // Do not record crash data when resetting the board
     if (checkNeedsReset()) {
         return;
@@ -96,74 +97,127 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
     }
 
     EEPROMr.commit();
-
 }
 
-/**
- * Clears crash info
- */
-void crashClear() {
-    uint32_t crash_time = 0xFFFFFFFF;
+// -----------------------------------------------------------------------------
+// MODULE PRIVATE
+// -----------------------------------------------------------------------------
 
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
-    EEPROMr.commit();
-}
+#if WEB_SUPPORT
+    void _crashOnGetReport(
+        AsyncWebServerRequest * request
+    ) {
+        webLog(request);
 
-/**
- * Print out crash information that has been previusly saved in EEPROM
- */
-void crashDump() {
-    uint32_t crash_time;
-
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
-
-    if ((crash_time == 0) || (crash_time == 0xFFFFFFFF)) {
-        DEBUG_MSG(PSTR("[DEBUG] No crash info\n"));
-        return;
-    }
-
-    DEBUG_MSG(PSTR("[DEBUG] Latest crash was at %lu ms after boot\n"), crash_time);
-    DEBUG_MSG(PSTR("[DEBUG] Reason of restart: %u\n"), EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
-    DEBUG_MSG(PSTR("[DEBUG] Exception cause: %u\n"), EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
-
-    uint32_t epc1, epc2, epc3, excvaddr, depc;
-
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, epc1);
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, epc2);
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, epc3);
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, excvaddr);
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, depc);
-
-    DEBUG_MSG(PSTR("[DEBUG] epc1=0x%08x epc2=0x%08x epc3=0x%08x\n"), epc1, epc2, epc3);
-    DEBUG_MSG(PSTR("[DEBUG] excvaddr=0x%08x depc=0x%08x\n"), excvaddr, depc);
-
-    uint32_t stack_start, stack_end;
-
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
-    EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
-
-    DEBUG_MSG(PSTR("[DEBUG] sp=0x%08x end=0x%08x\n"), stack_start, stack_end);
-
-    int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
-    int16_t stack_len = stack_end - stack_start;
-
-    uint32_t stack_trace;
-
-    DEBUG_MSG(PSTR("[DEBUG] >>>stack>>>\n[DEBUG] "));
-
-    for (int16_t i = 0; i < stack_len; i += 0x10) {
-        DEBUG_MSG(PSTR("%08x: "), stack_start + i);
-
-        for (byte j = 0; j < 4; j++) {
-            EEPROMr.get(current_address, stack_trace);
-            DEBUG_MSG(PSTR("%08x "), stack_trace);
-            current_address += 4;
+        if (!webAuthenticate(request)) {
+            return request->requestAuthentication(getIdentifier().c_str());
         }
 
-        DEBUG_MSG(PSTR("\n[DEBUG] "));
+        AsyncResponseStream *response = request->beginResponseStream("text/plain");
+
+        response->addHeader("Content-Disposition", "inline");
+        response->addHeader("X-XSS-Protection", "1; mode=block");
+        response->addHeader("X-Content-Type-Options", "nosniff");
+        response->addHeader("X-Frame-Options", "deny");
+
+        uint32_t crash_time;
+
+        EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
+
+        if ((crash_time == 0) || (crash_time == 0xFFFFFFFF)) {
+            response->printf("No crash info\n");
+            return;
+        }
+
+        response->printf("Latest crash was at %lu ms after boot\n", crash_time);
+        response->printf("Reason of restart: %u\n", EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
+        response->printf("Exception cause: %u\n", EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
+
+        uint32_t epc1, epc2, epc3, excvaddr, depc;
+
+        EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, epc1);
+        EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, epc2);
+        EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, epc3);
+        EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, excvaddr);
+        EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, depc);
+
+        response->printf("epc1=0x%08x epc2=0x%08x epc3=0x%08x\n", epc1, epc2, epc3);
+        response->printf("excvaddr=0x%08x depc=0x%08x\n", excvaddr, depc);
+
+        uint32_t stack_start, stack_end;
+
+        EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
+        EEPROMr.get(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
+
+        response->printf("sp=0x%08x end=0x%08x\n", stack_start, stack_end);
+
+        int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
+        int16_t stack_len = stack_end - stack_start;
+
+        uint32_t stack_trace;
+
+        response->printf(">>>stack>>>\n");
+
+        for (int16_t i = 0; i < stack_len; i += 0x10) {
+            response->printf("%08x: ", stack_start + i);
+
+            for (byte j = 0; j < 4; j++) {
+                EEPROMr.get(current_address, stack_trace);
+                response->printf("%08x ", stack_trace);
+                current_address += 4;
+            }
+
+            response->printf("\n");
+        }
+
+        response->printf("<<<stack<<<\n");
+
+        request->send(response);
     }
 
-    DEBUG_MSG(PSTR("<<<stack<<<\n"));
-}
+// -----------------------------------------------------------------------------
 
-#endif // DEBUG_SUPPORT
+    bool _crashWebRequestCallback(
+        AsyncWebServerRequest * request
+    ) {
+        String url = request->url();
+
+        if (url.equals("/control/crash")) {
+            if (request->method() == HTTP_GET) {
+                _crashOnGetReport(request);
+
+                return true;
+
+            } else if (request->method() == HTTP_DELETE) {
+                webLog(request);
+
+                if (!webAuthenticate(request)) {
+                    request->requestAuthentication(getIdentifier().c_str());
+
+                    return false;
+                }
+
+                uint32_t crash_time = 0xFFFFFFFF;
+
+                EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
+                EEPROMr.commit();
+
+                request->send(200);
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+#endif
+
+// -----------------------------------------------------------------------------
+// MODULE CORE
+// -----------------------------------------------------------------------------
+
+void crashSetup() {
+    #if WEB_SUPPORT
+        webOnRequestRegister(_crashWebRequestCallback);
+    #endif
+}
