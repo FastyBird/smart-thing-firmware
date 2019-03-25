@@ -17,6 +17,8 @@ typedef struct {
 
 std::vector<direct_control_channel_t> _direct_controls_channels;
 
+const char * _direct_control_config_filename = "dc.conf";
+
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
@@ -42,28 +44,23 @@ std::vector<direct_control_channel_t> _direct_controls_channels;
 
         JsonArray &controls = data.createNestedArray("controls");
 
-        for (uint8_t i = 0; i < _direct_controls_channels.size(); i++) {
-            for (uint8_t channel_id = 0; channel_id < _direct_controls_channels[i].channels; channel_id++) {
-                for (uint8_t j = 0; j < DIRECT_CONTROL_MAX_CONTROLS; j++) {
-                    if (!hasSetting(directControlCreateSettingsKey("dcControlAction_", _direct_controls_channels[i].channelType, j), channel_id)) {
-                        break;
-                    }
+        DynamicJsonBuffer jsonBuffer;
 
-                    JsonObject& control = controls.createNestedObject();
+        JsonArray& dc_configuration = jsonBuffer.parseArray(storageReadConfiguration(_direct_control_config_filename));
 
-                    control["control_channel_type"] = _direct_controls_channels[i].channelType;
-                    control["control_property"] = _direct_controls_channels[i].channelProperty;
-                    control["control_channel"] = channel_id;
-                    control["control_action"] = getSetting(directControlCreateSettingsKey("dcControlAction_", _direct_controls_channels[i].channelType, j), channel_id, "");
+        for (JsonObject& stored_control : dc_configuration) {
+            JsonObject& control = controls.createNestedObject();
 
-                    control["listen_topic"] = getSetting(directControlCreateSettingsKey("dcListenTopic_", _direct_controls_channels[i].channelType, j), channel_id, "");
-                    control["listen_action"] = getSetting(directControlCreateSettingsKey("dcListenAction_", _direct_controls_channels[i].channelType, j), channel_id, "");
+            control["expression"] = stored_control["expression"].as<char*>();
+            control["enabled"] = stored_control["enabled"].as<bool>();
 
-                    control["expression"] = getSetting(directControlCreateSettingsKey("dcExpression_", _direct_controls_channels[i].channelType, j), channel_id, "");
+            control["control_channel"] = stored_control["control_channel"].as<char*>();
+            control["control_channel_type"] = stored_control["control_channel_type"].as<char*>();
+            control["control_property"] = stored_control["control_property"].as<char*>();
+            control["control_action"] = stored_control["control_action"].as<char*>();
 
-                    control["enabled"] = getSetting(directControlCreateSettingsKey("dcEnabled_", _direct_controls_channels[i].channelType, j), channel_id, "").toInt() == 1 ? true : false;
-                }
-            }
+            control["listen_topic"] = stored_control["listen_topic"].as<char*>();
+            control["listen_action"] = stored_control["listen_action"].as<char*>();
         }
     }
 
@@ -80,25 +77,16 @@ std::vector<direct_control_channel_t> _direct_controls_channels;
                 if (configuration.containsKey("controls")) {
                     DEBUG_MSG(PSTR("[DC] Received %d direct control rules\n"), configuration["controls"].size());
 
-                    // Clear existing controls
-                    for (uint8_t i = 0; i < _direct_controls_channels.size(); i++) {
-                        for (uint8_t channel_id = 0; channel_id < _direct_controls_channels[i].channels; channel_id++) {
-                            for (uint8_t j = 0; j < DIRECT_CONTROL_MAX_CONTROLS; j++) {
-                                delSetting(directControlCreateSettingsKey("dcControlProperty_", _direct_controls_channels[i].channelType, j), channel_id);
-                                delSetting(directControlCreateSettingsKey("dcControlAction_", _direct_controls_channels[i].channelType, j), channel_id);
-                                delSetting(directControlCreateSettingsKey("dcListenTopic_", _direct_controls_channels[i].channelType, j), channel_id);
-                                delSetting(directControlCreateSettingsKey("dcListenAction_", _direct_controls_channels[i].channelType, j), channel_id);
-                                delSetting(directControlCreateSettingsKey("dcExpression_", _direct_controls_channels[i].channelType, j), channel_id);
-                                delSetting(directControlCreateSettingsKey("dcEnabled_", _direct_controls_channels[i].channelType, j), channel_id);
-                            }
-                        }
-                    }
+                    DynamicJsonBuffer jsonBuffer;
+
+                    JsonArray& dc_configuration = jsonBuffer.createArray();
 
                     for (uint8_t i = 0; i < _direct_controls_channels.size(); i++) {
                         _direct_controls_channels[i].controlsCnt = 0;
                     }
 
                     JsonArray& controls = configuration["controls"].as<JsonArray&>();
+
                     uint8_t control_cnt = 0;
 
                     for (JsonObject& control : controls) {
@@ -122,12 +110,18 @@ std::vector<direct_control_channel_t> _direct_controls_channels;
                                 ) {
                                     DEBUG_MSG(PSTR("[DC] Saving direct control rule\n"));
 
-                                    setSetting(directControlCreateSettingsKey("dcControlProperty_", _direct_controls_channels[i].channelType, control_cnt), channel_id, control["control_property"].as<char*>());
-                                    setSetting(directControlCreateSettingsKey("dcControlAction_", _direct_controls_channels[i].channelType, control_cnt), channel_id, control["control_action"].as<char*>());
-                                    setSetting(directControlCreateSettingsKey("dcListenTopic_", _direct_controls_channels[i].channelType, control_cnt), channel_id, control["listen_topic"].as<char*>());
-                                    setSetting(directControlCreateSettingsKey("dcListenAction_", _direct_controls_channels[i].channelType, control_cnt), channel_id, control["listen_action"].as<char*>());
-                                    setSetting(directControlCreateSettingsKey("dcExpression_", _direct_controls_channels[i].channelType, control_cnt), channel_id, control["expression"].as<char*>());
-                                    setSetting(directControlCreateSettingsKey("dcEnabled_", _direct_controls_channels[i].channelType, control_cnt), channel_id, control["enabled"].as<bool>() ? 1 : 0);
+                                    JsonObject& field = dc_configuration.createNestedObject();
+
+                                    field["expression"] = control["expression"].as<char*>();
+                                    field["enabled"] = control["enabled"].as<char*>();
+
+                                    field["control_channel"] = control["control_channel"].as<char*>();
+                                    field["control_channel_type"] = control["control_channel_type"].as<char*>();
+                                    field["control_property"] = control["control_property"].as<char*>();
+                                    field["control_action"] = control["control_action"].as<char*>();
+
+                                    field["listen_topic"] = control["listen_topic"].as<char*>();
+                                    field["listen_action"] = control["listen_action"].as<char*>();
 
                                     control_cnt++;
 
@@ -136,6 +130,12 @@ std::vector<direct_control_channel_t> _direct_controls_channels;
                             }
                         }
                     }
+
+                    String output;
+
+                    dc_configuration.printTo(output);
+
+                    storageWriteConfiguration(_direct_control_config_filename, output);
                 }
 
                 wsSend_P(clientId, PSTR("{\"message\": \"direct_control_updated\"}"));
@@ -151,45 +151,38 @@ std::vector<direct_control_channel_t> _direct_controls_channels;
 // MODULE API
 // -----------------------------------------------------------------------------
 
-String directControlCreateSettingsKey(
-    const char * prefix,
-    const char * channelType,
-    uint8_t channel
-) {
-    char buffer[100];
-    
-    strcpy(buffer, prefix);
-    strcat(buffer, channelType);
-    strcat(buffer, "_%d");
-
-    sprintf(buffer, buffer, channel);
-
-    return String(buffer);
-}
-
-// -----------------------------------------------------------------------------
-
 void directControlReportChannelConfiguration(
     uint8_t id,
     const char * channelType,
     JsonArray& directControls
 ) {
-    for (uint8_t i = 0; i < DIRECT_CONTROL_MAX_CONTROLS; i++) {
-        if (!hasSetting(directControlCreateSettingsKey("dcControlAction_", channelType, i), id)) {
-            break;
+    uint8_t counter = 0;
+
+    DynamicJsonBuffer jsonBuffer;
+
+    JsonArray& dc_configuration = jsonBuffer.parseArray(storageReadConfiguration(_direct_control_config_filename));
+
+    for (JsonObject& stored_control : dc_configuration) {
+        if (id == stored_control["control_channel"].as<unsigned int>() && strcmp(channelType, stored_control["control_channel_type"].as<char*>()) == 0) {
+            JsonObject& direct_control = directControls.createNestedObject();
+
+            direct_control["expression"] = stored_control["expression"].as<char*>();
+            direct_control["enabled"] = stored_control["enabled"].as<bool>();
+
+            direct_control["control_channel"] = stored_control["control_channel"].as<char*>();
+            direct_control["control_channel_type"] = stored_control["control_channel_type"].as<char*>();
+            direct_control["control_property"] = stored_control["control_property"].as<char*>();
+            direct_control["control_action"] = stored_control["control_action"].as<char*>();
+
+            direct_control["listen_topic"] = stored_control["listen_topic"].as<char*>();
+            direct_control["listen_action"] = stored_control["listen_action"].as<char*>();
         }
 
-        JsonObject& direct_control = directControls.createNestedObject();
+        counter++;
 
-        direct_control["control_property"] = getSetting(directControlCreateSettingsKey("dcControlProperty_", channelType, i), id, "");
-        direct_control["control_action"] = getSetting(directControlCreateSettingsKey("dcControlAction_", channelType, i), id, "");
-
-        direct_control["listen_topic"] = getSetting(directControlCreateSettingsKey("dcListenTopic_", channelType, i), id, "");
-        direct_control["listen_action"] = getSetting(directControlCreateSettingsKey("dcListenAction_", channelType, i), id, "");
-
-        direct_control["expression"] = getSetting(directControlCreateSettingsKey("dcExpression_", channelType, i), id, "");
-
-        direct_control["enabled"] = getSetting(directControlCreateSettingsKey("dcEnabled_", channelType, i), id, "").toInt() ? true : false;
+        if (counter >= DIRECT_CONTROL_MAX_CONTROLS) {
+            break;
+        }
     }
 }
 
@@ -200,16 +193,11 @@ void directControlConfigureChannelConfiguration(
     const char * channelType,
     JsonArray& configuration
 ) {
-    // Clear existing direct controls
-    for (uint8_t i = 0; i < DIRECT_CONTROL_MAX_CONTROLS; i++) {
-        delSetting(directControlCreateSettingsKey("dcControlProperty_", channelType, i), id);
-        delSetting(directControlCreateSettingsKey("dcControlAction_", channelType, i), id);
-        delSetting(directControlCreateSettingsKey("dcListenTopic_", channelType, i), id);
-        delSetting(directControlCreateSettingsKey("dcListenAction_", channelType, i), id);
-        delSetting(directControlCreateSettingsKey("dcExpression_", channelType, i), id);
-    }
-    
     uint8_t i = 0;
+
+    DynamicJsonBuffer jsonBuffer;
+
+    JsonArray& dc_configuration = jsonBuffer.createArray();
 
     // Store new direct controls configuration
     for (JsonObject& control : configuration) {
@@ -223,19 +211,28 @@ void directControlConfigureChannelConfiguration(
                 break;
             }
 
-            setSetting(directControlCreateSettingsKey("dcControlProperty_", channelType, i), id, control["control_property"].as<char*>());
-            setSetting(directControlCreateSettingsKey("dcControlAction_", channelType, i), id, control["control_action"].as<char*>());
+            JsonObject& field = dc_configuration.createNestedObject();
 
-            setSetting(directControlCreateSettingsKey("dcListenTopic_", channelType, i), id, control["listen_topic"].as<char*>());
-            setSetting(directControlCreateSettingsKey("dcListenAction_", channelType, i), id, control["listen_action"].as<char*>());
+            field["expression"] = control["expression"].as<char*>();
+            field["enabled"] = control["enabled"].as<bool>();
 
-            setSetting(directControlCreateSettingsKey("dcExpression_", channelType, i), id, control["expression"].as<char*>());
+            field["control_channel"] = id;
+            field["control_channel_type"] = channelType;
+            field["control_property"] = control["control_property"].as<char*>();
+            field["control_action"] = control["control_action"].as<char*>();
 
-            setSetting(directControlCreateSettingsKey("dcEnabled_", channelType, i), id, control["enabled"].as<bool>() ? 1 : 0);
+            field["listen_topic"] = control["listen_topic"].as<char*>();
+            field["listen_action"] = control["listen_action"].as<char*>();
 
             i++;
         }
     }
+
+    String output;
+
+    dc_configuration.printTo(output);
+
+    storageWriteConfiguration(_direct_control_config_filename, output);
 }
 
 // -----------------------------------------------------------------------------

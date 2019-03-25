@@ -122,40 +122,42 @@ String _fastybirdMqttApiConvertChannelName(
     ) {
         uint8_t packet_id;
 
-        for (uint8_t channel_id = 0; channel_id < channelStructure.length; channel_id++) {
-            for (uint8_t i = 0; i < DIRECT_CONTROL_MAX_CONTROLS; i++) {
-                if (!hasSetting(directControlCreateSettingsKey("dcControlAction_", channelStructure.type, i), channel_id)) {
-                    break;
-                }
+        DynamicJsonBuffer jsonBuffer;
 
-                if (getSetting(directControlCreateSettingsKey("dcEnabled_", channelStructure.type, i), channel_id, "").toInt() == 1) {
-                    String listenAction = getSetting(directControlCreateSettingsKey("dcListenAction_", channelStructure.type, i), channel_id, "");
-                    String controlAction = getSetting(directControlCreateSettingsKey("dcControlAction_", channelStructure.type, i), channel_id, "");
-                    String expression = getSetting(directControlCreateSettingsKey("dcExpression_", channelStructure.type, i), channel_id, "");
-                    String property = getSetting(directControlCreateSettingsKey("dcControlProperty_", channelStructure.type, i), channel_id, "");
+        JsonArray& dc_configuration = jsonBuffer.parseArray(storageReadConfiguration(_direct_control_config_filename));
 
-                    packet_id = mqttSubscribe(
-                        getSetting(directControlCreateSettingsKey("dcListenTopic_", channelStructure.type, i), channel_id, "").c_str(),
-                        [channelStructure, channel_id, listenAction, controlAction, property, expression](const char * topic, const char * payload) {
-                            if (
-                                strcmp(FASTYBIRD_DIRECT_CONTROL_EXPRESSION_EQ, expression.c_str()) == 0
-                                && strcmp(payload, listenAction.c_str()) == 0
-                            ) {
-                                for (uint8_t prop_i = 0; prop_i < channelStructure.properties.size(); prop_i++) {
-                                    if (strcmp(channelStructure.properties[prop_i].type, property.c_str()) == 0) {
-                                        channelStructure.properties[prop_i].payloadCallback(
-                                            channel_id,
-                                            controlAction.c_str()
-                                        );
+        for (JsonObject& stored_control : dc_configuration) {
+            if (strcmp(channelStructure.type, stored_control["control_channel_type"].as<char*>()) == 0) {
+                for (uint8_t channel_id = 0; channel_id < channelStructure.length; channel_id++) {
+                    if (channel_id == stored_control["control_channel"].as<unsigned int>() && stored_control["enabled"].as<bool>()) {
+                        String listenAction = stored_control["listen_action"].as<char*>();
+                        String controlAction = stored_control["control_action"].as<char*>();
+                        String expression = stored_control["expression"].as<char*>();
+                        String property = stored_control["control_property"].as<char*>();
+
+                        packet_id = mqttSubscribe(
+                            stored_control["listen_topic"].as<char*>(),
+                            [channelStructure, channel_id, listenAction, controlAction, property, expression](const char * topic, const char * payload) {
+                                if (
+                                    strcmp(FASTYBIRD_DIRECT_CONTROL_EXPRESSION_EQ, expression.c_str()) == 0
+                                    && strcmp(payload, listenAction.c_str()) == 0
+                                ) {
+                                    for (uint8_t prop_i = 0; prop_i < channelStructure.properties.size(); prop_i++) {
+                                        if (strcmp(channelStructure.properties[prop_i].type, property.c_str()) == 0) {
+                                            channelStructure.properties[prop_i].payloadCallback(
+                                                channel_id,
+                                                controlAction.c_str()
+                                            );
+                                        }
                                     }
+
+                                    return;
                                 }
-
-                                return;
                             }
-                        }
-                    );
+                        );
 
-                    if (packet_id == 0) return false;
+                        if (packet_id == 0) return false;
+                    }
                 }
             }
         }
@@ -170,12 +172,18 @@ String _fastybirdMqttApiConvertChannelName(
     ) {
         uint8_t packet_id;
 
-        for (uint8_t channel_id = 0; channel_id < channelStructure.length; channel_id++) {
-            for (uint8_t dc_i = 0; dc_i < DIRECT_CONTROL_MAX_CONTROLS; dc_i++) {
-                if (hasSetting(directControlCreateSettingsKey("dcControlAction_", channelStructure.type, dc_i), channel_id)) {
-                    packet_id = mqttUnsubscribe(getSetting(directControlCreateSettingsKey("dcListenTopic_", channelStructure.type, dc_i), channel_id, "").c_str());
+        DynamicJsonBuffer jsonBuffer;
 
-                    if (packet_id == 0) return false;
+        JsonArray& dc_configuration = jsonBuffer.parseArray(storageReadConfiguration(_direct_control_config_filename));
+
+        for (JsonObject& stored_control : dc_configuration) {
+            if (strcmp(channelStructure.type, stored_control["control_channel_type"].as<char*>()) == 0) {
+                for (uint8_t channel_id = 0; channel_id < channelStructure.length; channel_id++) {
+                    if (channel_id == stored_control["control_channel"].as<unsigned int>()) {
+                        packet_id = mqttUnsubscribe(stored_control["listen_topic"].as<char*>());
+
+                        if (packet_id == 0) return false;
+                    }
                 }
             }
         }

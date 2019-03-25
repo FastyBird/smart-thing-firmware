@@ -44,3 +44,8 @@
     #undef NTP_SUPPORT
     #define NTP_SUPPORT                 1           // Scheduler needs NTP
 #endif
+
+#if FASTYBIRD_SUPPORT || SCHEDULER_SUPPORT || DIRECT_CONTROL_SUPPORT
+    #undef SPIFFS_SUPPORT
+    #define SPIFFS_SUPPORT              1           // Enabling SPIFFS for storing configuration
+#endif

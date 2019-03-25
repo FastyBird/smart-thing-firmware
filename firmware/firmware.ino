@@ -91,6 +91,10 @@ void setup() {
     // Next modules will be only loaded if system is flagged as stable
     // -------------------------------------------------------------------------
 
+    #if SPIFFS_SUPPORT
+        storageSetup();
+    #endif
+
     // Init webserver required before any module that uses API
     #if WEB_SUPPORT
         webSetup();

@@ -6,29 +6,40 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
-#if SCHEDULER_SUPPORT && (RELAY_PROVIDER != RELAY_PROVIDER_NONE || LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
+#if SCHEDULER_SUPPORT
 
 #include <TimeLib.h>
+
+typedef struct {
+    bool        enabled;
+    uint8_t     channel;
+    uint8_t     action;
+    uint8_t     type;
+    uint8_t     hour;
+    uint8_t     minute;
+    bool        utc;
+    String      days;
+} scheduler_record_t;
+
+std::vector<scheduler_record_t> _scheduler_records;
+
+const char * _scheduler_config_filename = "schedules.conf";
 
 void schReportChannelConfiguration(
     unsigned int id,
     const char * channelType,
     JsonArray& schedules
 ) {
-    for (unsigned int i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
-        if (!hasSetting("schChannel", i) || getSetting("schChannel", i, 0).toInt() != id) {
-            break;
-        }
-
+    for (unsigned int i = 0; i < _scheduler_records.size(); i++) {
         JsonObject& schedule = schedules.createNestedObject();
 
-        schedule["enabled"] = getSetting("schEnabled", i, 1).toInt() == 1;
+        schedule["enabled"] = _scheduler_records[i].enabled;
         schedule["property"] = FASTYBIRD_PROPERTY_STATE;
-        schedule["action"] = getSetting("schAction", i, 0).toInt();
-        schedule["hour"] = getSetting("schHour", i, 0).toInt();
-        schedule["minute"] = getSetting("schMinute", i, 0).toInt();
-        schedule["utc"] = getSetting("schUTC", i, 0).toInt() == 1;
-        schedule["days"] = getSetting("schWDs", i, "");
+        schedule["action"] = _scheduler_records[i].action;
+        schedule["hour"] = _scheduler_records[i].hour;
+        schedule["minute"] = _scheduler_records[i].minute;
+        schedule["utc"] = _scheduler_records[i].utc;
+        schedule["days"] = _scheduler_records[i].days.c_str();
     }
 }
 
@@ -39,22 +50,10 @@ void schConfigureChannelConfiguration(
     const char * channelType,
     JsonArray& configuration
 ) {
-    // Clear existing direct controls
-    for (unsigned int i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
-        if (!hasSetting("schChannel", i) || getSetting("schChannel", i, 0).toInt() != id) {
-            break;
-        }
+    DynamicJsonBuffer jsonBuffer;
 
-        delSetting("schEnabled", i);
-        delSetting("schChannel", i);
-        delSetting("schAction", i);
-        delSetting("schType", i);
-        delSetting("schHour", i);
-        delSetting("schMinute", i);
-        delSetting("schUTC", i);
-        delSetting("schWDs", i);
-    }
-        
+    JsonArray& schedules_configuration = jsonBuffer.createArray();
+
     unsigned int i = 0;
 
     // Store new schedules configuration
@@ -70,14 +69,16 @@ void schConfigureChannelConfiguration(
                 break;
             }
 
-            setSetting("schEnabled", i, schedule["enabled"].as<unsigned int>());
-            setSetting("schChannel", i, id);
-            setSetting("schAction", i, schedule["action"].as<char*>());
-            setSetting("schType", i, SCHEDULER_TYPE_SWITCH);
-            setSetting("schHour", i, schedule["hour"].as<unsigned int>());
-            setSetting("schMinute", i, schedule["minute"].as<unsigned int>());
-            setSetting("schUTC", i, schedule["utc"].as<bool>());
-            setSetting("schWDs", i, schedule["days"].as<char*>());
+            JsonObject& field = schedules_configuration.createNestedObject();
+
+            field["enabled"] = schedule["enabled"].as<bool>();
+            field["channel"] = id;
+            field["action"] = schedule["action"].as<unsigned int>();
+            field["type"] = SCHEDULER_TYPE_SWITCH;
+            field["hour"] = schedule["hour"].as<unsigned int>();
+            field["minute"] = schedule["minute"].as<unsigned int>();
+            field["utc"] = schedule["utc"].as<bool>();
+            field["days"] = schedule["action"].as<char*>();
 
             i++;
         }
@@ -107,21 +108,17 @@ void schConfigureChannelConfiguration(
 
         JsonArray &sch = data.createNestedArray("schedules");
 
-        for (byte i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
-            if (!hasSetting("schChannel", i)) {
-                break;
-            }
-
+        for (unsigned int i = 0; i < _scheduler_records.size(); i++) {
             JsonObject &scheduler = sch.createNestedObject();
 
-            scheduler["enabled"] = getSetting("schEnabled", i, 1).toInt() == 1;
-            scheduler["channel"] = getSetting("schChannel", i, 0).toInt();
-            scheduler["action"] = getSetting("schAction", i, 0).toInt();
-            scheduler["type"] = getSetting("schType", i, 0).toInt();
-            scheduler["hour"] = getSetting("schHour", i, 0).toInt();
-            scheduler["minute"] = getSetting("schMinute", i, 0).toInt();
-            scheduler["utc"] = getSetting("schUTC", i, 0).toInt() == 1;
-            scheduler["days"] = getSetting("schWDs", i, "");
+            scheduler["enabled"] = _scheduler_records[i].enabled;
+            scheduler["channel"] = _scheduler_records[i].channel;
+            scheduler["action"] = _scheduler_records[i].action;
+            scheduler["type"] = _scheduler_records[i].type;
+            scheduler["hour"] = _scheduler_records[i].hour;
+            scheduler["minute"] = _scheduler_records[i].minute;
+            scheduler["utc"] = _scheduler_records[i].utc;
+            scheduler["days"] = _scheduler_records[i].days.c_str();
         }
     }
 
@@ -136,32 +133,37 @@ void schConfigureChannelConfiguration(
                 JsonObject& configuration = module["config"];
 
                 if (configuration.containsKey("schedules")) {
-                    // Clear existing schedules
-                    for (byte i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
-                        delSetting("schEnabled", i);
-                        delSetting("schChannel", i);
-                        delSetting("schAction", i);
-                        delSetting("schType", i);
-                        delSetting("schHour", i);
-                        delSetting("schMinute", i);
-                        delSetting("schUTC", i);
-                        delSetting("schDays", i);
-                    }
+                    DEBUG_MSG(PSTR("[SCH] Received %d schedules rules\n"), configuration["schedules"].size());
+
+                    DynamicJsonBuffer jsonBuffer;
+
+                    JsonArray& schedules_configuration = jsonBuffer.createArray();
 
                     for (unsigned int i = 0; i < configuration["schedules"].size(); i++) {
                         if (i >= SCHEDULER_MAX_SCHEDULES) {
                             break;
                         }
 
-                        setSetting("schEnabled", i, configuration["schedules"][i]["enabled"].as<unsigned int>());
-                        setSetting("schChannel", i, configuration["schedules"][i]["channel"].as<unsigned int>());
-                        setSetting("schAction", i, configuration["schedules"][i]["action"].as<unsigned int>());
-                        setSetting("schType", i, configuration["schedules"][i]["type"].as<unsigned int>());
-                        setSetting("schHour", i, configuration["schedules"][i]["hour"].as<unsigned int>());
-                        setSetting("schMinute", i, configuration["schedules"][i]["minute"].as<unsigned int>());
-                        setSetting("schUTC", i, configuration["schedules"][i]["utc"].as<bool>());
-                        setSetting("schWDs", i, configuration["schedules"][i]["days"].as<char*>());
+                        JsonObject& field = schedules_configuration.createNestedObject();
+
+                        field["enabled"] = configuration["schedules"][i]["enabled"].as<bool>();
+                        field["channel"] = configuration["schedules"][i]["channel"].as<unsigned int>();
+                        field["action"] = configuration["schedules"][i]["action"].as<unsigned int>();
+                        field["type"] = configuration["schedules"][i]["type"].as<unsigned int>();
+                        field["hour"] = configuration["schedules"][i]["hour"].as<unsigned int>();
+                        field["minute"] = configuration["schedules"][i]["minute"].as<unsigned int>();
+                        field["utc"] = configuration["schedules"][i]["utc"].as<bool>();
+                        field["days"] = configuration["schedules"][i]["days"].as<char*>();
                     }
+
+                    String output;
+
+                    schedules_configuration.printTo(output);
+
+                    storageWriteConfiguration(_scheduler_config_filename, output);
+
+                    // Reload schedules
+                    _schLoadSchedules();
                 }
 
                 wsSend_P(clientId, PSTR("{\"message\": \"sch_updated\"}"));
@@ -175,51 +177,53 @@ void schConfigureChannelConfiguration(
 
 // -----------------------------------------------------------------------------
 
-void _schConfigure() {
-    bool delete_flag = false;
+void _schLoadSchedules() {
+    DynamicJsonBuffer jsonBuffer;
 
-    for (unsigned int i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
-        int sch_channel = getSetting("schChannel", i, 0xFF).toInt();
+    JsonArray& scheduler_configuration = jsonBuffer.parseArray(storageReadConfiguration(_scheduler_config_filename));
 
-        if (sch_channel == 0xFF) {
-            delete_flag = true;
-        }
+    std::vector<scheduler_record_t> stored_scheduler_records;
 
-        if (delete_flag) {
-            delSetting("schEnabled", i);
-            delSetting("schChannel", i);
-            delSetting("schAction", i);
-            delSetting("schHour", i);
-            delSetting("schMinute", i);
-            delSetting("schWDs", i);
-            delSetting("schType", i);
-            delSetting("schUTC", i);
-
-        } else {
-            #if DEBUG_SUPPORT
-                bool sch_enabled = getSetting("schEnabled", i, 1).toInt() == 1;
-
-                int sch_action = getSetting("schAction", i, 0).toInt();
-
-                int sch_hour = getSetting("schHour", i, 0).toInt();
-                int sch_minute = getSetting("schMinute", i, 0).toInt();
-
-                bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
-
-                String sch_weekdays = getSetting("schWDs", i, "");
-
-                unsigned char sch_type = getSetting("schType", i, SCHEDULER_TYPE_SWITCH).toInt();
-
-                DEBUG_MSG(
-                    PSTR("[SCH] Schedule #%d: %s #%d to %d at %02d:%02d %s on %s%s\n"),
-                    i, SCHEDULER_TYPE_SWITCH == sch_type ? "switch" : "channel", sch_channel,
-                    sch_action, sch_hour, sch_minute, sch_utc ? "UTC" : "local time",
-                    (char *) sch_weekdays.c_str(),
-                    sch_enabled ? "" : " (disabled)"
-                );
-            #endif // DEBUG_SUPPORT
-        }
+    for (JsonObject& stored_configuration : scheduler_configuration) {
+        stored_scheduler_records.push_back((scheduler_record_t) {
+            stored_configuration["enabled"].as<bool>(),
+            stored_configuration["channel"].as<unsigned int>(),
+            stored_configuration["action"].as<unsigned int>(),
+            stored_configuration["type"].as<unsigned int>(),
+            stored_configuration["hour"].as<unsigned int>(),
+            stored_configuration["minute"].as<unsigned int>(),
+            stored_configuration["utc"].as<bool>(),
+            String(stored_configuration["days"].as<char*>())
+        });
     }
+
+    _scheduler_records = stored_scheduler_records;
+}
+
+// -----------------------------------------------------------------------------
+
+void _schConfigure() {
+    _schLoadSchedules();
+
+    #if DEBUG_SUPPORT
+        for (unsigned int i = 0; i < _scheduler_records.size(); i++) {
+            bool sch_enabled = _scheduler_records[i].enabled;
+            uint8_t sch_channel = _scheduler_records[i].channel;
+            uint8_t sch_type = _scheduler_records[i].type;
+            uint8_t sch_action = _scheduler_records[i].action;
+
+            uint8_t sch_hour = _scheduler_records[i].hour;
+            uint8_t sch_minute = _scheduler_records[i].minute;
+
+            DEBUG_MSG(
+                PSTR("[SCH] Schedule #%d: %s #%d to %d at %02d:%02d %s on %s%s\n"),
+                i, SCHEDULER_TYPE_SWITCH == sch_type ? "switch" : "channel", sch_channel,
+                sch_action, sch_hour, sch_minute, _scheduler_records[i].utc ? "UTC" : "local time",
+                (char *) _scheduler_records[i].days.c_str(),
+                sch_enabled ? "" : " (disabled)"
+            );
+        }
+    #endif // DEBUG_SUPPORT
 }
 
 // -----------------------------------------------------------------------------
@@ -269,37 +273,24 @@ void _schCheck() {
     time_t utc_time = ntpLocal2UTC(local_time);
 
     // Check schedules
-    for (unsigned int i = 0; i < SCHEDULER_MAX_SCHEDULES; i++) {
-        int sch_channel = getSetting("schChannel", i, 0xFF).toInt();
-
-        if (sch_channel == 0xFF) {
-            break;
-        }
+    for (unsigned int i = 0; i < _scheduler_records.size(); i++) {
 
         // Skip disabled schedules
-        if (getSetting("schEnabled", i, 1).toInt() == 0) {
+        if (_scheduler_records[i].enabled == false) {
             continue;
         }
 
-        // Get the datetime used for the calculation
-        bool sch_utc = getSetting("schUTC", i, 0).toInt() == 1;
+        time_t t = _scheduler_records[i].utc ? utc_time : local_time;
 
-        time_t t = sch_utc ? utc_time : local_time;
-
-        String sch_weekdays = getSetting("schWDs", i, "");
-
-        if (_schIsThisWeekday(t, sch_weekdays)) {
-            int sch_hour = getSetting("schHour", i, 0).toInt();
-            int sch_minute = getSetting("schMinute", i, 0).toInt();
-
-            int minutes_to_trigger = _schMinutesLeft(t, sch_hour, sch_minute);
+        if (_schIsThisWeekday(t, _scheduler_records[i].days)) {
+            int minutes_to_trigger = _schMinutesLeft(t, _scheduler_records[i].hour, _scheduler_records[i].minute);
 
             if (minutes_to_trigger == 0) {
-                unsigned char sch_type = getSetting("schType", i, SCHEDULER_TYPE_SWITCH).toInt();
+                uint8_t sch_type = _scheduler_records[i].type;
 
                 #if RELAY_PROVIDER != RELAY_PROVIDER_NONE
                     if (sch_type == SCHEDULER_TYPE_SWITCH) {
-                        int sch_action = getSetting("schAction", i, 0).toInt();
+                        uint8_t sch_action = _scheduler_records[i].action;
 
                         DEBUG_MSG(PSTR("[SCH] Switching switch %d to %d\n"), sch_channel, sch_action);
 
@@ -314,7 +305,7 @@ void _schCheck() {
 
                 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
                     if (sch_type == SCHEDULER_TYPE_DIM) {
-                        int sch_brightness = getSetting("schAction", i, -1).toInt();
+                        int sch_brightness = _scheduler_records[i].action;
 
                         DEBUG_MSG(PSTR("[SCH] Set channel %d value to %d\n"), sch_channel, sch_brightness);
 
