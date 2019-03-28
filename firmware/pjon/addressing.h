@@ -83,6 +83,8 @@ void _gatewaySearchNodeRequestHandler(
         node_sn[i] = (char) payload[i + 4];
     }
 
+    uint8_t reply_address = PJON_BROADCAST;
+
     // Node has allready assigned bus address
     if (address != PJON_NOT_ASSIGNED) {
         if (address != (uint16_t) senderAddress) {
@@ -102,6 +104,8 @@ void _gatewaySearchNodeRequestHandler(
             DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with serial number mismatch\n"));
             return;
         }
+
+        reply_address = (uint8_t) address;
 
         DEBUG_MSG(PSTR("[GATEWAY] Addressing for node: %s was successfully restored. Previously assigned address is: %d\n"), (char *) node_sn, (uint8_t) address);
 
@@ -152,7 +156,7 @@ void _gatewaySearchNodeRequestHandler(
     output_content[byte_pointer] = 0; // Be sure to set the null terminator!!!
 
     _gatewaySendPacket(
-        PJON_BROADCAST,
+        reply_address,
         output_content,
         (byte_pointer + 1)
     );

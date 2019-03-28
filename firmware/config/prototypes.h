@@ -161,19 +161,6 @@ void niceDelay(unsigned long ms);
 #endif
 
 // -----------------------------------------------------------------------------
-// RFM69
-// -----------------------------------------------------------------------------
-typedef struct {
-    unsigned long messageID;
-    unsigned int packetID;
-    unsigned int senderID;
-    unsigned int targetID;
-    char * key;
-    char * value;
-    int16_t rssi;
-} packet_t;
-
-// -----------------------------------------------------------------------------
 // Settings
 // -----------------------------------------------------------------------------
 #include <Embedis.h>

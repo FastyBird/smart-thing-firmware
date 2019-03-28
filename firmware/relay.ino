@@ -558,7 +558,7 @@ bool _relayConfigureChannel(
         if (strcmp(action, "switch") == 0 && data.containsKey("channels")) {
             for (uint8_t i = 0; i < data["channels"].size(); i++) {
                 // Parse value
-                uint32_t value = _relayParsePayload(data["channels"][i].as<char*>());
+                uint32_t value = _relayParsePayload(data["channels"][i].as<char *>());
 
                 // Action to perform
                 if (value == 0) {

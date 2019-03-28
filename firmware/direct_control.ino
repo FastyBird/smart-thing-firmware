@@ -23,6 +23,18 @@ const char * _direct_control_config_filename = "dc.conf";
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
+String _directControlReadStoredConfiguration() {
+    String stored_content = storageReadConfiguration(_direct_control_config_filename);
+
+    if (strcmp(stored_content.c_str(), "") == 0) {
+        stored_content = String("[]");
+    }
+
+    return stored_content;
+}
+
+// -----------------------------------------------------------------------------
+
 #if WEB_SUPPORT && WS_SUPPORT
     // New WS client is connected
     void _directControlWSOnConnect(
@@ -46,21 +58,21 @@ const char * _direct_control_config_filename = "dc.conf";
 
         DynamicJsonBuffer jsonBuffer;
 
-        JsonArray& dc_configuration = jsonBuffer.parseArray(storageReadConfiguration(_direct_control_config_filename));
+        JsonArray& dc_configuration = jsonBuffer.parseArray(storageReadConfiguration(_directControlReadStoredConfiguration().c_str()));
 
         for (JsonObject& stored_control : dc_configuration) {
             JsonObject& control = controls.createNestedObject();
 
-            control["expression"] = stored_control["expression"].as<char*>();
+            control["expression"] = stored_control["expression"].as<char *>();
             control["enabled"] = stored_control["enabled"].as<bool>();
 
-            control["control_channel"] = stored_control["control_channel"].as<char*>();
-            control["control_channel_type"] = stored_control["control_channel_type"].as<char*>();
-            control["control_property"] = stored_control["control_property"].as<char*>();
-            control["control_action"] = stored_control["control_action"].as<char*>();
+            control["control_channel"] = stored_control["control_channel"].as<char *>();
+            control["control_channel_type"] = stored_control["control_channel_type"].as<char *>();
+            control["control_property"] = stored_control["control_property"].as<char *>();
+            control["control_action"] = stored_control["control_action"].as<char *>();
 
-            control["listen_topic"] = stored_control["listen_topic"].as<char*>();
-            control["listen_action"] = stored_control["listen_action"].as<char*>();
+            control["listen_topic"] = stored_control["listen_topic"].as<char *>();
+            control["listen_action"] = stored_control["listen_action"].as<char *>();
         }
     }
 
@@ -112,16 +124,16 @@ const char * _direct_control_config_filename = "dc.conf";
 
                                     JsonObject& field = dc_configuration.createNestedObject();
 
-                                    field["expression"] = control["expression"].as<char*>();
-                                    field["enabled"] = control["enabled"].as<char*>();
+                                    field["expression"] = control["expression"].as<char *>();
+                                    field["enabled"] = control["enabled"].as<char *>();
 
-                                    field["control_channel"] = control["control_channel"].as<char*>();
-                                    field["control_channel_type"] = control["control_channel_type"].as<char*>();
-                                    field["control_property"] = control["control_property"].as<char*>();
-                                    field["control_action"] = control["control_action"].as<char*>();
+                                    field["control_channel"] = control["control_channel"].as<char *>();
+                                    field["control_channel_type"] = control["control_channel_type"].as<char *>();
+                                    field["control_property"] = control["control_property"].as<char *>();
+                                    field["control_action"] = control["control_action"].as<char *>();
 
-                                    field["listen_topic"] = control["listen_topic"].as<char*>();
-                                    field["listen_action"] = control["listen_action"].as<char*>();
+                                    field["listen_topic"] = control["listen_topic"].as<char *>();
+                                    field["listen_action"] = control["listen_action"].as<char *>();
 
                                     control_cnt++;
 
@@ -160,22 +172,22 @@ void directControlReportChannelConfiguration(
 
     DynamicJsonBuffer jsonBuffer;
 
-    JsonArray& dc_configuration = jsonBuffer.parseArray(storageReadConfiguration(_direct_control_config_filename));
+    JsonArray& dc_configuration = jsonBuffer.parseArray(_directControlReadStoredConfiguration().c_str());
 
     for (JsonObject& stored_control : dc_configuration) {
-        if (id == stored_control["control_channel"].as<unsigned int>() && strcmp(channelType, stored_control["control_channel_type"].as<char*>()) == 0) {
+        if (id == stored_control["control_channel"].as<unsigned int>() && strcmp(channelType, stored_control["control_channel_type"].as<char *>()) == 0) {
             JsonObject& direct_control = directControls.createNestedObject();
 
-            direct_control["expression"] = stored_control["expression"].as<char*>();
+            direct_control["expression"] = stored_control["expression"].as<char *>();
             direct_control["enabled"] = stored_control["enabled"].as<bool>();
 
-            direct_control["control_channel"] = stored_control["control_channel"].as<char*>();
-            direct_control["control_channel_type"] = stored_control["control_channel_type"].as<char*>();
-            direct_control["control_property"] = stored_control["control_property"].as<char*>();
-            direct_control["control_action"] = stored_control["control_action"].as<char*>();
+            direct_control["control_channel"] = stored_control["control_channel"].as<char *>();
+            direct_control["control_channel_type"] = stored_control["control_channel_type"].as<char *>();
+            direct_control["control_property"] = stored_control["control_property"].as<char *>();
+            direct_control["control_action"] = stored_control["control_action"].as<char *>();
 
-            direct_control["listen_topic"] = stored_control["listen_topic"].as<char*>();
-            direct_control["listen_action"] = stored_control["listen_action"].as<char*>();
+            direct_control["listen_topic"] = stored_control["listen_topic"].as<char *>();
+            direct_control["listen_action"] = stored_control["listen_action"].as<char *>();
         }
 
         counter++;
@@ -213,16 +225,16 @@ void directControlConfigureChannelConfiguration(
 
             JsonObject& field = dc_configuration.createNestedObject();
 
-            field["expression"] = control["expression"].as<char*>();
+            field["expression"] = control["expression"].as<char *>();
             field["enabled"] = control["enabled"].as<bool>();
 
             field["control_channel"] = id;
             field["control_channel_type"] = channelType;
-            field["control_property"] = control["control_property"].as<char*>();
-            field["control_action"] = control["control_action"].as<char*>();
+            field["control_property"] = control["control_property"].as<char *>();
+            field["control_action"] = control["control_action"].as<char *>();
 
-            field["listen_topic"] = control["listen_topic"].as<char*>();
-            field["listen_action"] = control["listen_action"].as<char*>();
+            field["listen_topic"] = control["listen_topic"].as<char *>();
+            field["listen_action"] = control["listen_action"].as<char *>();
 
             i++;
         }

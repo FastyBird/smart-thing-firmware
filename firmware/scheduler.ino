@@ -25,64 +25,18 @@ std::vector<scheduler_record_t> _scheduler_records;
 
 const char * _scheduler_config_filename = "schedules.conf";
 
-void schReportChannelConfiguration(
-    unsigned int id,
-    const char * channelType,
-    JsonArray& schedules
-) {
-    for (unsigned int i = 0; i < _scheduler_records.size(); i++) {
-        JsonObject& schedule = schedules.createNestedObject();
-
-        schedule["enabled"] = _scheduler_records[i].enabled;
-        schedule["property"] = FASTYBIRD_PROPERTY_STATE;
-        schedule["action"] = _scheduler_records[i].action;
-        schedule["hour"] = _scheduler_records[i].hour;
-        schedule["minute"] = _scheduler_records[i].minute;
-        schedule["utc"] = _scheduler_records[i].utc;
-        schedule["days"] = _scheduler_records[i].days.c_str();
-    }
-}
-
+// -----------------------------------------------------------------------------
+// MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-void schConfigureChannelConfiguration(
-    unsigned int id,
-    const char * channelType,
-    JsonArray& configuration
-) {
-    DynamicJsonBuffer jsonBuffer;
+String _schReadStoredConfiguration() {
+    String stored_content = storageReadConfiguration(_scheduler_config_filename);
 
-    JsonArray& schedules_configuration = jsonBuffer.createArray();
-
-    unsigned int i = 0;
-
-    // Store new schedules configuration
-    for (JsonObject& schedule : configuration) {
-        if (
-            schedule.containsKey("action")
-            && schedule.containsKey("hour")
-            && schedule.containsKey("minute")
-            && schedule.containsKey("utc")
-            && schedule.containsKey("days")
-        )  {
-            if (i >= SCHEDULER_MAX_SCHEDULES) {
-                break;
-            }
-
-            JsonObject& field = schedules_configuration.createNestedObject();
-
-            field["enabled"] = schedule["enabled"].as<bool>();
-            field["channel"] = id;
-            field["action"] = schedule["action"].as<unsigned int>();
-            field["type"] = SCHEDULER_TYPE_SWITCH;
-            field["hour"] = schedule["hour"].as<unsigned int>();
-            field["minute"] = schedule["minute"].as<unsigned int>();
-            field["utc"] = schedule["utc"].as<bool>();
-            field["days"] = schedule["action"].as<char*>();
-
-            i++;
-        }
+    if (strcmp(stored_content.c_str(), "") == 0) {
+        stored_content = String("[]");
     }
+
+    return stored_content;
 }
 
 // -----------------------------------------------------------------------------
@@ -153,7 +107,7 @@ void schConfigureChannelConfiguration(
                         field["hour"] = configuration["schedules"][i]["hour"].as<unsigned int>();
                         field["minute"] = configuration["schedules"][i]["minute"].as<unsigned int>();
                         field["utc"] = configuration["schedules"][i]["utc"].as<bool>();
-                        field["days"] = configuration["schedules"][i]["days"].as<char*>();
+                        field["days"] = configuration["schedules"][i]["days"].as<char *>();
                     }
 
                     String output;
@@ -180,7 +134,7 @@ void schConfigureChannelConfiguration(
 void _schLoadSchedules() {
     DynamicJsonBuffer jsonBuffer;
 
-    JsonArray& scheduler_configuration = jsonBuffer.parseArray(storageReadConfiguration(_scheduler_config_filename));
+    JsonArray& scheduler_configuration = jsonBuffer.parseArray(_schReadStoredConfiguration().c_str());
 
     std::vector<scheduler_record_t> stored_scheduler_records;
 
@@ -193,7 +147,7 @@ void _schLoadSchedules() {
             stored_configuration["hour"].as<unsigned int>(),
             stored_configuration["minute"].as<unsigned int>(),
             stored_configuration["utc"].as<bool>(),
-            String(stored_configuration["days"].as<char*>())
+            String(stored_configuration["days"].as<char *>())
         });
     }
 
@@ -331,6 +285,70 @@ void _schCheck() {
                     }
                 #endif
             }
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// MODULE API
+// -----------------------------------------------------------------------------
+
+void schReportChannelConfiguration(
+    unsigned int id,
+    const char * channelType,
+    JsonArray& schedules
+) {
+    for (unsigned int i = 0; i < _scheduler_records.size(); i++) {
+        JsonObject& schedule = schedules.createNestedObject();
+
+        schedule["enabled"] = _scheduler_records[i].enabled;
+        schedule["property"] = FASTYBIRD_PROPERTY_STATE;
+        schedule["action"] = _scheduler_records[i].action;
+        schedule["hour"] = _scheduler_records[i].hour;
+        schedule["minute"] = _scheduler_records[i].minute;
+        schedule["utc"] = _scheduler_records[i].utc;
+        schedule["days"] = _scheduler_records[i].days.c_str();
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+void schConfigureChannelConfiguration(
+    unsigned int id,
+    const char * channelType,
+    JsonArray& configuration
+) {
+    DynamicJsonBuffer jsonBuffer;
+
+    JsonArray& schedules_configuration = jsonBuffer.createArray();
+
+    unsigned int i = 0;
+
+    // Store new schedules configuration
+    for (JsonObject& schedule : configuration) {
+        if (
+            schedule.containsKey("action")
+            && schedule.containsKey("hour")
+            && schedule.containsKey("minute")
+            && schedule.containsKey("utc")
+            && schedule.containsKey("days")
+        )  {
+            if (i >= SCHEDULER_MAX_SCHEDULES) {
+                break;
+            }
+
+            JsonObject& field = schedules_configuration.createNestedObject();
+
+            field["enabled"] = schedule["enabled"].as<bool>();
+            field["channel"] = id;
+            field["action"] = schedule["action"].as<unsigned int>();
+            field["type"] = SCHEDULER_TYPE_SWITCH;
+            field["hour"] = schedule["hour"].as<unsigned int>();
+            field["minute"] = schedule["minute"].as<unsigned int>();
+            field["utc"] = schedule["utc"].as<bool>();
+            field["days"] = schedule["action"].as<char *>();
+
+            i++;
         }
     }
 }

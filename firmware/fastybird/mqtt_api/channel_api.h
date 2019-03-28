@@ -127,16 +127,16 @@ String _fastybirdMqttApiConvertChannelName(
         JsonArray& dc_configuration = jsonBuffer.parseArray(storageReadConfiguration(_direct_control_config_filename));
 
         for (JsonObject& stored_control : dc_configuration) {
-            if (strcmp(channelStructure.type, stored_control["control_channel_type"].as<char*>()) == 0) {
+            if (strcmp(channelStructure.type, stored_control["control_channel_type"].as<char *>()) == 0) {
                 for (uint8_t channel_id = 0; channel_id < channelStructure.length; channel_id++) {
                     if (channel_id == stored_control["control_channel"].as<unsigned int>() && stored_control["enabled"].as<bool>()) {
-                        String listenAction = stored_control["listen_action"].as<char*>();
-                        String controlAction = stored_control["control_action"].as<char*>();
-                        String expression = stored_control["expression"].as<char*>();
-                        String property = stored_control["control_property"].as<char*>();
+                        String listenAction = stored_control["listen_action"].as<char *>();
+                        String controlAction = stored_control["control_action"].as<char *>();
+                        String expression = stored_control["expression"].as<char *>();
+                        String property = stored_control["control_property"].as<char *>();
 
                         packet_id = mqttSubscribe(
-                            stored_control["listen_topic"].as<char*>(),
+                            stored_control["listen_topic"].as<char *>(),
                             [channelStructure, channel_id, listenAction, controlAction, property, expression](const char * topic, const char * payload) {
                                 if (
                                     strcmp(FASTYBIRD_DIRECT_CONTROL_EXPRESSION_EQ, expression.c_str()) == 0
@@ -177,10 +177,10 @@ String _fastybirdMqttApiConvertChannelName(
         JsonArray& dc_configuration = jsonBuffer.parseArray(storageReadConfiguration(_direct_control_config_filename));
 
         for (JsonObject& stored_control : dc_configuration) {
-            if (strcmp(channelStructure.type, stored_control["control_channel_type"].as<char*>()) == 0) {
+            if (strcmp(channelStructure.type, stored_control["control_channel_type"].as<char *>()) == 0) {
                 for (uint8_t channel_id = 0; channel_id < channelStructure.length; channel_id++) {
                     if (channel_id == stored_control["control_channel"].as<unsigned int>()) {
-                        packet_id = mqttUnsubscribe(stored_control["listen_topic"].as<char*>());
+                        packet_id = mqttUnsubscribe(stored_control["listen_topic"].as<char *>());
 
                         if (packet_id == 0) return false;
                     }

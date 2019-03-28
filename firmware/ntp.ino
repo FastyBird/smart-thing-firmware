@@ -87,7 +87,7 @@ void _ntpUpdateConfiguration(
     JsonObject& configuration
 ) {
     if (configuration.containsKey("ntp_server"))  {
-        setSetting("ntpServer", configuration["ntp_server"].as<char*>());
+        setSetting("ntpServer", configuration["ntp_server"].as<char *>());
     }
 
     if (configuration.containsKey("ntp_offset"))  {

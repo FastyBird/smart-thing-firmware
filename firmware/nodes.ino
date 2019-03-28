@@ -145,7 +145,9 @@ uint8_t _gateway_reading_node_index = 0;
 uint32_t _gateway_last_nodes_check = 0;
 uint32_t _gateway_last_nodes_scan = 0;
 
-uint32_t _gateway_nodes_scan_client_id = 0;
+bool _gateway_nodes_preform_scan = false;
+
+const char * _gateway_config_filename = "gateway.conf";
 
 #include "./pjon/addressing.h"
 #include "./pjon/initialization.h"
@@ -153,6 +155,18 @@ uint32_t _gateway_nodes_scan_client_id = 0;
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
+// -----------------------------------------------------------------------------
+
+String _gatewayReadStoredConfiguration() {
+    String stored_content = storageReadConfiguration(_gateway_config_filename);
+
+    if (strcmp(stored_content.c_str(), "") == 0) {
+        stored_content = String("[]");
+    }
+
+    return stored_content;
+}
+
 // -----------------------------------------------------------------------------
 
 #if (WEB_SUPPORT && WS_SUPPORT) || FASTYBIRD_SUPPORT
@@ -463,7 +477,7 @@ uint32_t _gateway_nodes_scan_client_id = 0;
             }
 
         } else if (strcmp(action, "scan") == 0) {
-            _gateway_nodes_scan_client_id = clientId;
+            _gateway_nodes_preform_scan = true;
         }
     }
 #endif
@@ -675,18 +689,105 @@ uint32_t _gateway_nodes_scan_client_id = 0;
 
 // -----------------------------------------------------------------------------
 
-void _gatewayBootup()
-{
-    String node_sn;
+#if WEB_SUPPORT
+    void _gatewayOnGetConfig(
+        AsyncWebServerRequest * request
+    ) {
+        webLog(request);
 
-    for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
-        node_sn = getSetting("nodeSn", i, GATEWAY_DESCRIPTION_NOT_SET);
-
-        if (node_sn.equals(GATEWAY_DESCRIPTION_NOT_SET) == false) {
-            strncpy(_gateway_nodes[i].serial_number, node_sn.c_str(), (node_sn.length() + 1));
+        if (!webAuthenticate(request)) {
+            return request->requestAuthentication(getIdentifier().c_str());
         }
+
+        AsyncResponseStream * response = request->beginResponseStream("text/json");
+
+        char buffer[100];
+
+        snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-gateway-backup.json\""), (char *) getIdentifier().c_str());
+
+        response->addHeader("Content-Disposition", buffer);
+        response->addHeader("X-XSS-Protection", "1; mode=block");
+        response->addHeader("X-Content-Type-Options", "nosniff");
+        response->addHeader("X-Frame-Options", "deny");
+
+        response->printf("{\n\"thing\": \"%s\"", THING);
+        response->printf(",\n\"manufacturer\": \"%s\"", FIRMWARE_MANUFACTURER);
+        response->printf(",\n\"version\": \"%s\"", FIRMWARE_VERSION);
+
+        #if NTP_SUPPORT
+            response->printf(",\n\"timestamp\": \"%s\"", ntpDateTime().c_str());
+        #endif
+
+        DynamicJsonBuffer jsonBuffer;
+
+        JsonArray& registered_nodes = jsonBuffer.parseArray(_gatewayReadStoredConfiguration().c_str());
+
+        String output;
+
+        registered_nodes.printTo(output);
+
+        response->printf(",\n\"gateway\": %s", output.c_str());
+
+        response->printf("\n}");
+
+        request->send(response);
     }
-}
+
+// -----------------------------------------------------------------------------
+
+    void _gatewayOnPostConfig(
+        AsyncWebServerRequest * request
+    ) {
+        webLog(request);
+
+        if (!webAuthenticate(request)) {
+            return request->requestAuthentication(getIdentifier().c_str());
+        }
+
+        bool gateway_web_config_success = false;
+
+        int params = request->params();
+
+        for (uint8_t i = 0; i < params; i++) {
+            AsyncWebParameter* p = request->getParam(i);
+            
+            if (p->isFile()) {
+                DynamicJsonBuffer jsonBuffer;
+
+                JsonObject& root = jsonBuffer.parseObject(p->value().c_str());
+
+                if (root.success()) {
+                    gateway_web_config_success = _gatewayRestoreStorageFromJson(root);
+                }
+            }
+        }
+
+        request->send(gateway_web_config_success ? 200 : 400);
+    }
+
+// -----------------------------------------------------------------------------
+
+    bool _gatewayWebRequestCallback(
+        AsyncWebServerRequest * request
+    ) {
+        String url = request->url();
+
+        if (url.equals("/gateway/config")) {
+            if (request->method() == HTTP_GET) {
+                _gatewayOnGetConfig(request);
+
+                return true;
+
+            } else if (request->method() == HTTP_POST) {
+                _gatewayOnPostConfig(request);
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+#endif
 
 // -----------------------------------------------------------------------------
 
@@ -766,6 +867,164 @@ void _gatewayBootup()
         );
     }
 #endif
+
+// -----------------------------------------------------------------------------
+
+void _gatewayAddNodeToStorage(
+    const uint8_t id
+) {
+    DynamicJsonBuffer jsonBuffer;
+
+    JsonArray& registered_nodes = jsonBuffer.parseArray(_gatewayReadStoredConfiguration().c_str());
+
+    if (!registered_nodes.success()) {
+        //JsonArray& registered_nodes = jsonBuffer.createArray();
+    }
+
+    uint8_t index = 0;
+
+    for (JsonObject& stored_node : registered_nodes) {
+        if (stored_node["address"] == id) {
+            registered_nodes.remove(index);
+        }
+
+        index++;
+    }
+
+    JsonObject& node = registered_nodes.createNestedObject();
+
+    if (!node.success()) {
+        DEBUG_MSG(PSTR("[GATEWAY][ERR] Could not create configuration schema for storing.\n"));
+
+        return;
+    }
+
+    node["address"] = id;
+    node["serial_number"] = _gateway_nodes[id].serial_number;
+
+    JsonObject& hardware_info = node.createNestedObject("hardware");
+
+    hardware_info["manufacturer"] = _gateway_nodes[id].hardware.manufacturer;
+    hardware_info["model"] = _gateway_nodes[id].hardware.model;
+    hardware_info["version"] = _gateway_nodes[id].hardware.version;
+
+    JsonObject& firmware_info = node.createNestedObject("firmware");
+
+    firmware_info["manufacturer"] = _gateway_nodes[id].firmware.manufacturer;
+    firmware_info["model"] = _gateway_nodes[id].firmware.model;
+    firmware_info["version"] = _gateway_nodes[id].firmware.version;
+
+    node["digital_inputs"] = _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI];
+    node["digital_outputs"] = _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO];
+    node["analog_inputs"] = _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI];
+    node["analog_outputs"] = _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO];
+
+    String output;
+
+    registered_nodes.printTo(output);
+
+    storageWriteConfiguration(_gateway_config_filename, output);
+}
+
+// -----------------------------------------------------------------------------
+
+void _gatewayRemoveNodeFromStorage(
+    const uint8_t id
+) {
+    DynamicJsonBuffer jsonBuffer;
+
+    JsonArray& registered_nodes = jsonBuffer.parseArray(_gatewayReadStoredConfiguration().c_str());
+
+    bool removed = false;
+    uint8_t index = 0;
+
+    for (JsonObject& stored_node : registered_nodes) {
+        if (stored_node["address"] == id) {
+            registered_nodes.remove(index);
+
+            removed = true;
+        }
+
+        index++;
+    }
+
+    if (removed) {
+        String output;
+
+        registered_nodes.printTo(output);
+
+        storageWriteConfiguration(_gateway_config_filename, output);
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+bool _gatewayRestoreStorageFromJson(
+    JsonObject& data
+) {
+    const char * _thing = data["thing"];
+
+    if (strcmp(_thing, THING) != 0) {
+        return false;
+    }
+
+    const char * _version = data["version"];
+
+    if (strcmp(_version, FIRMWARE_VERSION) != 0) {
+        return false;
+    }
+
+    for (auto element : data) {
+        if (strcmp(element.key, "thing") == 0) {
+            continue;
+        }
+
+        if (strcmp(element.key, "version") == 0) {
+            continue;
+        }
+
+        // Parse gateway structure
+    }
+
+    DEBUG_MSG(PSTR("[GATEWAY] Structure restored successfully\n"));
+
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+
+void _gatewayRestoreFromStorage() {
+    DynamicJsonBuffer jsonBuffer;
+
+    JsonArray& registered_nodes = jsonBuffer.parseArray(_gatewayReadStoredConfiguration().c_str());
+
+    for (JsonObject& stored_node : registered_nodes) {
+        uint8_t address = stored_node["address"].as<unsigned int>();
+
+        strncpy(_gateway_nodes[address].serial_number, stored_node["serial_number"].as<char *>(), (uint8_t) strlen(stored_node["serial_number"].as<char *>()));
+
+        _gateway_nodes[address].addressing.state = false;
+        _gateway_nodes[address].addressing.registration = 0;
+        _gateway_nodes[address].addressing.lost = 0;
+
+        JsonObject& hardware = stored_node["hardware"];
+
+        strncpy(_gateway_nodes[address].hardware.manufacturer, hardware["manufacturer"].as<char *>(), (uint8_t) strlen(hardware["manufacturer"].as<char *>()));
+        strncpy(_gateway_nodes[address].hardware.model, hardware["model"].as<char *>(), (uint8_t) strlen(hardware["model"].as<char *>()));
+        strncpy(_gateway_nodes[address].hardware.version, hardware["version"].as<char *>(), (uint8_t) strlen(hardware["version"].as<char *>()));
+
+        JsonObject& firmware = stored_node["firmware"];
+
+        strncpy(_gateway_nodes[address].firmware.manufacturer, firmware["manufacturer"].as<char *>(), (uint8_t) strlen(firmware["manufacturer"].as<char *>()));
+        strncpy(_gateway_nodes[address].firmware.model, firmware["model"].as<char *>(), (uint8_t) strlen(firmware["model"].as<char *>()));
+        strncpy(_gateway_nodes[address].firmware.version, firmware["version"].as<char *>(), (uint8_t) strlen(firmware["version"].as<char *>()));
+
+        _gateway_nodes[address].registers_size[GATEWAY_REGISTER_DI] = stored_node["digital_inputs"].as<unsigned int>();
+        _gateway_nodes[address].registers_size[GATEWAY_REGISTER_DO] = stored_node["digital_outputs"].as<unsigned int>();
+        _gateway_nodes[address].registers_size[GATEWAY_REGISTER_AI] = stored_node["analog_inputs"].as<unsigned int>();
+        _gateway_nodes[address].registers_size[GATEWAY_REGISTER_AO] = stored_node["analog_outputs"].as<unsigned int>();
+    }
+}
 
 // -----------------------------------------------------------------------------
 
@@ -1166,8 +1425,7 @@ void _gatewayMarkNodeAsInitialized(
     _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
     _gateway_nodes[id].packet.sending_time = 0;
 
-    // Store node SN into memory
-    setSetting("nodeSn", id, _gateway_nodes[id].serial_number);
+    _gatewayAddNodeToStorage(id);
 
     #if WEB_SUPPORT && WS_SUPPORT
         // Propagate nodes structure to WS clients
@@ -1357,7 +1615,7 @@ void _gatewayReceiveHandler(
     // Get packet identifier from payload
     uint8_t packet_id = (uint8_t) payload[0];
 
-    //DEBUG_MSG(PSTR("[GATEWAY] Received packet: %s for node with address: %d\n"), _gatewayPacketName(packet_id).c_str(), sender_address);
+    DEBUG_MSG(PSTR("[GATEWAY] Received packet: %s for node with address: %d\n"), _gatewayPacketName(packet_id).c_str(), sender_address);
 
     // Node is trying to acquire address
     if (_gatewayIsPacketInGroup(packet_id, gateway_packets_addresing, GATEWAY_PACKET_ADDRESS_MAX)) {
@@ -1509,13 +1767,17 @@ void gatewaySetup() {
 
     _gateway_bus.begin();
 
-    #if WEB_SUPPORT && WS_SUPPORT
-        wsOnConnectRegister(_gatewayWSOnConnect);
-        wsOnConfigureRegister(_gatewayWSOnConfigure);
-        wsOnActionRegister(_gatewayWSOnAction);
+    #if WEB_SUPPORT
+        webOnRequestRegister(_gatewayWebRequestCallback);
+
+        #if WS_SUPPORT
+            wsOnConnectRegister(_gatewayWSOnConnect);
+            wsOnConfigureRegister(_gatewayWSOnConfigure);
+            wsOnActionRegister(_gatewayWSOnAction);
+        #endif
     #endif
 
-    _gatewayBootup();
+    _gatewayRestoreFromStorage();
 
     firmwareRegisterLoop(gatewayLoop);
 }
@@ -1540,8 +1802,16 @@ void gatewayLoop() {
     // If some node is not initialized, get its address
     uint8_t node_to_initialize = _gatewayGetNodeAddressToInitialize();
 
-    if (_gateway_last_nodes_scan == 0 || (_gateway_last_nodes_scan - NODES_GATEWAY_SEARCH_DELAY) < NODES_GATEWAY_ADDRESSING_TIMEOUT) {
-        _gateway_last_nodes_scan = millis();
+    if (
+        _gateway_nodes_preform_scan == true
+        || _gateway_last_nodes_scan == 0
+        || (_gateway_last_nodes_scan + NODES_GATEWAY_ADDRESSING_TIMEOUT) > millis()
+    ) {
+        if (_gateway_last_nodes_scan == 0 || _gateway_nodes_preform_scan == true) {
+            _gateway_last_nodes_scan = millis();
+        }
+
+        _gateway_nodes_preform_scan = false;
 
         _gatewaySearchForNodes();
 

@@ -131,13 +131,13 @@ std::vector<String> _settingsKeys() {
 bool _settingsRestoreJson(
     JsonObject& data
 ) {
-    const char* _thing = data["thing"];
+    const char * _thing = data["thing"];
 
     if (strcmp(_thing, THING) != 0) {
         return false;
     }
 
-    const char* _version = data["version"];
+    const char * _version = data["version"];
 
     if (strcmp(_version, FIRMWARE_VERSION) != 0) {
         return false;
@@ -156,7 +156,7 @@ bool _settingsRestoreJson(
             continue;
         }
 
-        setSetting(element.key, element.value.as<char*>());
+        setSetting(element.key, element.value.as<char *>());
     }
 
     saveSettings();
@@ -189,6 +189,7 @@ bool _settingsRestoreJson(
         response->addHeader("X-Content-Type-Options", "nosniff");
         response->addHeader("X-Frame-Options", "deny");
 
+        response->printf("{\n\"thing\": \"%s\"", THING);
         response->printf("{\n\"manufacturer\": \"%s\"", FIRMWARE_MANUFACTURER);
         response->printf(",\n\"version\": \"%s\"", FIRMWARE_VERSION);
         response->printf(",\n\"backup\": \"1\"");

@@ -315,8 +315,8 @@ void _mqttOnDisconnect() {
 // -----------------------------------------------------------------------------
 
 void _mqttOnMessage(
-    char* topic,
-    char* payload,
+    char * topic,
+    char * payload,
     const uint8_t len
 ) {
     if (len == 0) {
@@ -467,8 +467,8 @@ void _mqttOnMessage(
                             setSetting("mqttUseSsl", values["mqtt_ssl_enabled"].as<bool>() ? 1 : 0);
                         }
 
-                        if (values.containsKey("mqtt_ssl_fp") && values["mqtt_ssl_fp"].as<char*>() != getSetting("mqttSslFp").c_str())  {
-                            setSetting("mqttSslFp", values["mqtt_ssl_fp"].as<char*>());
+                        if (values.containsKey("mqtt_ssl_fp") && values["mqtt_ssl_fp"].as<char *>() != getSetting("mqttSslFp").c_str())  {
+                            setSetting("mqttSslFp", values["mqtt_ssl_fp"].as<char *>());
                         }
                     #else
                         delSetting("mqttUseSsl");
@@ -699,7 +699,7 @@ void mqttSetup() {
             _mqttOnDisconnect();
         });
 
-        _mqtt.onMessage([](char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
+        _mqtt.onMessage([](char * topic, char * payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
             _mqttOnMessage(topic, payload, len);
         });
 
