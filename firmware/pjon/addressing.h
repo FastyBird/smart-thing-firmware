@@ -83,9 +83,7 @@ void _gatewaySearchNodeRequestHandler(
         node_sn[i] = (char) payload[i + 4];
     }
 
-    uint8_t reply_address = PJON_BROADCAST;
-
-    // Node has allready assigned bus address
+    // Node has to have allready assigned bus address
     if (address != PJON_NOT_ASSIGNED) {
         if (address != (uint16_t) senderAddress) {
             DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with addressing mismatch\n"));
@@ -105,29 +103,72 @@ void _gatewaySearchNodeRequestHandler(
             return;
         }
 
-        reply_address = (uint8_t) address;
+        if (
+            strcmp(_gateway_nodes[address - 1].serial_number, "") == 0
+            || strcmp(_gateway_nodes[address - 1].serial_number, GATEWAY_DESCRIPTION_NOT_SET) == 0
+            || strcmp(_gateway_nodes[address - 1].serial_number, node_sn) == 0
+        ) {
+            // Extract node basic info from received packet
+            strncpy(_gateway_nodes[address - 1].serial_number, node_sn, (uint8_t) payload[3]);
+            _gateway_nodes[address - 1].packet.max_length = max_packet_length;
 
-        DEBUG_MSG(PSTR("[GATEWAY] Addressing for node: %s was successfully restored. Previously assigned address is: %d\n"), (char *) node_sn, (uint8_t) address);
+            // Node is successfully addressed
+            _gateway_nodes[address - 1].addressing.state = true;
+            _gateway_nodes[address - 1].addressing.registration = 0;
 
-    // Node is new without bus address
-    } else {
-        // Check node serial number if is unique & get free address slot
-        address = _gatewayReserveNodeAddress(node_sn);
+            _gateway_nodes[address - 1].initiliazation.state = false;
+            _gateway_nodes[address - 1].initiliazation.attempts = 0;
+            _gateway_nodes[address - 1].initiliazation.step = GATEWAY_PACKET_HW_MODEL;
 
-        // Maximum nodes count reached
-        if (address == NODES_GATEWAY_NODES_BUFFER_FULL) {
-            return;
+            _gateway_nodes[address - 1].packet.waiting_for = GATEWAY_PACKET_NONE;
+
+            DEBUG_MSG(PSTR("[GATEWAY] Addressing for node: %s was successfully restored. Previously assigned address is: %d\n"), (char *) node_sn, (uint8_t) address);
+
+        } else {
+            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node address missmatch, node with SN: %s has colision on address %d with node with SN: %s\n"), (char *) node_sn, (uint8_t) address, (char *) _gateway_nodes[address - 1].serial_number);
         }
-
-        // Node SN is allready used in registry
-        if (address == NODES_GATEWAY_FAIL) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node: %s is allready in registry\n"), (char *) node_sn);
-
-            return;
-        }
-
-        DEBUG_MSG(PSTR("[GATEWAY] New node: %s was successfully added to registry with address: %d\n"), (char *) node_sn, (uint8_t) address);
     }
+}
+
+// -----------------------------------------------------------------------------
+
+/**
+ * PAYLOAD:
+ * 0    => Packet identifier    => GATEWAY_PACKET_SEARCH_NEW_NODES
+ * 1    => Node bus address     => 1-250
+ * 2    => Max packet size      => 0-255
+ * 3    => Node SN length       => 0-255
+ * 4-n  => Node parsed SN       => char array (a,b,c,...)
+ */
+void _gatewaySearchNewNodeRequestHandler(
+    const uint8_t senderAddress,
+    uint8_t * payload
+) {
+    uint8_t max_packet_length = (uint8_t) payload[2];
+
+    char node_sn[(uint8_t) payload[3]];
+
+    // Extract node serial number from payload
+    for (uint8_t i = 0; i < (uint8_t) payload[3]; i++) {
+        node_sn[i] = (char) payload[i + 4];
+    }
+
+    // Check node serial number if is unique & get free address slot
+    address = _gatewayReserveNodeAddress(node_sn);
+
+    // Maximum nodes count reached
+    if (address == NODES_GATEWAY_NODES_BUFFER_FULL) {
+        return;
+    }
+
+    // Node SN is allready used in registry
+    if (address == NODES_GATEWAY_FAIL) {
+        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node: %s is allready in registry\n"), (char *) node_sn);
+
+        return;
+    }
+
+    DEBUG_MSG(PSTR("[GATEWAY] New node: %s was successfully added to registry with address: %d\n"), (char *) node_sn, (uint8_t) address);
 
     strncpy(_gateway_nodes[address - 1].serial_number, node_sn, (uint8_t) payload[3]);
     _gateway_nodes[address - 1].packet.max_length = max_packet_length;
@@ -154,12 +195,6 @@ void _gatewaySearchNodeRequestHandler(
     }
 
     output_content[byte_pointer] = 0; // Be sure to set the null terminator!!!
-
-    _gatewaySendPacket(
-        reply_address,
-        output_content,
-        (byte_pointer + 1)
-    );
 
     while((millis() - time) <= NODES_GATEWAY_LIST_ADDRESSES_TIME) {
         if (_gateway_bus.receive() == PJON_ACK) {
@@ -208,12 +243,15 @@ void _gatewayConfirmNodeRequestHandler(
             return;
         }
 
-        // Node addressing finished
+        // Node is successfully addressed
         _gateway_nodes[address - 1].addressing.state = true;
         _gateway_nodes[address - 1].addressing.registration = 0;
 
-        // Prepare for initialization
+        _gateway_nodes[address - 1].initiliazation.state = false;
+        _gateway_nodes[address - 1].initiliazation.attempts = 0;
         _gateway_nodes[address - 1].initiliazation.step = GATEWAY_PACKET_HW_MODEL;
+
+        _gateway_nodes[address - 1].packet.waiting_for = GATEWAY_PACKET_NONE;
 
         DEBUG_MSG(PSTR("[GATEWAY] Addressing for node: %s was successfully finished. Assigned address is: %d\n"), (char *) node_sn, address);
 
@@ -245,6 +283,13 @@ void _gatewayAddressRequestHandler(
          */
         case GATEWAY_PACKET_SEARCH_NODES:
             _gatewaySearchNodeRequestHandler(address, payload);
+            break;
+
+        /**
+         * Unaddressed node responded to search request
+         */
+        case GATEWAY_PACKET_SEARCH_NEW_NODES:
+            _gatewaySearchNewNodeRequestHandler(address, payload);
             break;
 
         /**

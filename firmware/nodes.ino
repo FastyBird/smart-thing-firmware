@@ -886,7 +886,7 @@ void _gatewayAddNodeToStorage(
     uint8_t index = 0;
 
     for (JsonObject& stored_node : registered_nodes) {
-        if (stored_node["address"] == id) {
+        if (stored_node["address"] == (id + 1)) {
             registered_nodes.remove(index);
         }
 
@@ -901,7 +901,7 @@ void _gatewayAddNodeToStorage(
         return;
     }
 
-    node["address"] = id;
+    node["address"] = id + 1;
     node["serial_number"] = _gateway_nodes[id].serial_number;
 
     JsonObject& hardware_info = node.createNestedObject("hardware");
@@ -941,7 +941,7 @@ void _gatewayRemoveNodeFromStorage(
     uint8_t index = 0;
 
     for (JsonObject& stored_node : registered_nodes) {
-        if (stored_node["address"] == id) {
+        if (stored_node["address"] == (id + 1)) {
             registered_nodes.remove(index);
 
             removed = true;
@@ -1001,30 +1001,30 @@ void _gatewayRestoreFromStorage() {
     JsonArray& registered_nodes = jsonBuffer.parseArray(_gatewayReadStoredConfiguration().c_str());
 
     for (JsonObject& stored_node : registered_nodes) {
-        uint8_t address = stored_node["address"].as<unsigned int>();
+        uint8_t id = (stored_node["address"].as<unsigned int>() - 1);
 
-        strncpy(_gateway_nodes[address].serial_number, stored_node["serial_number"].as<char *>(), (uint8_t) strlen(stored_node["serial_number"].as<char *>()));
+        strncpy(_gateway_nodes[id].serial_number, stored_node["serial_number"].as<char *>(), (uint8_t) strlen(stored_node["serial_number"].as<char *>()));
 
-        _gateway_nodes[address].addressing.state = false;
-        _gateway_nodes[address].addressing.registration = 0;
-        _gateway_nodes[address].addressing.lost = 0;
+        _gateway_nodes[id].addressing.state = false;
+        _gateway_nodes[id].addressing.registration = 0;
+        _gateway_nodes[id].addressing.lost = 0;
 
         JsonObject& hardware = stored_node["hardware"];
 
-        strncpy(_gateway_nodes[address].hardware.manufacturer, hardware["manufacturer"].as<char *>(), (uint8_t) strlen(hardware["manufacturer"].as<char *>()));
-        strncpy(_gateway_nodes[address].hardware.model, hardware["model"].as<char *>(), (uint8_t) strlen(hardware["model"].as<char *>()));
-        strncpy(_gateway_nodes[address].hardware.version, hardware["version"].as<char *>(), (uint8_t) strlen(hardware["version"].as<char *>()));
+        strncpy(_gateway_nodes[id].hardware.manufacturer, hardware["manufacturer"].as<char *>(), (uint8_t) strlen(hardware["manufacturer"].as<char *>()));
+        strncpy(_gateway_nodes[id].hardware.model, hardware["model"].as<char *>(), (uint8_t) strlen(hardware["model"].as<char *>()));
+        strncpy(_gateway_nodes[id].hardware.version, hardware["version"].as<char *>(), (uint8_t) strlen(hardware["version"].as<char *>()));
 
         JsonObject& firmware = stored_node["firmware"];
 
-        strncpy(_gateway_nodes[address].firmware.manufacturer, firmware["manufacturer"].as<char *>(), (uint8_t) strlen(firmware["manufacturer"].as<char *>()));
-        strncpy(_gateway_nodes[address].firmware.model, firmware["model"].as<char *>(), (uint8_t) strlen(firmware["model"].as<char *>()));
-        strncpy(_gateway_nodes[address].firmware.version, firmware["version"].as<char *>(), (uint8_t) strlen(firmware["version"].as<char *>()));
+        strncpy(_gateway_nodes[id].firmware.manufacturer, firmware["manufacturer"].as<char *>(), (uint8_t) strlen(firmware["manufacturer"].as<char *>()));
+        strncpy(_gateway_nodes[id].firmware.model, firmware["model"].as<char *>(), (uint8_t) strlen(firmware["model"].as<char *>()));
+        strncpy(_gateway_nodes[id].firmware.version, firmware["version"].as<char *>(), (uint8_t) strlen(firmware["version"].as<char *>()));
 
-        _gateway_nodes[address].registers_size[GATEWAY_REGISTER_DI] = stored_node["digital_inputs"].as<unsigned int>();
-        _gateway_nodes[address].registers_size[GATEWAY_REGISTER_DO] = stored_node["digital_outputs"].as<unsigned int>();
-        _gateway_nodes[address].registers_size[GATEWAY_REGISTER_AI] = stored_node["analog_inputs"].as<unsigned int>();
-        _gateway_nodes[address].registers_size[GATEWAY_REGISTER_AO] = stored_node["analog_outputs"].as<unsigned int>();
+        _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] = stored_node["digital_inputs"].as<unsigned int>();
+        _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] = stored_node["digital_outputs"].as<unsigned int>();
+        _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] = stored_node["analog_inputs"].as<unsigned int>();
+        _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] = stored_node["analog_outputs"].as<unsigned int>();
     }
 }
 
@@ -1223,6 +1223,15 @@ String _gatewayPacketName(
 
 // -----------------------------------------------------------------------------
 
+bool _gatewayBroadcastPacket(
+    char * payload,
+    const uint8_t length
+) {
+    return _gatewaySendPacket(PJON_BROADCAST, payload, length);
+}
+
+// -----------------------------------------------------------------------------
+
 bool _gatewaySendPacket(
     const uint8_t address,
     char * payload,
@@ -1343,8 +1352,7 @@ void _gatewaySearchForNodes()
 
     output_content[0] = GATEWAY_PACKET_SEARCH_NODES;
 
-    _gatewaySendPacket(
-        PJON_BROADCAST,
+    _gatewayBroadcastPacket(
         output_content,
         1
     );
@@ -1802,7 +1810,7 @@ void gatewayLoop() {
     _gatewayCheckPacketsDelays();
 
     // If some node is not initialized, get its address
-    uint8_t node_to_initialize = _gatewayGetNodeAddressToInitialize();
+    uint8_t node_address_to_initialize = _gatewayGetNodeAddressToInitialize();
 
     #if WEB_SUPPORT && WS_SUPPORT
         if (
@@ -1845,8 +1853,8 @@ void gatewayLoop() {
         _gatewayCheckNodesPresence();
 
     // Check if all connected nodes are initialized
-    } else if (node_to_initialize != 0) {
-        _gatewayContinueInNodeInitialization(node_to_initialize);
+    } else if (node_address_to_initialize != 0) {
+        _gatewayContinueInNodeInitialization(node_address_to_initialize);
 
     // Continue in nodes registers reading
     } else {
