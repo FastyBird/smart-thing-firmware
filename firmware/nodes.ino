@@ -145,7 +145,8 @@ uint8_t _gateway_reading_node_index = 0;
 uint32_t _gateway_last_nodes_check = 0;
 uint32_t _gateway_last_nodes_scan = 0;
 
-bool _gateway_nodes_preform_scan = false;
+uint32_t _gateway_nodes_scan_client_id = 0;
+bool _gateway_nodes_perform_scan = false;
 
 const char * _gateway_config_filename = "gateway.conf";
 
@@ -477,7 +478,8 @@ String _gatewayReadStoredConfiguration() {
             }
 
         } else if (strcmp(action, "scan") == 0) {
-            _gateway_nodes_preform_scan = true;
+            _gateway_nodes_scan_client_id = clientId;
+            _gateway_nodes_perform_scan = true;
         }
     }
 #endif
@@ -1802,16 +1804,37 @@ void gatewayLoop() {
     // If some node is not initialized, get its address
     uint8_t node_to_initialize = _gatewayGetNodeAddressToInitialize();
 
+    #if WEB_SUPPORT && WS_SUPPORT
+        if (
+            _gateway_last_nodes_scan > 0
+            && (_gateway_last_nodes_scan + NODES_GATEWAY_ADDRESSING_TIMEOUT) < millis()
+            && _gateway_nodes_scan_client_id != 0
+        ) {
+            DynamicJsonBuffer jsonBuffer;
+
+            JsonObject& scan_result = jsonBuffer.createObject();
+
+            scan_result["module"] = "nodes";
+            scan_result["result"] = String("OK");
+
+            String converted_output;
+
+            scan_result.printTo(converted_output);
+
+            wsSend(_gateway_nodes_scan_client_id, converted_output.c_str()); 
+        }
+    #endif
+
     if (
-        _gateway_nodes_preform_scan == true
+        _gateway_nodes_perform_scan == true
         || _gateway_last_nodes_scan == 0
         || (_gateway_last_nodes_scan + NODES_GATEWAY_ADDRESSING_TIMEOUT) > millis()
     ) {
-        if (_gateway_last_nodes_scan == 0 || _gateway_nodes_preform_scan == true) {
+        if (_gateway_last_nodes_scan == 0 || _gateway_nodes_perform_scan == true) {
             _gateway_last_nodes_scan = millis();
         }
 
-        _gateway_nodes_preform_scan = false;
+        _gateway_nodes_perform_scan = false;
 
         _gatewaySearchForNodes();
 
