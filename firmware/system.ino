@@ -425,6 +425,29 @@ void systemSetup() {
         );
     #endif
 
+    #if FASTYBIRD_SUPPORT
+        fastybirdOnControlRegister(
+            [](JsonObject& payload) {
+                DEBUG_MSG(PSTR("[SYSTEM] Requested reset action\n"));
+
+                deferredReset(100, CUSTOM_RESET_MQTT);
+            },
+            "reset"
+        );
+
+        fastybirdOnControlRegister(
+            [](JsonObject& payload) {
+                DEBUG_MSG(PSTR("[SYSTEM] Requested factory reset action\n"));
+                DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
+
+                resetSettings();
+
+                deferredReset(100, CUSTOM_RESET_FACTORY);
+            },
+            "factory-reset"
+        );
+    #endif
+
     systemOnHeartbeatRegister(_systemInfoOnHeartbeat);
 
     _systemInfo();

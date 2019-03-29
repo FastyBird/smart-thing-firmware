@@ -493,11 +493,7 @@ bool _fastybirdPropagateThingStat(
 
 bool _fastybirdPropagateThingControlConfiguration(
     const char * thingId,
-    std::vector<String> controls,
-    std::function<void(JsonObject&)> configureCallback,
-    std::function<void()> resetCallback,
-    std::function<void()> reconnectCallback,
-    std::function<void()> factoryResetCallback
+    std::vector<String> controls
 ) {
     if (controls.size() <= 0) {
         return true;
@@ -521,79 +517,33 @@ bool _fastybirdPropagateThingControlConfiguration(
 
     if (packet_id == 0) return false;
 
-    #if FASTYBIRD_ENABLE_CONFIGURATION
+    for (uint8_t i = 0; i < _fastybird_on_control_callbacks.size(); i++) {
+        std::function<void(JsonObject&)> controll_callback = _fastybird_on_control_callbacks[i].callback;
+
         packet_id = mqttSubscribe(
             _fastybirdMqttApiCreateThingTopicString(
                 thingId,
                 FASTYBIRD_TOPIC_THING_CONTROL_RECEIVE,
                 "control",
-                FASTYBIRD_THING_CONTROL_VALUE_CONFIGURATION
+                _fastybird_on_control_callbacks[i].controlName
             ).c_str(),
-            [configureCallback](const char * topic, const char * payload) {
+            [controll_callback](const char * topic, const char * payload) {
                 DynamicJsonBuffer jsonBuffer;
 
                 // Parse payload
                 JsonObject& root = jsonBuffer.parseObject(payload);
 
                 if (root.success()) {
-                    configureCallback(root);
+                    controll_callback(root);
 
                 } else {
-                    DEBUG_MSG(PSTR("[FASTYBIRD] Configuration payload is not in valid JSON format\n"));
+                    DEBUG_MSG(PSTR("[FASTYBIRD] Received payload is not in valid JSON format\n"));
                 }
             }
         );
         
         if (packet_id == 0) return false;
-    #endif
-
-    #if FASTYBIRD_ENABLE_RESET
-        packet_id = mqttSubscribe(
-            _fastybirdMqttApiCreateThingTopicString(
-                thingId,
-                FASTYBIRD_TOPIC_THING_CONTROL_RECEIVE,
-                "control",
-                FASTYBIRD_THING_CONTROL_VALUE_RESET
-            ).c_str(),
-            [resetCallback](const char * topic, const char * payload) {
-                resetCallback();
-            }
-        );
-
-        if (packet_id == 0) return false;
-    #endif
-
-    #if FASTYBIRD_ENABLE_RECONNECT
-        packet_id = mqttSubscribe(
-            _fastybirdMqttApiCreateThingTopicString(
-                thingId,
-                FASTYBIRD_TOPIC_THING_CONTROL_RECEIVE,
-                "control",
-                FASTYBIRD_THING_CONTROL_VALUE_RECONNECT
-            ).c_str(),
-            [reconnectCallback](const char * topic, const char * payload) {
-                reconnectCallback();
-            }
-        );
-
-        if (packet_id == 0) return false;
-    #endif
-
-    #if FASTYBIRD_ENABLE_FACTORY_RESET
-        packet_id = mqttSubscribe(
-            _fastybirdMqttApiCreateThingTopicString(
-                thingId,
-                FASTYBIRD_TOPIC_THING_CONTROL_RECEIVE,
-                "control",
-                FASTYBIRD_THING_CONTROL_VALUE_FACTORY_RESET
-            ).c_str(),
-            [factoryResetCallback](const char * topic, const char * payload) {
-                factoryResetCallback();
-            }
-        );
-
-        if (packet_id == 0) return false;
-    #endif
+    }
 
     return true;
 }
@@ -601,19 +551,11 @@ bool _fastybirdPropagateThingControlConfiguration(
 // -----------------------------------------------------------------------------
 
 bool _fastybirdPropagateThingControlConfiguration(
-    std::vector<String> controls,
-    std::function<void(JsonObject&)> configureCallback,
-    std::function<void()> resetCallback,
-    std::function<void()> reconnectCallback,
-    std::function<void()> factoryResetCallback
+    std::vector<String> controls
 ) {
     return _fastybirdPropagateThingControlConfiguration(
         _fastybird_mqtt_thing_id,
-        controls,
-        configureCallback,
-        resetCallback,
-        reconnectCallback,
-        factoryResetCallback
+        controls
     );
 }
 
@@ -635,7 +577,7 @@ bool _fastybirdPropagateThingConfigurationSchema(
                 thingId,
                 FASTYBIRD_TOPIC_THING_CONTROL_SCHEMA,
                 "control",
-                FASTYBIRD_THING_CONTROL_VALUE_CONFIGURATION
+                "config"
             ).c_str(),
             output.c_str()
         );
@@ -672,7 +614,7 @@ bool _fastybirdPropagateThingConfiguration(
                 thingId,
                 FASTYBIRD_TOPIC_THING_CONTROL_DATA,
                 "control",
-                FASTYBIRD_THING_CONTROL_VALUE_CONFIGURATION
+                "config"
             ).c_str(),
             output.c_str()
         );

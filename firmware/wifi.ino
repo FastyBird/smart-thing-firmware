@@ -585,6 +585,20 @@ void wifiSetup() {
         );
     #endif
 
+    #if FASTYBIRD_SUPPORT
+        fastybirdOnControlRegister(
+            [](JsonObject& payload) {
+                DEBUG_MSG(PSTR("[WIFI] Requested reconnect action\n"));
+
+                wifiDisconnect();
+
+                // Reload & cache settings
+                firmwareReload();
+            },
+            "reconnect"
+        );
+    #endif
+
     // Register loop
     firmwareRegisterLoop(wifiLoop);
 }

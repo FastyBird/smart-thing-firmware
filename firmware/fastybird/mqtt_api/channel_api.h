@@ -624,59 +624,57 @@ bool _fastybirdPropagateChannelControlConfiguration(
     String topic;
 
     for (uint8_t i = 0; i < channel.length; i++) {
-        #if FASTYBIRD_ENABLE_CONFIGURATION
-            if (channel.isConfigurable) {
-                if (channel.length > 1) {
-                    topic = _fastybirdMqttApiCreateChannelTopicString(
-                        thingId,
-                        _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
-                        i,
-                        FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
-                        "control",
-                        FASTYBIRD_CHANNEL_CONTROL_CONFIGURATION
-                    );
-
-                } else {
-                    topic = _fastybirdMqttApiCreateChannelTopicString(
-                        thingId,
-                        _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
-                        FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
-                        "control",
-                        FASTYBIRD_CHANNEL_CONTROL_CONFIGURATION
-                    );
-                }
-
-                packet_id = mqttSubscribe(
-                    topic.c_str(),
-                    [channel, i](const char * topic, const char * payload) {
-                        DynamicJsonBuffer jsonBuffer;
-
-                        // Parse payload
-                        JsonObject& root = jsonBuffer.parseObject(payload);
-
-                        if (root.success()) {
-                            DEBUG_MSG(PSTR("[FASTYBIRD] Sending configuration to channel: %s:%d\n"), channel.type, i);
-
-                            channel.configureCallback(i, root);
-
-                            DEBUG_MSG(PSTR("[FASTYBIRD] Changes were saved\n"));
-
-                            #if WEB_SUPPORT && WS_SUPPORT
-                                wsReportConfiguration();
-                            #endif
-
-                            // Reload & cache settings
-                            firmwareReload();
-
-                        } else {
-                            DEBUG_MSG(PSTR("[FASTYBIRD] Error parsing settings data\n"));
-                        }
-                    }
+        if (channel.isConfigurable) {
+            if (channel.length > 1) {
+                topic = _fastybirdMqttApiCreateChannelTopicString(
+                    thingId,
+                    _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+                    i,
+                    FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
+                    "control",
+                    FASTYBIRD_CHANNEL_CONTROL_CONFIGURATION
                 );
 
-                if (packet_id == 0) return false;
+            } else {
+                topic = _fastybirdMqttApiCreateChannelTopicString(
+                    thingId,
+                    _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+                    FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
+                    "control",
+                    FASTYBIRD_CHANNEL_CONTROL_CONFIGURATION
+                );
             }
-        #endif
+
+            packet_id = mqttSubscribe(
+                topic.c_str(),
+                [channel, i](const char * topic, const char * payload) {
+                    DynamicJsonBuffer jsonBuffer;
+
+                    // Parse payload
+                    JsonObject& root = jsonBuffer.parseObject(payload);
+
+                    if (root.success()) {
+                        DEBUG_MSG(PSTR("[FASTYBIRD] Sending configuration to channel: %s:%d\n"), channel.type, i);
+
+                        channel.configureCallback(i, root);
+
+                        DEBUG_MSG(PSTR("[FASTYBIRD] Changes were saved\n"));
+
+                        #if WEB_SUPPORT && WS_SUPPORT
+                            wsReportConfiguration();
+                        #endif
+
+                        // Reload & cache settings
+                        firmwareReload();
+
+                    } else {
+                        DEBUG_MSG(PSTR("[FASTYBIRD] Error parsing settings data\n"));
+                    }
+                }
+            );
+
+            if (packet_id == 0) return false;
+        }
 
         #if DIRECT_CONTROL_SUPPORT
             if (channel.hasDirectControl) {

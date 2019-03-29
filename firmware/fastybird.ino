@@ -64,71 +64,6 @@ std::vector<fastybird_channel_t> _fastybird_channels;
 // -----------------------------------------------------------------------------
 
 /**
- * Call configuration update for each module
- */
-void _fastybirdConfigureModules(
-    JsonObject& configuration
-) {
-    DEBUG_MSG(PSTR("[FASTYBIRD] Sending configuration to modules\n"));
-
-    for (uint8_t i = 0; i < _fastybird_on_configure_callbacks.size(); i++) {
-        (_fastybird_on_configure_callbacks[i])(configuration);
-    }
-
-    DEBUG_MSG(PSTR("[FASTYBIRD] Changes were saved\n"));
-
-    #if WEB_SUPPORT && WS_SUPPORT
-        wsReportConfiguration();
-    #endif
-
-    // Report back updated configuration
-    fastybirdReportConfiguration();
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * Remote thing reset
- */
-void _fastybirdResetThing() {
-    DEBUG_MSG(PSTR("[FASTYBIRD] Requested reset action\n"));
-
-    deferredReset(100, CUSTOM_RESET_MQTT);
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * Remote thing reconnect
- */
-void _fastybirdReconnectThing() {
-    DEBUG_MSG(PSTR("[FASTYBIRD] Requested reconnect action\n"));
-
-    #if WIFI_SUPPORT
-        wifiDisconnect();
-    #endif
-
-    // Reload & cache settings
-    firmwareReload();
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * Remote thing factory reset
- */
-void _fastybirdFactoryResetThing() {
-    DEBUG_MSG(PSTR("[FASTYBIRD] Requested factory reset action\n"));
-    DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
-
-    resetSettings();
-
-    deferredReset(100, CUSTOM_RESET_FACTORY);
-}
-
-// -----------------------------------------------------------------------------
-
-/**
  * Initialize all thing channels
  */
 bool _fastybirdInitializeChannel(
@@ -232,11 +167,9 @@ bool _fastybirdInitializeChannel(
 // -----------------------------------------------------------------------------
 
         case FASTYBIRD_PUB_CHANNEL_CONTROL_STRUCTURE:
-            #if FASTYBIRD_ENABLE_CONFIGURATION
-                if (channelStructure.isConfigurable) {
-                    channel_controls.push_back(FASTYBIRD_CHANNEL_CONTROL_VALUE_CONFIGURATION);
-                }
-            #endif
+            if (channelStructure.isConfigurable) {
+                channel_controls.push_back(FASTYBIRD_CHANNEL_CONTROL_VALUE_CONFIGURATION);
+            }
 
             #if DIRECT_CONTROL_SUPPORT
                 if (channelStructure.hasDirectControl) {
@@ -258,13 +191,11 @@ bool _fastybirdInitializeChannel(
             break;
 
         case FASTYBIRD_PUB_CHANNEL_CONFIGURATION_SCHEMA:
-            #if FASTYBIRD_ENABLE_CONFIGURATION
-                if (channelStructure.isConfigurable) {
-                    if (!_fastybirdPropagateChannelConfigurationSchema(channelStructure, channelStructure.configurationSchema)) {
-                        return false;
-                    }
+            if (channelStructure.isConfigurable) {
+                if (!_fastybirdPropagateChannelConfigurationSchema(channelStructure, channelStructure.configurationSchema)) {
+                    return false;
                 }
-            #endif
+            }
 
             _fastybird_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_DONE;
             break;
@@ -415,30 +346,12 @@ void _fastybirdInitializeSystem() {
             break;
 
         case FASTYBIRD_PUB_CONTROL_STRUCTURE:
-            #if FASTYBIRD_ENABLE_CONFIGURATION
-                thing_controls.push_back(FASTYBIRD_THING_CONTROL_CONFIGURATION);
-            #endif
-
-            #if FASTYBIRD_ENABLE_RESET
-                thing_controls.push_back(FASTYBIRD_THING_CONTROL_RESET);
-            #endif
-
-            #if FASTYBIRD_ENABLE_RECONNECT
-                thing_controls.push_back(FASTYBIRD_THING_CONTROL_RECONNECT);
-            #endif
-
-            #if FASTYBIRD_ENABLE_FACTORY_RESET
-                thing_controls.push_back(FASTYBIRD_THING_CONTROL_FACTORY_RESET);
-            #endif
+            for (uint8_t i = 0; i < _fastybird_on_control_callbacks.size(); i++) {
+                thing_controls.push_back(_fastybird_on_control_callbacks[i].controlName);
+            }
 
             if (
-                !_fastybirdPropagateThingControlConfiguration(
-                    thing_controls,
-                    _fastybirdConfigureModules,
-                    _fastybirdResetThing,
-                    _fastybirdReconnectThing,
-                    _fastybirdFactoryResetThing
-                )
+                !_fastybirdPropagateThingControlConfiguration(thing_controls)
             ) {
                 return;
             }
@@ -447,17 +360,15 @@ void _fastybirdInitializeSystem() {
             break;
 
         case FASTYBIRD_PUB_CONFIGURATION_SCHEMA:
-            #if FASTYBIRD_ENABLE_CONFIGURATION
-                for (uint8_t i = 0; i < _fastybird_report_configuration_schema_callbacks.size(); i++) {
-                    (_fastybird_report_configuration_schema_callbacks[i])(configurationSchema);
-                }
+            for (uint8_t i = 0; i < _fastybird_report_configuration_schema_callbacks.size(); i++) {
+                (_fastybird_report_configuration_schema_callbacks[i])(configurationSchema);
+            }
 
-                if (configurationSchema.size() > 0) {
-                    if (!_fastybirdPropagateThingConfigurationSchema(configurationSchema)) {
-                        return;
-                    }
+            if (configurationSchema.size() > 0) {
+                if (!_fastybirdPropagateThingConfigurationSchema(configurationSchema)) {
+                    return;
                 }
-            #endif
+            }
 
             _fastybird_thing_advertisement_progress = FASTYBIRD_PUB_INITIALIZE_CHANNELS;
             break;
@@ -729,6 +640,26 @@ void fastybirdSetup() {
 
     systemOnHeartbeatRegister(_fastybirdOnHeartbeat);
     
+    fastybirdOnControlRegister(
+        [](JsonObject& configuration) {
+            DEBUG_MSG(PSTR("[FASTYBIRD] Sending configuration to modules\n"));
+
+            for (uint8_t i = 0; i < _fastybird_on_configure_callbacks.size(); i++) {
+                (_fastybird_on_configure_callbacks[i])(configuration);
+            }
+
+            DEBUG_MSG(PSTR("[FASTYBIRD] Changes were saved\n"));
+
+            #if WEB_SUPPORT && WS_SUPPORT
+                wsReportConfiguration();
+            #endif
+
+            // Report back updated configuration
+            fastybirdReportConfiguration();
+        },
+        "config"
+    );
+
     // Register firmware callbacks
     firmwareRegisterLoop(fastybirdLoop);
     firmwareRegisterReload([]() {

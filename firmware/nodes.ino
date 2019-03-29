@@ -562,10 +562,10 @@ String _gatewayReadStoredConfiguration() {
                 register_property.payloadCallback = ([nodeId](uint8_t id, const char * payload) {
                     // Action to perform
                     if (strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE) == 0) {
-                        _gatewayRequestWritingSingleDigitalRegister(nodeId, id, _gatewayReadDigitalRegisterValue(nodeId, GATEWAY_REGISTER_DO, id) ? false : true);
+                        gatewayDigitalRegisterStatus(nodeId, id, _gatewayReadDigitalRegisterValue(nodeId, GATEWAY_REGISTER_DO, id) ? false : true);
 
                     } else {
-                        _gatewayRequestWritingSingleDigitalRegister(nodeId, id, strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_ON) == 0);
+                        gatewayDigitalRegisterStatus(nodeId, id, strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_ON) == 0);
                     }
                 });
                 break;
@@ -1789,6 +1789,22 @@ void gatewaySetup() {
             wsOnConfigureRegister(_gatewayWSOnConfigure);
             wsOnActionRegister(_gatewayWSOnAction);
         #endif
+    #endif
+
+    #if FASTYBIRD_SUPPORT
+        fastybirdOnControlRegister(
+            [](JsonObject& payload) {
+                DEBUG_MSG(PSTR("[GATEWAY] Searching for new nodes\n"));
+            },
+            "nodes-search"
+        );
+
+        fastybirdOnControlRegister(
+            [](JsonObject& payload) {
+                DEBUG_MSG(PSTR("[GATEWAY] Disconnection selected node\n"));
+            },
+            "node-disconnect"
+        );
     #endif
 
     _gatewayRestoreFromStorage();

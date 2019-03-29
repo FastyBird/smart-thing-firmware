@@ -36,6 +36,8 @@ String _schReadStoredConfiguration() {
         stored_content = String("[]");
     }
 
+    DynamicJsonBuffer jsonBuffer;
+
     JsonArray& scheduler_configuration = jsonBuffer.parseArray(stored_content.c_str());
 
     if (!scheduler_configuration.success()) {

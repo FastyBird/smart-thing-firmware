@@ -246,6 +246,14 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
     typedef std::function<void(JsonObject&)> fastybird_on_configure_callback_f;
     void fastybirdOnConfigureRegister(fastybird_on_configure_callback_f callback);
 
+    typedef std::function<void(JsonObject&)> fastybird_on_control_callback_f;
+    typedef struct {
+        fastybird_on_control_callback_f callback;
+        const char * controlName;
+    } fastybird_thing_control_callback_t;
+
+    void fastybirdOnControlRegister(fastybird_on_control_callback_f callback, const char * controlName);
+
     typedef std::function<bool()> fastybird_channels_report_configuration_callback_f;
     void fastybirdChannelsReportConfigurationRegister(fastybird_channels_report_configuration_callback_f callback);
     typedef std::function<bool()> fastybird_channels_report_direct_controls_callback_f;

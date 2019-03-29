@@ -63,11 +63,6 @@
 
 #define FASTYBIRD_HARDWARE_MAC_ADDRESS                      "mac-address"
 
-#define FASTYBIRD_ENABLE_CONFIGURATION                      true
-#define FASTYBIRD_ENABLE_RESET                              true
-#define FASTYBIRD_ENABLE_RECONNECT                          true
-#define FASTYBIRD_ENABLE_FACTORY_RESET                      true
-
 // =============================================================================
 // THING TOPICS
 // =============================================================================
@@ -172,22 +167,6 @@
 #define FASTYBIRD_PUB_CHANNEL_DIRECT_CONTROL                12
 #define FASTYBIRD_PUB_CHANNEL_SCHEDULE                      13
 #define FASTYBIRD_PUB_CHANNEL_DONE                          14
-
-// =============================================================================
-// THING CONTROLS
-// =============================================================================
-
-#define FASTYBIRD_THING_CONTROL_CONFIGURATION               "config"
-#define FASTYBIRD_THING_CONTROL_RESET                       "reset"
-#define FASTYBIRD_THING_CONTROL_RECONNECT                   "reconnect"
-#define FASTYBIRD_THING_CONTROL_FACTORY_RESET               "factory-reset"
-#define FASTYBIRD_THING_CONTROL_VALUE_OTA                   "ota"
-
-#define FASTYBIRD_THING_CONTROL_VALUE_CONFIGURATION         "config"
-#define FASTYBIRD_THING_CONTROL_VALUE_RESET                 "reset"
-#define FASTYBIRD_THING_CONTROL_VALUE_RECONNECT             "reconnect"
-#define FASTYBIRD_THING_CONTROL_VALUE_FACTORY_RESET         "factory-reset"
-#define FASTYBIRD_THING_CONTROL_VALUE_OTA                   "ota"
 
 // =============================================================================
 // CHANNEL CONTROLS
