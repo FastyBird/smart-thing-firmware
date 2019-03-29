@@ -30,6 +30,12 @@ String _directControlReadStoredConfiguration() {
         stored_content = String("[]");
     }
 
+    JsonArray& dc_configuration = jsonBuffer.parseArray(stored_content.c_str());
+
+    if (!dc_configuration.success()) {
+        return String("[]");
+    }
+
     return stored_content;
 }
 

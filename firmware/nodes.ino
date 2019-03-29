@@ -165,6 +165,14 @@ String _gatewayReadStoredConfiguration() {
         stored_content = String("[]");
     }
 
+    DynamicJsonBuffer jsonBuffer;
+
+    JsonArray& registered_nodes = jsonBuffer.parseArray(stored_content.c_str());
+
+    if (!registered_nodes.success()) {
+        return String("[]");
+    }
+
     return stored_content;
 }
 
@@ -878,10 +886,6 @@ void _gatewayAddNodeToStorage(
     DynamicJsonBuffer jsonBuffer;
 
     JsonArray& registered_nodes = jsonBuffer.parseArray(_gatewayReadStoredConfiguration().c_str());
-
-    if (!registered_nodes.success()) {
-        //JsonArray& registered_nodes = jsonBuffer.createArray();
-    }
 
     uint8_t index = 0;
 

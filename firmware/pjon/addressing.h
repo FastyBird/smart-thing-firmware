@@ -154,7 +154,7 @@ void _gatewaySearchNewNodeRequestHandler(
     }
 
     // Check node serial number if is unique & get free address slot
-    address = _gatewayReserveNodeAddress(node_sn);
+    uint16_t address = _gatewayReserveNodeAddress(node_sn);
 
     // Maximum nodes count reached
     if (address == NODES_GATEWAY_NODES_BUFFER_FULL) {
