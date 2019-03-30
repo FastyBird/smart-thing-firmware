@@ -332,8 +332,16 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
             strcmp(action, "remove") == 0
             && data.containsKey("node")
         ) {
-            // TODO: implement it
-            // TODO: implement node removing process
+            for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
+                // Search for node
+                if (strcmp(_gateway_nodes[i].serial_number, data["node"].as<const char *>()) == 0) {
+                    DEBUG_MSG(PSTR("[GATEWAY] Found node to remove\n"));
+
+                    _gatewayRemoveNodeFromStorage(i);
+
+                    deferredReset(100, CUSTOM_RESET_WEB);
+                }
+            }
         }
     }
 #endif
