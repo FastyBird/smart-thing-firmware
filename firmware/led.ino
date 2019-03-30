@@ -16,10 +16,6 @@ typedef struct {
 
 std::vector<led_t> _leds;
 
-#if FASTYBIRD_SUPPORT
-    uint8_t _led_fastybird_channel_index = 0xFF;
-#endif
-
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
@@ -225,151 +221,6 @@ void _ledConfigureChannel(
 
 // -----------------------------------------------------------------------------
 
-#if FASTYBIRD_SUPPORT
-    fastybird_channel_property_t _ledFastybirdGetChannelStatePropertyStructure() {
-        fastybird_channel_property_t property = {
-            FASTYBIRD_PROPERTY_STATE,
-            "Status LED state",
-            true,
-            FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
-        };
-
-        property.format.push_back(FASTYBIRD_LED_PAYLOAD_ON);
-        property.format.push_back(FASTYBIRD_LED_PAYLOAD_OFF);
-        property.format.push_back(FASTYBIRD_LED_PAYLOAD_TOGGLE);
-
-        property.mappings.push_back({
-            FASTYBIRD_LED_PAYLOAD_ON,
-            FASTYBIRD_LED_PAYLOAD_ON
-        });
-
-        property.mappings.push_back({
-            FASTYBIRD_LED_PAYLOAD_OFF,
-            FASTYBIRD_LED_PAYLOAD_OFF
-        });
-
-        property.mappings.push_back({
-            FASTYBIRD_LED_PAYLOAD_TOGGLE,
-            FASTYBIRD_LED_PAYLOAD_TOGGLE
-        });
-
-        property.payloadCallback = ([](uint8_t id, const char * payload) {
-            // Action to perform
-            if (strcmp(payload, FASTYBIRD_LED_PAYLOAD_TOGGLE) == 0) {
-                _ledToggle(id);
-
-            } else {
-                _ledStatus(id, strcmp(payload, FASTYBIRD_LED_PAYLOAD_ON) == 0);
-            }
-        });
-
-        return property;
-    }
-
-// -----------------------------------------------------------------------------
-
-    fastybird_channel_t _ledFastybirdGetChannelStructure() {
-        fastybird_channel_t channel = {
-            "Status LEDs",
-            FASTYBIRD_CHANNEL_TYPE_LED,
-            ledCount(),
-            true,
-            true,
-            false
-        };
-
-        channel.properties.push_back(_ledFastybirdGetChannelStatePropertyStructure());
-
-        channel.configurationSchema = _ledReportChannelConfigurationSchema();
-
-        channel.configureCallback = ([](uint8_t id, JsonObject& configuration){
-            _ledConfigureChannel(id, configuration);
-
-            fastybirdReportChannelConfiguration(
-                _led_fastybird_channel_index,
-                id,
-                _ledReportChannelConfiguration(id)
-            );
-
-            DEBUG_MSG(PSTR("[LED] Configuration changes were saved\n"));
-        });
-
-        #if DIRECT_CONTROL_SUPPORT
-            channel.configureDirectControlsCallback = ([](uint8_t id, JsonArray& configuration){
-                directControlConfigureChannelConfiguration(id, FASTYBIRD_CHANNEL_TYPE_LED, configuration);
-
-                String output;
-                DynamicJsonBuffer jsonBuffer;
-
-                JsonArray& direct_controls = jsonBuffer.createArray();
-
-                directControlReportChannelConfiguration(id, FASTYBIRD_CHANNEL_TYPE_LED, direct_controls);
-                
-                direct_controls.printTo(output);
-
-                fastybirdReportChannelDirectControl(
-                    _led_fastybird_channel_index,
-                    id,
-                    output
-                );
-
-                DEBUG_MSG(PSTR("[LED] Direct controls configuration changes were saved\n"));
-            });
-        #endif
-
-        return channel;
-    }
-
-// -----------------------------------------------------------------------------
-
-    bool _ledFastybirdReportChannelsConfiguration() {
-        for (uint8_t i = 0; i < ledCount(); i++) {
-            if (
-                !fastybirdReportChannelConfiguration(
-                    _led_fastybird_channel_index,
-                    i,
-                    _ledReportChannelConfiguration(i)
-                )
-            ) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-// -----------------------------------------------------------------------------
-
-    #if DIRECT_CONTROL_SUPPORT
-        bool _ledFastybirdReportChannelsDirectControl() {
-            String output;
-            DynamicJsonBuffer jsonBuffer;
-
-            for (uint8_t i = 0; i < ledCount(); i++) {
-                JsonArray& direct_controls = jsonBuffer.createArray();
-
-                directControlReportChannelConfiguration(i, FASTYBIRD_CHANNEL_TYPE_LED, direct_controls);
-                
-                direct_controls.printTo(output);
-
-                if (
-                    !fastybirdReportChannelDirectControl(
-                        _led_fastybird_channel_index,
-                        i,
-                        output
-                    )
-                ) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-    #endif
-#endif
-
-// -----------------------------------------------------------------------------
-
 #if WEB_SUPPORT && WS_SUPPORT
     // New WS client is connected
     void _ledWSOnConnect(
@@ -505,18 +356,6 @@ void ledSetup() {
     #if WEB_SUPPORT && WS_SUPPORT
         wsOnConnectRegister(_ledWSOnConnect);
         wsOnConfigureRegister(_ledWSOnConfigure);
-    #endif
-    
-    #if FASTYBIRD_SUPPORT
-        if (ledCount() > 0) {
-            _led_fastybird_channel_index = fastybirdRegisterChannel(_ledFastybirdGetChannelStructure());
-
-            fastybirdChannelsReportConfigurationRegister(_ledFastybirdReportChannelsConfiguration);
-
-            #if DIRECT_CONTROL_SUPPORT
-               fastybirdChannelsReportDirectControlsRegister(_ledFastybirdReportChannelsDirectControl);
-            #endif
-        }
     #endif
 
     DEBUG_MSG(PSTR("[LED] Number of leds: %d\n"), ledCount());
