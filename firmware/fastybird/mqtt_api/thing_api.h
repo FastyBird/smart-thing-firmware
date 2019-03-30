@@ -112,7 +112,7 @@ bool _fastybirdPropagateThingPropertiesStructure(
     uint8_t packet_id;
 
     packet_id = mqttSend(
-        _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_PROPERTIES).c_str(),
+        _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_PROPERTIES_STRUCTURE).c_str(),
         payload
     );
 

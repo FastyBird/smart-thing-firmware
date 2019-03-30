@@ -68,7 +68,7 @@
 // =============================================================================
 
 #define FASTYBIRD_TOPIC_THING_NAME		                    "$name"
-#define FASTYBIRD_TOPIC_THING_PROPERTIES		            "$properties"
+#define FASTYBIRD_TOPIC_THING_PROPERTIES_STRUCTURE          "$properties"
 #define FASTYBIRD_TOPIC_THING_HW_INFO                       "$hw/{hw}"
 #define FASTYBIRD_TOPIC_THING_FW_INFO                       "$fw/{fw}"
 #define FASTYBIRD_TOPIC_THING_CHANNELS                      "$channels"
