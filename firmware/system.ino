@@ -430,7 +430,7 @@ void systemSetup() {
             [](JsonObject& payload) {
                 DEBUG_MSG(PSTR("[SYSTEM] Requested reset action\n"));
 
-                deferredReset(100, CUSTOM_RESET_MQTT);
+                deferredReset(100, CUSTOM_RESET_BROKER);
             },
             "reset"
         );

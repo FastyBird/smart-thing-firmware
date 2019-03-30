@@ -106,14 +106,18 @@ const char firmware_modules[] PROGMEM =
 
 #if NODES_GATEWAY_SUPPORT
 
-const char gateway_packet_search_nodes[] PROGMEM                = "GATEWAY_PACKET_SEARCH_NODES";
 const char gateway_packet_srarch_new_nodes[] PROGMEM            = "GATEWAY_PACKET_SEARCH_NEW_NODES";
 const char gateway_packet_node_address_confirm[] PROGMEM        = "GATEWAY_PACKET_NODE_ADDRESS_CONFIRM";
+
+PROGMEM const char * const gateway_packets_searching_string[] = {
+    gateway_packet_srarch_new_nodes, gateway_packet_node_address_confirm
+};
+
+const char gateway_packet_search_nodes[] PROGMEM                = "GATEWAY_PACKET_SEARCH_NODES";
 const char gateway_packet_address_discard[] PROGMEM             = "GATEWAY_PACKET_ADDRESS_DISCARD";
 
 PROGMEM const char * const gateway_packets_addresing_string[] = {
-    gateway_packet_search_nodes, gateway_packet_srarch_new_nodes,
-    gateway_packet_node_address_confirm, gateway_packet_address_discard
+    gateway_packet_search_nodes, gateway_packet_address_discard
 };
 
 const char gateway_packet_hw_model[] PROGMEM                    = "GATEWAY_PACKET_HW_MODEL";
@@ -172,9 +176,12 @@ PROGMEM const char * const gateway_packets_misc_string[] = {
 
 //--------------------------------------------------------------------------------
 
+const int gateway_packets_searching[] PROGMEM = {
+    GATEWAY_PACKET_SEARCH_NEW_NODES, GATEWAY_PACKET_NODE_ADDRESS_CONFIRM
+};
+
 const int gateway_packets_addresing[] PROGMEM = {
-    GATEWAY_PACKET_SEARCH_NODES, GATEWAY_PACKET_SEARCH_NEW_NODES,
-    GATEWAY_PACKET_NODE_ADDRESS_CONFIRM, GATEWAY_PACKET_ADDRESS_DISCARD
+    GATEWAY_PACKET_SEARCH_NODES, GATEWAY_PACKET_ADDRESS_DISCARD
 };
 
 const int gateway_packets_node_initialization[] PROGMEM = {

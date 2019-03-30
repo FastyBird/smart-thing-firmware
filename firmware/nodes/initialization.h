@@ -9,6 +9,194 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #if NODES_GATEWAY_SUPPORT
 
 // -----------------------------------------------------------------------------
+// MODULE PRIVATE
+// -----------------------------------------------------------------------------
+
+/**
+ * Send initiliaziation packet to node
+ */
+void _gatewaySendInitializationPacket(
+    const uint8_t id,
+    const uint8_t requestState
+) {
+    char output_content[1];
+
+    // Packet identifier at first postion
+    output_content[0] = requestState;
+
+    // Send packet to node
+    bool result = _gatewaySendPacket((id + 1), output_content, 1);
+
+    // When successfully sent...
+    if (result == true) {
+        // ...add mark, that gateway is waiting for reply from node
+        _gateway_nodes[id].packet.waiting_for = requestState;
+        _gateway_nodes[id].packet.sending_time = millis();
+
+        _gateway_nodes[id].initiliazation.attempts = _gateway_nodes[id].initiliazation.attempts + 1;
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+/**
+ * Send register structure request packet to node
+ */
+void _gatewaySendRegisterInitializationPacket(
+    const uint8_t id,
+    const uint8_t requestState,
+    const uint8_t start
+) {
+    char output_content[_gateway_nodes[id].packet.max_length];
+
+    // Packet identifier at first postion
+    output_content[0] = requestState;
+    output_content[1] = (char) (start >> 8);
+    output_content[2] = (char) (start & 0xFF);
+    
+    // It is based on maximum packed size reduced by packet header (4 bytes)
+    uint8_t max_readable_addresses = start + _gateway_nodes[id].packet.max_length - 4;
+
+    switch (requestState)
+    {
+        case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
+            if (max_readable_addresses <= _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI]) {
+                output_content[3] = (char) (max_readable_addresses >> 8);
+                output_content[4] = (char) (max_readable_addresses & 0xFF);
+
+            } else {
+                output_content[3] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] >> 8);
+                output_content[4] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] & 0xFF);
+            }
+            break;
+
+        case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
+            if (max_readable_addresses <= _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO]) {
+                output_content[3] = (char) (max_readable_addresses >> 8);
+                output_content[4] = (char) (max_readable_addresses & 0xFF);
+
+            } else {
+                output_content[3] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] >> 8);
+                output_content[4] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] & 0xFF);
+            }
+            break;
+    }
+
+    // Send packet to node
+    bool result = _gatewaySendPacket((id + 1), output_content, 5);
+
+    // When successfully sent...
+    if (result == true) {
+        // ...add mark, that gateway is waiting for reply from node
+        _gateway_nodes[id].packet.waiting_for = requestState;
+        _gateway_nodes[id].packet.sending_time = millis();
+
+        _gateway_nodes[id].initiliazation.attempts = _gateway_nodes[id].initiliazation.attempts + 1;
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+uint8_t _gatewayInitializationUnfinishedAddress() {
+    for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
+        if (
+            // Check if node has finished addressing procedure
+            _gateway_nodes[i].addressing.state == true
+            // Check if node is not initialized
+            && _gateway_nodes[i].initiliazation.state == false
+            && _gateway_nodes[i].packet.waiting_for == GATEWAY_PACKET_NONE
+        ) {
+            // Attempts counter reached maximum
+            if (_gateway_nodes[i].initiliazation.attempts > NODES_GATEWAY_MAX_INIT_ATTEMPTS) {
+                // Set delay
+                if (_gateway_nodes[i].initiliazation.delay == 0) {
+                    _gateway_nodes[i].initiliazation.delay = millis();
+
+                // If the delay is finished...
+                } else if ((millis() - _gateway_nodes[i].initiliazation.delay) >= NODES_GATEWAY_INIT_DELAY) {
+                    // ...reset it and continue in initiliazation
+                    _gateway_nodes[i].initiliazation.attempts = 0;
+                    _gateway_nodes[i].initiliazation.delay = 0;
+
+                    return (i + 1);
+                }
+
+            } else {
+                return (i + 1);
+            }
+        }
+    }
+
+    return 0;
+}
+
+// -----------------------------------------------------------------------------
+
+/**
+ * Get first not initialized node from the list & try to continue in initiliazation
+ */
+void _gatewayInitializationContinueInProcess(
+    const uint8_t address
+) {
+    // Convert node address to index
+    uint8_t index = address - 1;
+
+    if (
+        // Check if node has finished addressing procedure
+        _gateway_nodes[index].addressing.state == true
+        // Check if node is not initialized
+        && _gateway_nodes[index].initiliazation.state == false
+        && _gateway_nodes[index].initiliazation.attempts <= NODES_GATEWAY_MAX_INIT_ATTEMPTS
+        && _gateway_nodes[index].packet.waiting_for == GATEWAY_PACKET_NONE
+    ) {
+        switch (_gateway_nodes[index].initiliazation.step)
+        {
+            case GATEWAY_PACKET_HW_MODEL:
+            case GATEWAY_PACKET_HW_MANUFACTURER:
+            case GATEWAY_PACKET_HW_VERSION:
+            case GATEWAY_PACKET_FW_MODEL:
+            case GATEWAY_PACKET_FW_MANUFACTURER:
+            case GATEWAY_PACKET_FW_VERSION:
+            case GATEWAY_PACKET_REGISTERS_SIZE:
+                _gatewaySendInitializationPacket(index, _gateway_nodes[index].initiliazation.step);
+                break;
+
+            case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
+            case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
+                _gatewaySendRegisterInitializationPacket(index, _gateway_nodes[index].initiliazation.step, 0);
+                break;
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+/**
+ * Node is fully initialized & ready for receiving commands
+ */
+void _gatewayMarkNodeAsInitialized(
+    const uint8_t id
+) {
+    _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_NONE;
+    _gateway_nodes[id].initiliazation.state = true;
+    _gateway_nodes[id].initiliazation.attempts = 0;
+
+    _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
+    _gateway_nodes[id].packet.sending_time = 0;
+
+    _gatewayAddNodeToStorage(id);
+
+    #if WEB_SUPPORT && WS_SUPPORT
+        // Propagate nodes structure to WS clients
+        wsSend(_gatewayWebSocketUpdate);
+    #endif
+
+    #if FASTYBIRD_SUPPORT
+        _gatewayRegisterFastybirdNode(id);
+    #endif
+}
+
+// -----------------------------------------------------------------------------
 // NODE INITIALIZATION UTILS
 // -----------------------------------------------------------------------------
 

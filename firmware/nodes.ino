@@ -36,9 +36,14 @@ struct gateway_node_initiliazation_t {
 };
 
 struct gateway_node_addressing_t {
-    bool        state           = false;    // FALSE = node addresing is not finished | TRUE = address was successfully accepted by node
-    uint32_t    registration    = 0;        // Timestamp when node requested for address
+    bool        state           = false;    // FALSE = node addresing is not finished | TRUE = addressing was successfully accepted by node
     uint32_t    lost            = 0;        // Timestamp when gateway detected node as lost
+};
+
+struct gateway_node_searching_t {
+    bool        state           = false;    // FALSE = node searching is not finished | TRUE = searching was successfully accepted by node
+    uint32_t    registration    = 0;        // Timestamp when node requested for address
+    uint8_t     attempts        = 0;
 };
 
 struct gateway_register_reading_t {
@@ -69,6 +74,8 @@ typedef struct {
 struct gateway_node_t {
     // Node addressing process
     gateway_node_addressing_t addressing;
+
+    gateway_node_searching_t searching;
 
     // Node initiliazation process
     gateway_node_initiliazation_t initiliazation;
@@ -144,894 +151,22 @@ typedef union {
 uint8_t _gateway_reading_node_index = 0;
 uint32_t _gateway_last_nodes_check = 0;
 uint32_t _gateway_last_nodes_scan = 0;
+uint32_t _gateway_last_new_nodes_scan = 0;
 
 uint32_t _gateway_nodes_scan_client_id = 0;
-bool _gateway_nodes_perform_scan = false;
+bool _gateway_nodes_search_new = false;
 
 const char * _gateway_config_filename = "gateway.conf";
 
-#include "./pjon/addressing.h"
-#include "./pjon/initialization.h"
-#include "./pjon/registers.h"
+#include "./nodes/storage.h"             // Module configuration storage
+#include "./nodes/registers.h"           // Nodes registers methods
+#include "./nodes/searching.h"           // Nodes searching methods
+#include "./nodes/modules.h"             // 
+#include "./nodes/addressing.h"          // Nodes addressing methods
+#include "./nodes/initialization.h"      // Nodes initialiazation methods
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
-// -----------------------------------------------------------------------------
-
-String _gatewayReadStoredConfiguration() {
-    String stored_content = storageReadConfiguration(_gateway_config_filename);
-
-    if (strcmp(stored_content.c_str(), "") == 0) {
-        stored_content = String("[]");
-    }
-
-    DynamicJsonBuffer jsonBuffer;
-
-    JsonArray& registered_nodes = jsonBuffer.parseArray(stored_content.c_str());
-
-    if (!registered_nodes.success()) {
-        return String("[]");
-    }
-
-    return stored_content;
-}
-
-// -----------------------------------------------------------------------------
-
-#if (WEB_SUPPORT && WS_SUPPORT) || FASTYBIRD_SUPPORT
-    void _gatewayCollectNode(
-        JsonObject& node,
-        const uint8_t id
-    ) {
-        bool value_bool;
-        uint8_t value_uint8;
-        uint16_t value_uint16;
-        uint32_t value_uint32;
-        int8_t value_int8;
-        int16_t value_int16;
-        int32_t value_int32;
-        float value_float;
-
-        node["addressed"] = _gateway_nodes[id].addressing.state;
-        node["initialized"] = _gateway_nodes[id].initiliazation.state;
-        node["lost"] = _gateway_nodes[id].addressing.lost;
-
-        JsonObject& addressing = node.createNestedObject("addressing");
-
-        addressing["registration"] = _gateway_nodes[id].addressing.registration;
-
-        // Node basic info
-        node["node"] = String(_gateway_nodes[id].serial_number);
-
-        node["address"] = id + 1;
-
-        JsonObject& hardware = node.createNestedObject("hardware");
-
-        hardware["manufacturer"] = _gateway_nodes[id].hardware.manufacturer;
-        hardware["model"] = _gateway_nodes[id].hardware.model;
-        hardware["version"] = _gateway_nodes[id].hardware.version;
-
-        JsonObject& firmware = node.createNestedObject("firmware");
-
-        firmware["manufacturer"] = _gateway_nodes[id].firmware.manufacturer;
-        firmware["model"] = _gateway_nodes[id].firmware.model;
-        firmware["version"] = _gateway_nodes[id].firmware.version;
-
-        // Node channels schema
-        JsonObject& registers = node.createNestedObject("registers");
-
-        JsonArray& digital_inputs_register = registers.createNestedArray("digital_inputs");
-
-        for (uint8_t j = 0; j < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI]; j++) {
-            JsonObject& di_register = digital_inputs_register.createNestedObject();
-
-            di_register["data_type"] = "b1";
-            di_register["value"] = _gatewayReadDigitalRegisterValue(id, GATEWAY_REGISTER_DI, j);
-        }
-
-        JsonArray& digital_outputs_register = registers.createNestedArray("digital_outputs");
-
-        for (uint8_t j = 0; j < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO]; j++) {
-            JsonObject& do_register = digital_outputs_register.createNestedObject();
-
-            do_register["data_type"] = "b1";
-            do_register["value"] = _gatewayReadDigitalRegisterValue(id, GATEWAY_REGISTER_DO, j);
-        }
-
-        JsonArray& analog_inputs_register = registers.createNestedArray("analog_inputs");
-
-        for (uint8_t j = 0; j < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI]; j++) {
-            JsonObject& ai_register = analog_inputs_register.createNestedObject();
-
-            switch (_gateway_nodes[id].analog_inputs[j].data_type)
-            {
-                case GATEWAY_DATA_TYPE_UINT8:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_uint8);
-
-                    ai_register["data_type"] = "u1";
-                    ai_register["value"] = value_uint8;
-                    break;
-
-                case GATEWAY_DATA_TYPE_UINT16:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_uint16);
-
-                    ai_register["data_type"] = "u2";
-                    ai_register["value"] = value_uint16;
-                    break;
-
-                case GATEWAY_DATA_TYPE_UINT32:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_uint32);
-
-                    ai_register["data_type"] = "u4";
-                    ai_register["value"] = value_uint32;
-                    break;
-
-                case GATEWAY_DATA_TYPE_INT8:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_int8);
-
-                    ai_register["data_type"] = "i1";
-                    ai_register["value"] = value_uint8;
-                    break;
-
-                case GATEWAY_DATA_TYPE_INT16:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_int16);
-
-                    ai_register["data_type"] = "i2";
-                    ai_register["value"] = value_uint16;
-                    break;
-
-                case GATEWAY_DATA_TYPE_INT32:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_int32);
-
-                    ai_register["data_type"] = "i4";
-                    ai_register["value"] = value_uint32;
-                    break;
-
-                case GATEWAY_DATA_TYPE_FLOAT32:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AI, j, value_float);
-
-                    ai_register["data_type"] = "f4";
-                    ai_register["value"] = value_float;
-                    break;
-
-                default:
-                    ai_register["data_type"] = "na";
-                    ai_register["value"] = 0;
-                    break;
-            }
-        }
-
-        JsonArray& analog_outputs_register = registers.createNestedArray("analog_outputs");
-
-        for (uint8_t j = 0; j < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO]; j++) {
-            JsonObject& ao_register = analog_outputs_register.createNestedObject();
-
-            switch (_gateway_nodes[id].analog_outputs[j].data_type)
-            {
-                case GATEWAY_DATA_TYPE_UINT8:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_uint8);
-
-                    ao_register["data_type"] = "u1";
-                    ao_register["value"] = value_uint8;
-                    break;
-
-                case GATEWAY_DATA_TYPE_UINT16:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_uint16);
-
-                    ao_register["data_type"] = "u2";
-                    ao_register["value"] = value_uint16;
-                    break;
-
-                case GATEWAY_DATA_TYPE_UINT32:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_uint32);
-
-                    ao_register["data_type"] = "u4";
-                    ao_register["value"] = value_uint32;
-                    break;
-
-                case GATEWAY_DATA_TYPE_INT8:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_int8);
-
-                    ao_register["data_type"] = "i1";
-                    ao_register["value"] = value_uint8;
-                    break;
-
-                case GATEWAY_DATA_TYPE_INT16:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_int16);
-
-                    ao_register["data_type"] = "i2";
-                    ao_register["value"] = value_uint16;
-                    break;
-
-                case GATEWAY_DATA_TYPE_INT32:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_int32);
-
-                    ao_register["data_type"] = "i4";
-                    ao_register["value"] = value_uint32;
-                    break;
-
-                case GATEWAY_DATA_TYPE_FLOAT32:
-                    _gatewayReadAnalogRegisterValue(id, GATEWAY_REGISTER_AO, j, value_float);
-
-                    ao_register["data_type"] = "f4";
-                    ao_register["value"] = value_float;
-                    break;
-
-                default:
-                    ao_register["data_type"] = "na";
-                    ao_register["value"] = 0;
-                    break;
-            }
-        }
-    }
-#endif
-
-// -----------------------------------------------------------------------------
-
-#if WEB_SUPPORT && WS_SUPPORT
-    // Send module status to WS clients
-    void _gatewayWebSocketUpdate(
-        JsonObject& root
-    ) {
-        DEBUG_MSG(PSTR("[GATEWAY] Updating nodes to WS clients\n"));
-
-        root["module"] = "nodes";
-
-        // Data container
-        JsonObject& data = root.createNestedObject("data");
-
-        // Nodes container
-        JsonArray& nodes = data.createNestedArray("nodes");
-
-        for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
-            JsonObject& node = nodes.createNestedObject();
-
-            _gatewayCollectNode(node, i);
-        }
-    }
-
-// -----------------------------------------------------------------------------
-
-    // New WS client is connected
-    void _gatewayWSOnConnect(
-        JsonObject& root
-    ) {
-        JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
-        JsonObject& module = modules.createNestedObject();
-
-        module["module"] = "nodes";
-        module["visible"] = true;
-
-        // Configuration container
-        JsonObject& configuration = module.createNestedObject("config");
-
-        // Configuration values container
-        JsonObject& configuration_values = configuration.createNestedObject("values");
-
-        // Configuration schema container
-        JsonArray& configuration_schema = configuration.createNestedArray("schema");
-        
-        // Data container
-        JsonObject& data = module.createNestedObject("data");
-
-        // Nodes container
-        JsonArray& nodes = data.createNestedArray("nodes");
-
-        for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
-            JsonObject& node = nodes.createNestedObject();
-
-            _gatewayCollectNode(node, i);
-        }
-    }
-
-// -----------------------------------------------------------------------------
-
-    // WS client requested configuration update
-    void _gatewayWSOnConfigure(
-        const uint32_t clientId, 
-        JsonObject& module
-    ) {
-        if (module.containsKey("module") && module["module"] == "nodes") {
-            if (module.containsKey("config")) {
-                // Extract configuration container
-                JsonObject& configuration = module["config"].as<JsonObject&>();
-
-                if (configuration.containsKey("values")) {
-                    wsSend_P(clientId, PSTR("{\"message\": \"nodes_updated\"}"));
-
-                    // Reload & cache settings
-                    firmwareReload();
-                }
-            }
-        }
-    }
-
-// -----------------------------------------------------------------------------
-
-    // WS client called action
-    void _gatewayWSOnAction(
-        const uint32_t clientId,
-        const char * action,
-        JsonObject& data
-    ) {
-        if (
-            strcmp(action, "switch") == 0
-            && data.containsKey("node")
-            && data.containsKey("register")
-            && data.containsKey("address")
-            && data.containsKey("value")
-        ) {
-            for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
-                // Search for node
-                if (strcmp(_gateway_nodes[i].serial_number, data["node"].as<const char *>()) == 0) {
-                    DEBUG_MSG(PSTR("[GATEWAY] Found node to update\n"));
-
-                    if (strcmp("digital_output", data["register"].as<const char *>()) == 0) {
-                        if (data["address"].as<uint8_t>() < _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DO]) {
-                            gatewayDigitalRegisterStatus(i, data["address"].as<uint8_t>(), data["value"].as<bool>());
-
-                        } else {
-                            DEBUG_MSG(PSTR("[GATEWAY][ERR] Register address: %d is out of range: 0 - %d\n"), data["address"].as<uint8_t>(), _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DO]);
-                        }
-
-                    } else if (strcmp("analog_output", data["register"].as<const char *>()) == 0) {
-                        if (data["address"].as<uint8_t>() < _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AO]) {
-                            // TODO: _gatewayRequestWritingSingleAnalogRegister(i, data["address"].as<uint8_t>(), data["value"].as<float>());
-
-                        } else {
-                            DEBUG_MSG(PSTR("[GATEWAY][ERR] Register address: %d is out of range: 0 - %d\n"), data["address"].as<uint8_t>(), _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AO]);
-                        }
-                    }
-                }
-            }
-
-        } else if (strcmp(action, "scan") == 0) {
-            _gateway_nodes_scan_client_id = clientId;
-            _gateway_nodes_perform_scan = true;
-        }
-    }
-#endif
-
-// -----------------------------------------------------------------------------
-
-#if FASTYBIRD_SUPPORT
-    /**
-     * Node channel property structure
-     */
-    fastybird_channel_property_t _gatewayFastybirdGetChannelProperty(
-        const uint8_t id,
-        const uint8_t dataRegister
-    ) {
-        fastybird_channel_property_t register_property = {
-            FASTYBIRD_PROPERTY_STATE,
-            "Channel state"
-        };
-
-        uint8_t nodeId = id;
-
-        switch (dataRegister)
-        {
-            case GATEWAY_REGISTER_DI:
-                register_property.settable = false;
-                register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_BOOLEAN;
-
-                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_ON);
-                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_OFF);
-
-                register_property.mappings.push_back({
-                    FASTYBIRD_SWITCH_PAYLOAD_ON,
-                    FASTYBIRD_SWITCH_PAYLOAD_ON
-                });
-
-                register_property.mappings.push_back({
-                    FASTYBIRD_SWITCH_PAYLOAD_OFF,
-                    FASTYBIRD_SWITCH_PAYLOAD_OFF
-                });
-                break;
-
-            case GATEWAY_REGISTER_DO:
-                register_property.settable = true;
-                register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_BOOLEAN;
-
-                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_ON);
-                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_OFF);
-                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_TOGGLE);
-                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_QUERY);
-
-                register_property.mappings.push_back({
-                    FASTYBIRD_SWITCH_PAYLOAD_ON,
-                    FASTYBIRD_SWITCH_PAYLOAD_ON
-                });
-
-                register_property.mappings.push_back({
-                    FASTYBIRD_SWITCH_PAYLOAD_OFF,
-                    FASTYBIRD_SWITCH_PAYLOAD_OFF
-                });
-
-                register_property.mappings.push_back({
-                    FASTYBIRD_SWITCH_PAYLOAD_TOGGLE,
-                    FASTYBIRD_SWITCH_PAYLOAD_TOGGLE
-                });
-
-                register_property.mappings.push_back({
-                    FASTYBIRD_SWITCH_PAYLOAD_QUERY,
-                    FASTYBIRD_SWITCH_PAYLOAD_QUERY
-                });
-
-                // Add register payload callback
-                register_property.payloadCallback = ([nodeId](uint8_t id, const char * payload) {
-                    // Action to perform
-                    if (strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE) == 0) {
-                        gatewayDigitalRegisterStatus(nodeId, id, _gatewayReadDigitalRegisterValue(nodeId, GATEWAY_REGISTER_DO, id) ? false : true);
-
-                    } else {
-                        gatewayDigitalRegisterStatus(nodeId, id, strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_ON) == 0);
-                    }
-                });
-                break;
-
-            case GATEWAY_REGISTER_AI:
-                register_property.settable = false;
-                register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_FLOAT;
-                break;
-
-            case GATEWAY_REGISTER_AO:
-                register_property.settable = true;
-                register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_FLOAT;
-
-                // Add register payload callback
-                register_property.payloadCallback = ([nodeId](uint8_t id, const char * payload) {
-                    // TODO: implement it
-                    // TODO: _gatewayRequestWritingSingleAnalogRegister(nodeId, id, payload);
-                });
-                break;
-        }
-
-        return register_property;
-    }
-
-// -----------------------------------------------------------------------------
-
-    /**
-     * Node channel structure
-     */
-    fastybird_channel_t _gatewayFastybirdGetChannelStructure(
-        const uint8_t id,
-        const uint8_t dataRegister
-    ) {
-        fastybird_channel_t register_channel;
-
-        if (dataRegister == GATEWAY_REGISTER_DI) {
-            register_channel = {
-                FASTYBIRD_CHANNEL_TYPE_BINARY_SENSOR,
-                FASTYBIRD_CHANNEL_TYPE_BINARY_SENSOR,
-                _gateway_nodes[id].registers_size[dataRegister],
-                false,
-                false,
-                false,
-                false
-            };
-
-        } else if (dataRegister == GATEWAY_REGISTER_DO) {
-            register_channel = {
-                FASTYBIRD_CHANNEL_TYPE_BINARY_ACTOR,
-                FASTYBIRD_CHANNEL_TYPE_BINARY_ACTOR,
-                _gateway_nodes[id].registers_size[dataRegister],
-                false,
-                false,
-                false,
-                false
-            };
-
-        } else if (dataRegister == GATEWAY_REGISTER_AI) {
-            register_channel = {
-                FASTYBIRD_CHANNEL_TYPE_ANALOG_SENSOR,
-                FASTYBIRD_CHANNEL_TYPE_ANALOG_SENSOR,
-                _gateway_nodes[id].registers_size[dataRegister],
-                false,
-                false,
-                false,
-                false
-            };
-
-        } else if (dataRegister == GATEWAY_REGISTER_AO) {
-            register_channel = {
-                FASTYBIRD_CHANNEL_TYPE_ANALOG_ACTOR,
-                FASTYBIRD_CHANNEL_TYPE_ANALOG_ACTOR,
-                _gateway_nodes[id].registers_size[dataRegister],
-                false,
-                false,
-                false,
-                false
-            };
-        }
-
-        if (_gateway_nodes[id].registers_size[dataRegister] > 0) {
-            fastybird_channel_property_t register_property = _gatewayFastybirdGetChannelProperty(id, dataRegister);
-
-            register_channel.properties.push_back(register_property);
-        }
-
-        return register_channel;
-    }
-
-// -----------------------------------------------------------------------------
-
-    void _gatewayRegisterFastybirdNode(
-        const uint8_t id
-    ) {
-        fastybird_node_hardware_t hardware = {
-            _gateway_nodes[id].hardware.model,
-            _gateway_nodes[id].hardware.version,
-            _gateway_nodes[id].hardware.manufacturer
-        };
-
-        fastybird_node_software_t software = {
-            _gateway_nodes[id].firmware.model,
-            _gateway_nodes[id].firmware.version,
-            _gateway_nodes[id].firmware.manufacturer
-        };
-
-        fastybird_node_t register_node = {
-            _gateway_nodes[id].serial_number,
-            hardware,
-            software,
-            false
-        };
-
-        register_node.channels.push_back(_gatewayFastybirdGetChannelStructure(id, GATEWAY_REGISTER_DI));
-        register_node.channels.push_back(_gatewayFastybirdGetChannelStructure(id, GATEWAY_REGISTER_DO));
-        register_node.channels.push_back(_gatewayFastybirdGetChannelStructure(id, GATEWAY_REGISTER_AI));
-        register_node.channels.push_back(_gatewayFastybirdGetChannelStructure(id, GATEWAY_REGISTER_AO));
-
-        /*
-        for (uint8_t i = 0; i < _gateway_nodes[nodeIndex].settings.size(); i++) {
-            register_node.settings.push_back({
-                _gateway_nodes[nodeIndex].settings[i].key.c_str(),
-                _gateway_nodes[nodeIndex].settings[i].value.c_str()
-            });
-        }
-        */
-
-        fastybirdRegisterNode(register_node);
-    }
-#endif
-
-// -----------------------------------------------------------------------------
-
-#if WEB_SUPPORT
-    void _gatewayOnGetConfig(
-        AsyncWebServerRequest * request
-    ) {
-        webLog(request);
-
-        if (!webAuthenticate(request)) {
-            return request->requestAuthentication(getIdentifier().c_str());
-        }
-
-        AsyncResponseStream * response = request->beginResponseStream("text/json");
-
-        char buffer[100];
-
-        snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-gateway-backup.json\""), (char *) getIdentifier().c_str());
-
-        response->addHeader("Content-Disposition", buffer);
-        response->addHeader("X-XSS-Protection", "1; mode=block");
-        response->addHeader("X-Content-Type-Options", "nosniff");
-        response->addHeader("X-Frame-Options", "deny");
-
-        response->printf("{\n\"thing\": \"%s\"", THING);
-        response->printf(",\n\"manufacturer\": \"%s\"", FIRMWARE_MANUFACTURER);
-        response->printf(",\n\"version\": \"%s\"", FIRMWARE_VERSION);
-
-        #if NTP_SUPPORT
-            response->printf(",\n\"timestamp\": \"%s\"", ntpDateTime().c_str());
-        #endif
-
-        DynamicJsonBuffer jsonBuffer;
-
-        JsonArray& registered_nodes = jsonBuffer.parseArray(_gatewayReadStoredConfiguration().c_str());
-
-        String output;
-
-        registered_nodes.printTo(output);
-
-        response->printf(",\n\"gateway\": %s", output.c_str());
-
-        response->printf("\n}");
-
-        request->send(response);
-    }
-
-// -----------------------------------------------------------------------------
-
-    void _gatewayOnPostConfig(
-        AsyncWebServerRequest * request
-    ) {
-        webLog(request);
-
-        if (!webAuthenticate(request)) {
-            return request->requestAuthentication(getIdentifier().c_str());
-        }
-
-        bool gateway_web_config_success = false;
-
-        int params = request->params();
-
-        for (uint8_t i = 0; i < params; i++) {
-            AsyncWebParameter* p = request->getParam(i);
-            
-            if (p->isFile()) {
-                DynamicJsonBuffer jsonBuffer;
-
-                JsonObject& root = jsonBuffer.parseObject(p->value().c_str());
-
-                if (root.success()) {
-                    gateway_web_config_success = _gatewayRestoreStorageFromJson(root);
-                }
-            }
-        }
-
-        request->send(gateway_web_config_success ? 200 : 400);
-    }
-
-// -----------------------------------------------------------------------------
-
-    bool _gatewayWebRequestCallback(
-        AsyncWebServerRequest * request
-    ) {
-        String url = request->url();
-
-        if (url.equals("/gateway/config")) {
-            if (request->method() == HTTP_GET) {
-                _gatewayOnGetConfig(request);
-
-                return true;
-
-            } else if (request->method() == HTTP_POST) {
-                _gatewayOnPostConfig(request);
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-#endif
-
-// -----------------------------------------------------------------------------
-
-#if FASTYBIRD_SUPPORT
-    void _gatewayReportAnalogRegisterValue(
-        const uint8_t id,
-        const uint8_t dataRegister,
-        const uint8_t address,
-        const uint8_t channel
-    ) {
-        String payload;
-
-        switch (_gatewayGetAnalogRegistersDataType(id, dataRegister, address))
-        {
-            case GATEWAY_DATA_TYPE_UINT8:
-                uint8_t uint8_value;
-
-                _gatewayReadAnalogRegisterValue(id, dataRegister, address, uint8_value);
-
-                payload = String(uint8_value);
-                break;
-
-            case GATEWAY_DATA_TYPE_UINT16:
-                uint16_t uint16_value;
-
-                _gatewayReadAnalogRegisterValue(id, dataRegister, address, uint16_value);
-
-                payload = String(uint16_value);
-                break;
-
-            case GATEWAY_DATA_TYPE_UINT32:
-                uint32_t uint32_value;
-
-                _gatewayReadAnalogRegisterValue(id, dataRegister, address, uint32_value);
-
-                payload = String(uint32_value);
-                break;
-
-            case GATEWAY_DATA_TYPE_INT8:
-                int8_t int8_value;
-
-                _gatewayReadAnalogRegisterValue(id, dataRegister, address, int8_value);
-
-                payload = String(int8_value);
-                break;
-
-            case GATEWAY_DATA_TYPE_INT16:
-                int16_t int16_value;
-
-                _gatewayReadAnalogRegisterValue(id, dataRegister, address, int16_value);
-
-                payload = String(int16_value);
-                break;
-
-            case GATEWAY_DATA_TYPE_INT32:
-                int32_t int32_value;
-
-                _gatewayReadAnalogRegisterValue(id, dataRegister, address, int32_value);
-
-                payload = String(int32_value);
-                break;
-
-            case GATEWAY_DATA_TYPE_FLOAT32:
-                float float_value;
-
-                _gatewayReadAnalogRegisterValue(id, dataRegister, address, float_value);
-
-                payload = String(float_value);
-                break;
-        }
-
-        _fastybirdReportNodeChannelValue(
-            _gateway_nodes[id].serial_number,
-            channel,
-            address,
-            payload.c_str()
-        );
-    }
-#endif
-
-// -----------------------------------------------------------------------------
-
-void _gatewayAddNodeToStorage(
-    const uint8_t id
-) {
-    DynamicJsonBuffer jsonBuffer;
-
-    JsonArray& registered_nodes = jsonBuffer.parseArray(_gatewayReadStoredConfiguration().c_str());
-
-    uint8_t index = 0;
-
-    for (JsonObject& stored_node : registered_nodes) {
-        if (stored_node["address"] == (id + 1)) {
-            registered_nodes.remove(index);
-        }
-
-        index++;
-    }
-
-    JsonObject& node = registered_nodes.createNestedObject();
-
-    if (!node.success()) {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Could not create configuration schema for storing.\n"));
-
-        return;
-    }
-
-    node["address"] = id + 1;
-    node["serial_number"] = _gateway_nodes[id].serial_number;
-
-    JsonObject& hardware_info = node.createNestedObject("hardware");
-
-    hardware_info["manufacturer"] = _gateway_nodes[id].hardware.manufacturer;
-    hardware_info["model"] = _gateway_nodes[id].hardware.model;
-    hardware_info["version"] = _gateway_nodes[id].hardware.version;
-
-    JsonObject& firmware_info = node.createNestedObject("firmware");
-
-    firmware_info["manufacturer"] = _gateway_nodes[id].firmware.manufacturer;
-    firmware_info["model"] = _gateway_nodes[id].firmware.model;
-    firmware_info["version"] = _gateway_nodes[id].firmware.version;
-
-    node["digital_inputs"] = _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI];
-    node["digital_outputs"] = _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO];
-    node["analog_inputs"] = _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI];
-    node["analog_outputs"] = _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO];
-
-    String output;
-
-    registered_nodes.printTo(output);
-
-    storageWriteConfiguration(_gateway_config_filename, output);
-}
-
-// -----------------------------------------------------------------------------
-
-void _gatewayRemoveNodeFromStorage(
-    const uint8_t id
-) {
-    DynamicJsonBuffer jsonBuffer;
-
-    JsonArray& registered_nodes = jsonBuffer.parseArray(_gatewayReadStoredConfiguration().c_str());
-
-    bool removed = false;
-    uint8_t index = 0;
-
-    for (JsonObject& stored_node : registered_nodes) {
-        if (stored_node["address"] == (id + 1)) {
-            registered_nodes.remove(index);
-
-            removed = true;
-        }
-
-        index++;
-    }
-
-    if (removed) {
-        String output;
-
-        registered_nodes.printTo(output);
-
-        storageWriteConfiguration(_gateway_config_filename, output);
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-bool _gatewayRestoreStorageFromJson(
-    JsonObject& data
-) {
-    const char * _thing = data["thing"];
-
-    if (strcmp(_thing, THING) != 0) {
-        return false;
-    }
-
-    const char * _version = data["version"];
-
-    if (strcmp(_version, FIRMWARE_VERSION) != 0) {
-        return false;
-    }
-
-    for (auto element : data) {
-        if (strcmp(element.key, "thing") == 0) {
-            continue;
-        }
-
-        if (strcmp(element.key, "version") == 0) {
-            continue;
-        }
-
-        // Parse gateway structure
-    }
-
-    DEBUG_MSG(PSTR("[GATEWAY] Structure restored successfully\n"));
-
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-
-void _gatewayRestoreFromStorage() {
-    DynamicJsonBuffer jsonBuffer;
-
-    JsonArray& registered_nodes = jsonBuffer.parseArray(_gatewayReadStoredConfiguration().c_str());
-
-    for (JsonObject& stored_node : registered_nodes) {
-        uint8_t id = (stored_node["address"].as<unsigned int>() - 1);
-
-        strncpy(_gateway_nodes[id].serial_number, stored_node["serial_number"].as<char *>(), (uint8_t) strlen(stored_node["serial_number"].as<char *>()));
-
-        _gateway_nodes[id].addressing.state = false;
-        _gateway_nodes[id].addressing.registration = 0;
-        _gateway_nodes[id].addressing.lost = 0;
-
-        JsonObject& hardware = stored_node["hardware"];
-
-        strncpy(_gateway_nodes[id].hardware.manufacturer, hardware["manufacturer"].as<char *>(), (uint8_t) strlen(hardware["manufacturer"].as<char *>()));
-        strncpy(_gateway_nodes[id].hardware.model, hardware["model"].as<char *>(), (uint8_t) strlen(hardware["model"].as<char *>()));
-        strncpy(_gateway_nodes[id].hardware.version, hardware["version"].as<char *>(), (uint8_t) strlen(hardware["version"].as<char *>()));
-
-        JsonObject& firmware = stored_node["firmware"];
-
-        strncpy(_gateway_nodes[id].firmware.manufacturer, firmware["manufacturer"].as<char *>(), (uint8_t) strlen(firmware["manufacturer"].as<char *>()));
-        strncpy(_gateway_nodes[id].firmware.model, firmware["model"].as<char *>(), (uint8_t) strlen(firmware["model"].as<char *>()));
-        strncpy(_gateway_nodes[id].firmware.version, firmware["version"].as<char *>(), (uint8_t) strlen(firmware["version"].as<char *>()));
-
-        _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] = stored_node["digital_inputs"].as<unsigned int>();
-        _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] = stored_node["digital_outputs"].as<unsigned int>();
-        _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] = stored_node["analog_inputs"].as<unsigned int>();
-        _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] = stored_node["analog_outputs"].as<unsigned int>();
-    }
-}
-
 // -----------------------------------------------------------------------------
 
 bool _gatewayRegisterValueUpdated(
@@ -1091,9 +226,12 @@ void _gatewayResetNodeIndex(
     const uint8_t id
 ) {
     // Reset addressing
-    _gateway_nodes[id].addressing.registration = 0;
     _gateway_nodes[id].addressing.state = false;
     _gateway_nodes[id].addressing.lost = 0;
+
+    _gateway_nodes[id].searching.state = false;
+    _gateway_nodes[id].searching.registration = 0;
+    _gateway_nodes[id].searching.attempts = 0;
 
     // Reset initialization steps
     _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_NONE;
@@ -1139,11 +277,13 @@ void _gatewayResetNodeIndex(
 void _gatewayCheckPacketsDelays()
 {
     for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
-        // Addressing
+        // Searching
         if (
-            _gateway_nodes[i].addressing.state == false
-            && (millis() - _gateway_nodes[i].addressing.registration) > NODES_GATEWAY_ADDRESSING_TIMEOUT
+            _gateway_nodes[i].searching.state == true
+            && (millis() - _gateway_nodes[i].searching.registration) > NODES_GATEWAY_SEARCHING_WAITING_TIMEOUT
         ) {
+            // Node does not respons in reserved time window
+            // Node slot is free to use by other node
             _gatewayResetNodeIndex(i);
         }
 
@@ -1200,7 +340,10 @@ String _gatewayPacketName(
 ) {
     char buffer[50] = {0};
 
-    if (_gatewayIsPacketInGroup(packetId, gateway_packets_addresing, GATEWAY_PACKET_ADDRESS_MAX)) {
+    if (_gatewayIsPacketInGroup(packetId, gateway_packets_searching, GATEWAY_PACKET_SEARCH_MAX)) {
+        strncpy_P(buffer, gateway_packets_searching_string[_gatewayGetPacketIndexInGroup(packetId, gateway_packets_searching, GATEWAY_PACKET_SEARCH_MAX)], sizeof(buffer));
+
+    } else if (_gatewayIsPacketInGroup(packetId, gateway_packets_addresing, GATEWAY_PACKET_ADDRESS_MAX)) {
         strncpy_P(buffer, gateway_packets_addresing_string[_gatewayGetPacketIndexInGroup(packetId, gateway_packets_addresing, GATEWAY_PACKET_ADDRESS_MAX)], sizeof(buffer));
 
     } else if (_gatewayIsPacketInGroup(packetId, gateway_packets_node_initialization, GATEWAY_PACKET_NODE_INIT_MAX)) {
@@ -1225,6 +368,8 @@ String _gatewayPacketName(
     return String(buffer);
 }
 
+// -----------------------------------------------------------------------------
+// COMMUNICATION
 // -----------------------------------------------------------------------------
 
 bool _gatewayBroadcastPacket(
@@ -1423,194 +568,6 @@ void _gatewayCheckNodesPresence()
 }
 
 // -----------------------------------------------------------------------------
-// NODE INITIALIZATION
-// -----------------------------------------------------------------------------
-
-/**
- * Node is fully initialized & ready for receiving commands
- */
-void _gatewayMarkNodeAsInitialized(
-    const uint8_t id
-) {
-    _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_NONE;
-    _gateway_nodes[id].initiliazation.state = true;
-    _gateway_nodes[id].initiliazation.attempts = 0;
-
-    _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
-    _gateway_nodes[id].packet.sending_time = 0;
-
-    _gatewayAddNodeToStorage(id);
-
-    #if WEB_SUPPORT && WS_SUPPORT
-        // Propagate nodes structure to WS clients
-        wsSend(_gatewayWebSocketUpdate);
-    #endif
-
-    #if FASTYBIRD_SUPPORT
-        _gatewayRegisterFastybirdNode(id);
-    #endif
-}
-
-// -----------------------------------------------------------------------------
-
-uint8_t _gatewayGetNodeAddressToInitialize() {
-    for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
-        if (
-            // Check if node has finished addressing procedure
-            _gateway_nodes[i].addressing.state == true
-            // Check if node is not initialized
-            && _gateway_nodes[i].initiliazation.state == false
-            && _gateway_nodes[i].packet.waiting_for == GATEWAY_PACKET_NONE
-        ) {
-            // Attempts counter reached maximum
-            if (_gateway_nodes[i].initiliazation.attempts > NODES_GATEWAY_MAX_INIT_ATTEMPTS) {
-                // Set delay
-                if (_gateway_nodes[i].initiliazation.delay == 0) {
-                    _gateway_nodes[i].initiliazation.delay = millis();
-
-                // If the delay is finished...
-                } else if ((millis() - _gateway_nodes[i].initiliazation.delay) >= NODES_GATEWAY_INIT_DELAY) {
-                    // ...reset it and continue in initiliazation
-                    _gateway_nodes[i].initiliazation.attempts = 0;
-                    _gateway_nodes[i].initiliazation.delay = 0;
-
-                    return (i + 1);
-                }
-
-            } else {
-                return (i + 1);
-            }
-        }
-    }
-
-    return 0;
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * Send initiliaziation packet to node
- */
-void _gatewaySendInitializationPacket(
-    const uint8_t id,
-    const uint8_t requestState
-) {
-    char output_content[1];
-
-    // Packet identifier at first postion
-    output_content[0] = requestState;
-
-    // Send packet to node
-    bool result = _gatewaySendPacket((id + 1), output_content, 1);
-
-    // When successfully sent...
-    if (result == true) {
-        // ...add mark, that gateway is waiting for reply from node
-        _gateway_nodes[id].packet.waiting_for = requestState;
-        _gateway_nodes[id].packet.sending_time = millis();
-
-        _gateway_nodes[id].initiliazation.attempts = _gateway_nodes[id].initiliazation.attempts + 1;
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * Send register structure request packet to node
- */
-void _gatewaySendRegisterInitializationPacket(
-    const uint8_t id,
-    const uint8_t requestState,
-    const uint8_t start
-) {
-    char output_content[_gateway_nodes[id].packet.max_length];
-
-    // Packet identifier at first postion
-    output_content[0] = requestState;
-    output_content[1] = (char) (start >> 8);
-    output_content[2] = (char) (start & 0xFF);
-    
-    // It is based on maximum packed size reduced by packet header (4 bytes)
-    uint8_t max_readable_addresses = start + _gateway_nodes[id].packet.max_length - 4;
-
-    switch (requestState)
-    {
-        case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
-            if (max_readable_addresses <= _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI]) {
-                output_content[3] = (char) (max_readable_addresses >> 8);
-                output_content[4] = (char) (max_readable_addresses & 0xFF);
-
-            } else {
-                output_content[3] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] >> 8);
-                output_content[4] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] & 0xFF);
-            }
-            break;
-
-        case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
-            if (max_readable_addresses <= _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO]) {
-                output_content[3] = (char) (max_readable_addresses >> 8);
-                output_content[4] = (char) (max_readable_addresses & 0xFF);
-
-            } else {
-                output_content[3] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] >> 8);
-                output_content[4] = (char) (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] & 0xFF);
-            }
-            break;
-    }
-
-    // Send packet to node
-    bool result = _gatewaySendPacket((id + 1), output_content, 5);
-
-    // When successfully sent...
-    if (result == true) {
-        // ...add mark, that gateway is waiting for reply from node
-        _gateway_nodes[id].packet.waiting_for = requestState;
-        _gateway_nodes[id].packet.sending_time = millis();
-
-        _gateway_nodes[id].initiliazation.attempts = _gateway_nodes[id].initiliazation.attempts + 1;
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * Get first not initialized node from the list & try to continue in initiliazation
- */
-void _gatewayContinueInNodeInitialization(
-    const uint8_t address
-) {
-    // Convert node address to index
-    uint8_t index = address - 1;
-
-    if (
-        // Check if node has finished addressing procedure
-        _gateway_nodes[index].addressing.state == true
-        // Check if node is not initialized
-        && _gateway_nodes[index].initiliazation.state == false
-        && _gateway_nodes[index].initiliazation.attempts <= NODES_GATEWAY_MAX_INIT_ATTEMPTS
-        && _gateway_nodes[index].packet.waiting_for == GATEWAY_PACKET_NONE
-    ) {
-        switch (_gateway_nodes[index].initiliazation.step)
-        {
-            case GATEWAY_PACKET_HW_MODEL:
-            case GATEWAY_PACKET_HW_MANUFACTURER:
-            case GATEWAY_PACKET_HW_VERSION:
-            case GATEWAY_PACKET_FW_MODEL:
-            case GATEWAY_PACKET_FW_MANUFACTURER:
-            case GATEWAY_PACKET_FW_VERSION:
-            case GATEWAY_PACKET_REGISTERS_SIZE:
-                _gatewaySendInitializationPacket(index, _gateway_nodes[index].initiliazation.step);
-                break;
-
-            case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
-            case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
-                _gatewaySendRegisterInitializationPacket(index, _gateway_nodes[index].initiliazation.step, 0);
-                break;
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
 // COMMUNICATION HANDLERS
 // -----------------------------------------------------------------------------
 
@@ -1632,7 +589,11 @@ void _gatewayReceiveHandler(
     DEBUG_MSG(PSTR("[GATEWAY] Received packet: %s for node with address: %d\n"), _gatewayPacketName(packet_id).c_str(), sender_address);
 
     // Node is trying to acquire address
-    if (_gatewayIsPacketInGroup(packet_id, gateway_packets_addresing, GATEWAY_PACKET_ADDRESS_MAX)) {
+    if (_gatewayIsPacketInGroup(packet_id, gateway_packets_searching, GATEWAY_PACKET_SEARCH_MAX)) {
+        _gatewaySearchRequestHandler(packet_id, sender_address, payload);
+
+    // Node is trying to acquire address
+    } else if (_gatewayIsPacketInGroup(packet_id, gateway_packets_addresing, GATEWAY_PACKET_ADDRESS_MAX)) {
         _gatewayAddressRequestHandler(packet_id, sender_address, payload);
 
     // Node send reply to request
@@ -1795,6 +756,8 @@ void gatewaySetup() {
         fastybirdOnControlRegister(
             [](JsonObject& payload) {
                 DEBUG_MSG(PSTR("[GATEWAY] Searching for new nodes\n"));
+
+                _gatewaySearchNewNodesStart();
             },
             "nodes-search"
         );
@@ -1802,12 +765,14 @@ void gatewaySetup() {
         fastybirdOnControlRegister(
             [](JsonObject& payload) {
                 DEBUG_MSG(PSTR("[GATEWAY] Disconnection selected node\n"));
+
+                // TODO: implement
             },
             "node-disconnect"
         );
     #endif
 
-    _gatewayRestoreFromStorage();
+    _gatewayRestoreStorageFromMemory();
 
     firmwareRegisterLoop(gatewayLoop);
 }
@@ -1823,46 +788,47 @@ void gatewayLoop() {
     #endif
 
     // Little delay before gateway start
-    if (millis() < NODES_GATEWAY_SEARCH_DELAY) {
+    if (millis() < NODES_GATEWAY_START_DELAY) {
         return;
     }
 
     _gatewayCheckPacketsDelays();
 
     // If some node is not initialized, get its address
-    uint8_t node_address_to_initialize = _gatewayGetNodeAddressToInitialize();
+    uint8_t node_address_to_initialize = _gatewayInitializationUnfinishedAddress();
+    uint8_t node_address_to_search = _gatewaySearchUnfinishedAddress();
 
-    #if WEB_SUPPORT && WS_SUPPORT
-        if (
-            _gateway_last_nodes_scan > 0
-            && (_gateway_last_nodes_scan + NODES_GATEWAY_ADDRESSING_TIMEOUT) < millis()
-            && _gateway_nodes_scan_client_id != 0
-        ) {
-            DynamicJsonBuffer jsonBuffer;
+    if (_gateway_nodes_search_new == true && (_gateway_last_new_nodes_scan + NODES_GATEWAY_SEARCHING_TIMEOUT) <= millis()) {
+        _gateway_nodes_search_new = false;
+        _gateway_last_new_nodes_scan = 0;
 
-            JsonObject& scan_result = jsonBuffer.createObject();
+        #if WEB_SUPPORT && WS_SUPPORT
+            if (_gateway_nodes_scan_client_id != 0) {
+                DynamicJsonBuffer jsonBuffer;
 
-            scan_result["module"] = "nodes";
-            scan_result["result"] = String("OK");
+                JsonObject& scan_result = jsonBuffer.createObject();
 
-            String converted_output;
+                scan_result["module"] = "nodes";
+                scan_result["result"] = String("OK");
 
-            scan_result.printTo(converted_output);
+                String converted_output;
 
-            wsSend(_gateway_nodes_scan_client_id, converted_output.c_str()); 
-        }
-    #endif
+                scan_result.printTo(converted_output);
 
-    if (
-        _gateway_nodes_perform_scan == true
-        || _gateway_last_nodes_scan == 0
-        || (_gateway_last_nodes_scan + NODES_GATEWAY_ADDRESSING_TIMEOUT) > millis()
-    ) {
-        if (_gateway_last_nodes_scan == 0 || _gateway_nodes_perform_scan == true) {
+                wsSend(_gateway_nodes_scan_client_id, converted_output.c_str());  
+            }
+        #endif
+    }
+
+    // Search for new unaddressed nodes
+    if (_gateway_nodes_search_new == true && (_gateway_last_new_nodes_scan + NODES_GATEWAY_SEARCHING_TIMEOUT) > millis()) {
+        _gatewaySearchForNewNodes();
+
+    // Search for nodes after bootup
+    } else if (_gateway_last_nodes_scan == 0 || (_gateway_last_nodes_scan + NODES_GATEWAY_ADDRESSING_TIMEOUT) > millis()) {
+        if (_gateway_last_nodes_scan == 0) {
             _gateway_last_nodes_scan = millis();
         }
-
-        _gateway_nodes_perform_scan = false;
 
         _gatewaySearchForNodes();
 
@@ -1874,7 +840,11 @@ void gatewayLoop() {
 
     // Check if all connected nodes are initialized
     } else if (node_address_to_initialize != 0) {
-        _gatewayContinueInNodeInitialization(node_address_to_initialize);
+        _gatewayInitializationContinueInProcess(node_address_to_initialize);
+
+    // Check if all connected nodes have finished searching process
+    } else if (node_address_to_search != 0) {
+        _gatewaySearchContinueInProcess(node_address_to_search);
 
     // Continue in nodes registers reading
     } else {

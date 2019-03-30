@@ -721,7 +721,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 #ifndef NODES_GATEWAY_MAX_NODES
-#define NODES_GATEWAY_MAX_NODES                     5               // Define maximum slave nodes count that could connect to the master
+#define NODES_GATEWAY_MAX_NODES                     10              // Define maximum slave nodes count that could connect to the master
 #endif
 
 #ifndef NODES_GATEWAY_MAX_INIT_ATTEMPTS
@@ -737,11 +737,11 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 #ifndef NODES_GATEWAY_NODES_CHECK_INTERVAL
-#define NODES_GATEWAY_NODES_CHECK_INTERVAL          8000            // Delay in ms to wait for response on packet from node
+#define NODES_GATEWAY_NODES_CHECK_INTERVAL          8000            // Nodes heartbeat check interval
 #endif
 
 #ifndef NODES_GATEWAY_ADDRESSING_TIMEOUT
-#define NODES_GATEWAY_ADDRESSING_TIMEOUT            4000            // Master GATEWAY_ACQUIRE_ADDRESS_REQUEST and GATEWAY_ACQUIRE_ADDRESS_NEGATE timeout
+#define NODES_GATEWAY_ADDRESSING_TIMEOUT            4000            // After timeout is reached, gateway stop searching for connected nodes
 #endif
 
 #ifndef NODES_GATEWAY_LIST_ADDRESSES_TIME
@@ -768,12 +768,16 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define NODES_GATEWAY_NODES_BUFFER_FULL             254
 #endif
 
+#ifndef NODES_GATEWAY_NODES_NOT_FOUND
+#define NODES_GATEWAY_NODES_NOT_FOUND               255
+#endif
+
 #ifndef NODES_GATEWAY_FAIL
 #define NODES_GATEWAY_FAIL                          65535
 #endif
 
-#ifndef NODES_GATEWAY_SEARCH_DELAY
-#define NODES_GATEWAY_SEARCH_DELAY                  60000           // The system is considered stable after these many millis
+#ifndef NODES_GATEWAY_START_DELAY
+#define NODES_GATEWAY_START_DELAY                   60000           // Little delay before gateway start communication with nodes
 #endif
 
 #ifndef NODES_GATEWAY_FLOOD_WINDOW
@@ -782,4 +786,16 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #ifndef NODES_GATEWAY_FLOOD_CHANGES
 #define NODES_GATEWAY_FLOOD_CHANGES                 5               // Allowed actual registers changes inside requests flood protection window
+#endif
+
+#ifndef NODES_GATEWAY_MAX_SEARCH_ATTEMPTS
+#define NODES_GATEWAY_MAX_SEARCH_ATTEMPTS           5               // Maximum count of attempts before gateway end searching process
+#endif
+
+#ifndef NODES_GATEWAY_SEARCHING_TIMEOUT
+#define NODES_GATEWAY_SEARCHING_TIMEOUT             4000            // After timeout is reached, gateway stop searching for new nodes
+#endif
+
+#ifndef NODES_GATEWAY_SEARCHING_WAITING_TIMEOUT
+#define NODES_GATEWAY_SEARCHING_WAITING_TIMEOUT     4000            // After timeout is reached, gateway discard node reserved slot
 #endif

@@ -12,7 +12,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #define CUSTOM_RESET_HARDWARE                   1       // Reset from hardware button
 #define CUSTOM_RESET_WEB                        2       // Reset from web interface
-#define CUSTOM_RESET_MQTT                       3       // Reset via MQTT
+#define CUSTOM_RESET_BROKER                     3       // Reset via broker
 #define CUSTOM_RESET_OTA                        4       // Reset after successful OTA update
 #define CUSTOM_RESET_NOFUSS                     5       // Reset after successful NOFUSS update
 #define CUSTOM_RESET_UPGRADE                    6       // Reset after update from web interface
@@ -62,13 +62,17 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 // GATEWAY PACKET NAMES
 // =============================================================================
 
-// Node addressing
-#define GATEWAY_PACKET_SEARCH_NODES             0x01
+// Node searching
 #define GATEWAY_PACKET_SEARCH_NEW_NODES         0x02
 #define GATEWAY_PACKET_NODE_ADDRESS_CONFIRM     0x03
+
+#define GATEWAY_PACKET_SEARCH_MAX               2
+
+// Node addressing
+#define GATEWAY_PACKET_SEARCH_NODES             0x01
 #define GATEWAY_PACKET_ADDRESS_DISCARD          0x04
 
-#define GATEWAY_PACKET_ADDRESS_MAX              4
+#define GATEWAY_PACKET_ADDRESS_MAX              2
 
 // Node initialization
 #define GATEWAY_PACKET_HW_MODEL                 0x11
