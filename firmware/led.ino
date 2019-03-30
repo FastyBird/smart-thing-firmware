@@ -358,6 +358,25 @@ void ledSetup() {
         wsOnConfigureRegister(_ledWSOnConfigure);
     #endif
 
+    #if FASTYBIRD_SUPPORT && LED1_PIN != GPIO_NONE
+        fastybirdOnControlRegister(
+            [](const char * payload) {
+                DEBUG_MSG(PSTR("[LED] Controling status LED\n"));
+
+                if (strcmp(payload, FASTYBIRD_LED_PAYLOAD_ON) == 0) {
+                    _ledMode(0, LED_MODE_ON);
+
+                } else if (strcmp(payload, FASTYBIRD_LED_PAYLOAD_OFF) == 0) {
+                    _ledMode(0, LED_MODE_OFF);
+
+                } else if (strcmp(payload, FASTYBIRD_LED_PAYLOAD_RESTORE) == 0) {
+                    _ledMode(0, LED_MODE_WIFI);
+                }  
+            },
+            "status-led"
+        );
+    #endif
+
     DEBUG_MSG(PSTR("[LED] Number of leds: %d\n"), ledCount());
 
     // Register firmware callbacks

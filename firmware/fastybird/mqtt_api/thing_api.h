@@ -518,7 +518,7 @@ bool _fastybirdPropagateThingControlConfiguration(
     if (packet_id == 0) return false;
 
     for (uint8_t i = 0; i < _fastybird_on_control_callbacks.size(); i++) {
-        std::function<void(JsonObject&)> controll_callback = _fastybird_on_control_callbacks[i].callback;
+        std::function<void(const char *)> controll_callback = _fastybird_on_control_callbacks[i].callback;
 
         packet_id = mqttSubscribe(
             _fastybirdMqttApiCreateThingTopicString(
@@ -528,17 +528,7 @@ bool _fastybirdPropagateThingControlConfiguration(
                 _fastybird_on_control_callbacks[i].controlName
             ).c_str(),
             [controll_callback](const char * topic, const char * payload) {
-                DynamicJsonBuffer jsonBuffer;
-
-                // Parse payload
-                JsonObject& root = jsonBuffer.parseObject(payload);
-
-                if (root.success()) {
-                    controll_callback(root);
-
-                } else {
-                    DEBUG_MSG(PSTR("[FASTYBIRD] Received payload is not in valid JSON format\n"));
-                }
+                controll_callback(payload);
             }
         );
         

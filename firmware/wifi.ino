@@ -587,7 +587,7 @@ void wifiSetup() {
 
     #if FASTYBIRD_SUPPORT
         fastybirdOnControlRegister(
-            [](JsonObject& payload) {
+            [](const char * payload) {
                 DEBUG_MSG(PSTR("[WIFI] Requested reconnect action\n"));
 
                 wifiDisconnect();

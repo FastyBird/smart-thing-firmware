@@ -427,7 +427,7 @@ void systemSetup() {
 
     #if FASTYBIRD_SUPPORT
         fastybirdOnControlRegister(
-            [](JsonObject& payload) {
+            [](const char * payload) {
                 DEBUG_MSG(PSTR("[SYSTEM] Requested reset action\n"));
 
                 deferredReset(100, CUSTOM_RESET_BROKER);
@@ -436,7 +436,7 @@ void systemSetup() {
         );
 
         fastybirdOnControlRegister(
-            [](JsonObject& payload) {
+            [](const char * payload) {
                 DEBUG_MSG(PSTR("[SYSTEM] Requested factory reset action\n"));
                 DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
 

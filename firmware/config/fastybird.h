@@ -17,6 +17,7 @@
 #define FASTYBIRD_LED_PAYLOAD_ON                            "on"
 #define FASTYBIRD_LED_PAYLOAD_OFF                           "off"
 #define FASTYBIRD_LED_PAYLOAD_TOGGLE                        "toggle"
+#define FASTYBIRD_LED_PAYLOAD_RESTORE                       "restore"
 
 #define FASTYBIRD_BTN_PAYLOAD_PRESS                         "press"
 #define FASTYBIRD_BTN_PAYLOAD_CLICK                         "click"

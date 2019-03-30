@@ -641,21 +641,31 @@ void fastybirdSetup() {
     systemOnHeartbeatRegister(_fastybirdOnHeartbeat);
     
     fastybirdOnControlRegister(
-        [](JsonObject& configuration) {
-            DEBUG_MSG(PSTR("[FASTYBIRD] Sending configuration to modules\n"));
+        [](const char * payload) {
+            DynamicJsonBuffer jsonBuffer;
 
-            for (uint8_t i = 0; i < _fastybird_on_configure_callbacks.size(); i++) {
-                (_fastybird_on_configure_callbacks[i])(configuration);
+            // Parse payload
+            JsonObject& root = jsonBuffer.parseObject(payload);
+
+            if (root.success()) {
+                DEBUG_MSG(PSTR("[FASTYBIRD] Sending configuration to modules\n"));
+
+                for (uint8_t i = 0; i < _fastybird_on_configure_callbacks.size(); i++) {
+                    (_fastybird_on_configure_callbacks[i])(root);
+                }
+
+                DEBUG_MSG(PSTR("[FASTYBIRD] Changes were saved\n"));
+
+                #if WEB_SUPPORT && WS_SUPPORT
+                    wsReportConfiguration();
+                #endif
+
+                // Report back updated configuration
+                fastybirdReportConfiguration();
+                
+            } else {
+                DEBUG_MSG(PSTR("[FASTYBIRD] Received payload is not in valid JSON format\n"));
             }
-
-            DEBUG_MSG(PSTR("[FASTYBIRD] Changes were saved\n"));
-
-            #if WEB_SUPPORT && WS_SUPPORT
-                wsReportConfiguration();
-            #endif
-
-            // Report back updated configuration
-            fastybirdReportConfiguration();
         },
         "config"
     );

@@ -754,7 +754,7 @@ void gatewaySetup() {
 
     #if FASTYBIRD_SUPPORT
         fastybirdOnControlRegister(
-            [](JsonObject& payload) {
+            [](const char * payload) {
                 DEBUG_MSG(PSTR("[GATEWAY] Searching for new nodes\n"));
 
                 _gatewaySearchNewNodesStart();
@@ -763,7 +763,7 @@ void gatewaySetup() {
         );
 
         fastybirdOnControlRegister(
-            [](JsonObject& payload) {
+            [](const char * payload) {
                 DEBUG_MSG(PSTR("[GATEWAY] Disconnection selected node\n"));
 
                 // TODO: implement
