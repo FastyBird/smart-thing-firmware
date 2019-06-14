@@ -17,7 +17,6 @@ std::vector<fastybird_thing_control_callback_t> _fastybird_on_control_callbacks;
 
 std::vector<fastybird_channels_report_configuration_callback_f> _fastybird_channels_report_configuration_callbacks;
 
-std::vector<fastybird_channels_report_direct_controls_callback_f> _fastybird_channels_report_direct_controls_callbacks;
 std::vector<fastybird_channels_report_scheduler_callback_f> _fastybird_channels_report_scheduler_callbacks;
 
 // -----------------------------------------------------------------------------
@@ -64,14 +63,6 @@ void fastybirdChannelsReportConfigurationRegister(
     fastybird_channels_report_configuration_callback_f callback
 ) {
     _fastybird_channels_report_configuration_callbacks.push_back(callback);
-}
-
-// -----------------------------------------------------------------------------
-
-void fastybirdChannelsReportDirectControlsRegister(
-    fastybird_channels_report_direct_controls_callback_f callback
-) {
-    _fastybird_channels_report_direct_controls_callbacks.push_back(callback);
 }
 
 // -----------------------------------------------------------------------------

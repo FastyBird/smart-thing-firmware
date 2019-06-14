@@ -77,9 +77,6 @@ const char firmware_modules[] PROGMEM =
     #if SCHEDULER_SUPPORT
         "SCHEDULER "
     #endif
-    #if DIRECT_CONTROL_SUPPORT
-        "DIRECT_CONTROL "
-    #endif
     #if SENSOR_SUPPORT
         "SENSOR "
     #endif
@@ -149,12 +146,15 @@ const char gateway_packet_read_single_ai[] PROGMEM              = "GATEWAY_PACKE
 const char gateway_packet_read_multi_ai[] PROGMEM               = "GATEWAY_PACKET_READ_MULTI_AI";
 const char gateway_packet_read_single_ao[] PROGMEM              = "GATEWAY_PACKET_READ_SINGLE_AO";
 const char gateway_packet_read_multi_ao[] PROGMEM               = "GATEWAY_PACKET_READ_MULTI_AO";
+const char gateway_packet_read_single_ev[] PROGMEM              = "GATEWAY_PACKET_READ_SINGLE_EV";
+const char gateway_packet_read_multi_ev[] PROGMEM               = "GATEWAY_PACKET_READ_MULTI_EV";
 
 PROGMEM const char * const gateway_packets_registers_reading_string[] = {
     gateway_packet_read_single_di, gateway_packet_read_multi_di,
     gateway_packet_read_single_do, gateway_packet_read_multi_do,
     gateway_packet_read_single_ai, gateway_packet_read_multi_ai,
-    gateway_packet_read_single_ao, gateway_packet_read_multi_ao
+    gateway_packet_read_single_ao, gateway_packet_read_multi_ao,
+    gateway_packet_read_single_ev, gateway_packet_read_multi_ev
 };
 
 const char gateway_packet_write_one_do[] PROGMEM                = "GATEWAY_PACKET_WRITE_ONE_DO";
@@ -198,7 +198,8 @@ const int gateway_packets_registers_reading[] PROGMEM = {
     GATEWAY_PACKET_READ_SINGLE_DI, GATEWAY_PACKET_READ_MULTI_DI,
     GATEWAY_PACKET_READ_SINGLE_DO, GATEWAY_PACKET_READ_MULTI_DO,
     GATEWAY_PACKET_READ_SINGLE_AI, GATEWAY_PACKET_READ_MULTI_AI,
-    GATEWAY_PACKET_READ_SINGLE_AO, GATEWAY_PACKET_READ_MULTI_AO
+    GATEWAY_PACKET_READ_SINGLE_AO, GATEWAY_PACKET_READ_MULTI_AO,
+    GATEWAY_PACKET_READ_SINGLE_EV, GATEWAY_PACKET_READ_MULTI_EV
 };
 
 const int gateway_packets_registers_writing[] PROGMEM = {

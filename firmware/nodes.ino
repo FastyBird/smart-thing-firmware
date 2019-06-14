@@ -71,6 +71,11 @@ typedef struct {
     char            value[4];
 } gateway_analog_register_t;
 
+typedef struct {
+    const char *    name;
+    uint8_t         value;
+} gateway_event_register_t;
+
 struct gateway_node_t {
     // Node addressing process
     gateway_node_addressing_t addressing;
@@ -96,7 +101,9 @@ struct gateway_node_t {
     std::vector<gateway_analog_register_t> analog_inputs;
     std::vector<gateway_analog_register_t> analog_outputs;
     
-    uint8_t registers_size[4];
+    std::vector<gateway_event_register_t> event_inputs;
+
+    uint8_t registers_size[5];
 
     // Data registers reading
     gateway_register_reading_t digital_inputs_reading;
@@ -104,6 +111,8 @@ struct gateway_node_t {
 
     gateway_register_reading_t analog_inputs_reading;
     gateway_register_reading_t analog_outputs_reading;
+
+    gateway_register_reading_t event_inputs_reading;
 };
 
 gateway_node_t _gateway_nodes[NODES_GATEWAY_MAX_NODES];
@@ -216,6 +225,10 @@ bool _gatewayRegisterValueUpdated(
             case GATEWAY_REGISTER_AO:
                 _gatewayReportAnalogRegisterValue(id, dataRegister, address, 3);
                 break;
+
+            case GATEWAY_REGISTER_EV:
+                _gatewayReportEventRegisterValue(id, dataRegister, address, 4);
+                break;
         }
     #endif
 }
@@ -267,6 +280,9 @@ void _gatewayResetNodeIndex(
 
     std::vector<gateway_analog_register_t> reset_analog_outputs;
     _gateway_nodes[id].analog_outputs = reset_analog_outputs;
+
+    std::vector<gateway_event_register_t> reset_event_inputs;
+    _gateway_nodes[id].event_inputs = reset_event_inputs;
 }
 
 // -----------------------------------------------------------------------------
@@ -438,6 +454,7 @@ void _gatewayReadNodes()
                 || _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DO] > 0
                 || _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AI] > 0
                 || _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AO] > 0
+                || _gateway_nodes[i].registers_size[GATEWAY_REGISTER_EV] > 0
             )
             && _gateway_nodes[i].packet.waiting_for == GATEWAY_PACKET_NONE
         ) {
@@ -478,6 +495,15 @@ void _gatewayReadNodes()
                 )
             ) {
                 _gatewayRequestReadingMultipleAnalogOutputsRegisters(i);
+
+            } else if (
+                _gateway_nodes[i].registers_size[GATEWAY_REGISTER_EV] > 0
+                && (
+                    _gateway_nodes[i].event_inputs_reading.delay == 0
+                    || (millis() - _gateway_nodes[i].event_inputs_reading.delay) > NODES_GATEWAY_EV_READING_INTERVAL
+                )
+            ) {
+                _gatewayRequestReadingMultipleEventInputsRegisters(i);
             }
 
             return;
@@ -677,6 +703,18 @@ void _gatewayReceiveHandler(
                     break;
 
             /**
+             * EVENT REGISTERS READING
+             */
+
+                case GATEWAY_PACKET_READ_SINGLE_EV:
+                    // TODO: implement
+                    break;
+
+                case GATEWAY_PACKET_READ_MULTI_EV:
+                    _gatewayReadMultipleEventRegisterHandler((sender_address - 1), GATEWAY_REGISTER_EV, payload);
+                    break;
+
+            /**
              * DIGITAL REGISTERS WRITING
              */
 
@@ -725,6 +763,18 @@ void _gatewayErrorHandler(
     } else {
         DEBUG_MSG(PSTR("[GATEWAY][ERR] Unknown error\n"));
     }
+}
+
+// -----------------------------------------------------------------------------
+// MODULE API
+// -----------------------------------------------------------------------------
+
+bool gatewayReadDigitalValue(
+    const uint8_t id,
+    const uint8_t dataRegister,
+    const uint8_t address
+) {
+    return _gatewayReadDigitalRegisterValue(id, dataRegister, address);
 }
 
 // -----------------------------------------------------------------------------

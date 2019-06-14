@@ -685,18 +685,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 // -----------------------------------------------------------------------------
-// DIRECT CONTROLS MODULE
-// -----------------------------------------------------------------------------
-
-#ifndef DIRECT_CONTROL_SUPPORT
-#define DIRECT_CONTROL_SUPPORT          1           // Enable direct control
-#endif
-
-#ifndef DIRECT_CONTROL_MAX_CONTROLS
-#define DIRECT_CONTROL_MAX_CONTROLS     10          // Max direct controls alowed
-#endif
-
-// -----------------------------------------------------------------------------
 // ALEXA MODULE
 // -----------------------------------------------------------------------------
 
@@ -749,7 +737,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 #ifndef NODES_GATEWAY_DI_READING_INTERVAL
-#define NODES_GATEWAY_DI_READING_INTERVAL           500
+#define NODES_GATEWAY_DI_READING_INTERVAL           150
 #endif
 
 #ifndef NODES_GATEWAY_DO_READING_INTERVAL
@@ -757,11 +745,15 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 #ifndef NODES_GATEWAY_AI_READING_INTERVAL
-#define NODES_GATEWAY_AI_READING_INTERVAL           500
+#define NODES_GATEWAY_AI_READING_INTERVAL           150
 #endif
 
 #ifndef NODES_GATEWAY_AO_READING_INTERVAL
 #define NODES_GATEWAY_AO_READING_INTERVAL           3000
+#endif
+
+#ifndef NODES_GATEWAY_EV_READING_INTERVAL
+#define NODES_GATEWAY_EV_READING_INTERVAL           150
 #endif
 
 #ifndef NODES_GATEWAY_NODES_BUFFER_FULL
@@ -777,7 +769,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 #ifndef NODES_GATEWAY_START_DELAY
-#define NODES_GATEWAY_START_DELAY                   60000           // Little delay before gateway start communication with nodes
+#define NODES_GATEWAY_START_DELAY                   6000           // Little delay before gateway start communication with nodes
 #endif
 
 #ifndef NODES_GATEWAY_FLOOD_WINDOW

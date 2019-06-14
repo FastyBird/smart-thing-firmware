@@ -293,6 +293,7 @@ void _gatewayExtractAndStoreDescription(
  * 2    => DO buffer size               => 0-255
  * 3    => AI buffer size               => 0-255
  * 4    => AO buffer size               => 0-255
+ * 5    => EV buffer size               => 0-255
  */
 void _gatewayExtractAndStoreRegistersDefinitions(
     const uint8_t id,
@@ -310,10 +311,14 @@ void _gatewayExtractAndStoreRegistersDefinitions(
     std::vector<gateway_analog_register_t> reset_analog_outputs;
     _gateway_nodes[id].analog_outputs = reset_analog_outputs;
 
+    std::vector<gateway_event_register_t> reset_event_inputs;
+    _gateway_nodes[id].event_inputs = reset_event_inputs;
+
     _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] = (uint8_t) payload[1];
     _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] = (uint8_t) payload[2];
     _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] = (uint8_t) payload[3];
     _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] = (uint8_t) payload[4];
+    _gateway_nodes[id].registers_size[GATEWAY_REGISTER_EV] = (uint8_t) payload[5];
 
     _gateway_nodes[id].digital_inputs_reading.start = 0;
     _gateway_nodes[id].digital_inputs_reading.delay = 0;
@@ -323,6 +328,8 @@ void _gatewayExtractAndStoreRegistersDefinitions(
     _gateway_nodes[id].analog_inputs_reading.delay = 0;
     _gateway_nodes[id].analog_outputs_reading.start = 0;
     _gateway_nodes[id].analog_outputs_reading.delay = 0;
+    _gateway_nodes[id].event_inputs_reading.start = 0;
+    _gateway_nodes[id].event_inputs_reading.delay = 0;
     
     for (uint8_t i = 0; i < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI]; i++) {
         _gateway_nodes[id].digital_inputs.push_back((gateway_digital_register_t) {
@@ -352,12 +359,20 @@ void _gatewayExtractAndStoreRegistersDefinitions(
         });
     }
 
+    for (uint8_t i = 0; i < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_EV]; i++) {
+        _gateway_nodes[id].event_inputs.push_back((gateway_event_register_t) {
+            GATEWAY_DESCRIPTION_NOT_SET,
+            0
+        });
+    }
+ 
     DEBUG_MSG(
-        PSTR("[GATEWAY] Received node registers structure (DI: %d, DO: %d, AI: %d, AO: %d) for node with address: %d\n"),
+        PSTR("[GATEWAY] Received node registers structure (DI: %d, DO: %d, AI: %d, AO: %d, EV: %d) for node with address: %d\n"),
         _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI],
         _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO],
         _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI],
         _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO],
+        _gateway_nodes[id].registers_size[GATEWAY_REGISTER_EV],
         (id + 1)
     );
 

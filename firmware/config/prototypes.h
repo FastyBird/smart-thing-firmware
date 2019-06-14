@@ -194,10 +194,10 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
 // -----------------------------------------------------------------------------
 #if FASTYBIRD_SUPPORT
     typedef std::function<void(unsigned int, const char *)> fastybird_channels_process_payload_f;
+    typedef std::function<void(unsigned int, const char *)> fastybird_channels_process_query_f;
 
     typedef std::function<JsonArray&()> fastybird_channels_confiuration_schema_f;
     typedef std::function<void(unsigned int, JsonObject&)> fastybird_channels_configure_f;
-    typedef std::function<void(unsigned int, JsonArray&)> fastybird_channels_confiure_direct_controls_f;
     typedef std::function<void(unsigned int, JsonArray&)> fastybird_channels_confiure_schedules_f;
 
     typedef struct {
@@ -210,6 +210,7 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
         const char * name;
 
         bool settable;
+        bool queryable;
 
         const char * dataType;
 
@@ -217,6 +218,7 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
         std::vector<fastybird_channel_property_mapping_t> mappings;
 
         fastybird_channels_process_payload_f payloadCallback;
+        fastybird_channels_process_query_f queryCallback;
     } fastybird_channel_property_t;
 
     typedef struct {
@@ -225,7 +227,6 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
         unsigned int length;
 
         bool isConfigurable;
-        bool hasDirectControl;
         bool hasScheduler;
 
         bool initialized;
@@ -233,7 +234,6 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
         String configurationSchema;
 
         fastybird_channels_configure_f configureCallback;
-        fastybird_channels_confiure_direct_controls_f configureDirectControlsCallback;
         fastybird_channels_confiure_schedules_f configureSchedulesCallback;
 
         std::vector<fastybird_channel_property_t> properties;
@@ -256,8 +256,6 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
 
     typedef std::function<bool()> fastybird_channels_report_configuration_callback_f;
     void fastybirdChannelsReportConfigurationRegister(fastybird_channels_report_configuration_callback_f callback);
-    typedef std::function<bool()> fastybird_channels_report_direct_controls_callback_f;
-    void fastybirdChannelsReportDirectControlsRegister(fastybird_channels_report_direct_controls_callback_f callback);
     typedef std::function<bool()> fastybird_channels_report_scheduler_callback_f;
     void fastybirdChannelsReportSchedulerRegister(fastybird_channels_report_scheduler_callback_f callback);
 
@@ -301,7 +299,6 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
     #define fastybird_on_configure_callback_f void *
 
     #define fastybird_channels_report_configuration_callback_f void *
-    #define fastybird_channels_report_direct_controls_callback_f void *
     #define fastybird_channels_report_scheduler_callback_f void *
 #endif
 

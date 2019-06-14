@@ -67,6 +67,10 @@ void setup() {
         stabilitySetup();
     #endif
 
+    #if BUTTON_SUPPORT
+        buttonSetup();
+    #endif
+
     // Init Serial, SPIFFS
     systemSetup();
 
@@ -106,16 +110,12 @@ void setup() {
 
     crashSetup();
 
-    #if RELAY_PROVIDER != RELAY_PROVIDER_NONE
-        relaySetup();
-    #endif
-
-    #if BUTTON_SUPPORT
-        buttonSetup();
-    #endif
-
     #if LED_SUPPORT
         ledSetup();
+    #endif
+
+    #if RELAY_PROVIDER != RELAY_PROVIDER_NONE
+        relaySetup();
     #endif
 
     #if MQTT_SUPPORT
@@ -140,10 +140,6 @@ void setup() {
 
     #if SCHEDULER_SUPPORT
         schSetup();
-    #endif
-    
-    #if DIRECT_CONTROL_SUPPORT
-        directControlSetup();
     #endif
 }
 

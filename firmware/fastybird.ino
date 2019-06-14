@@ -137,6 +137,14 @@ bool _fastybirdInitializeChannel(
                 return false;
             }
 
+            _fastybird_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_PROPERTY_QUERYABLE;
+            break;
+
+        case FASTYBIRD_PUB_CHANNEL_PROPERTY_QUERYABLE:
+            if (!_fastybirdPropagateChannelPropertyQueryable(channelStructure, channelStructure.properties[0])) {
+                return false;
+            }
+
             _fastybird_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_PROPERTY_DATA_TYPE;
             break;
 
@@ -170,12 +178,6 @@ bool _fastybirdInitializeChannel(
             if (channelStructure.isConfigurable) {
                 channel_controls.push_back(FASTYBIRD_CHANNEL_CONTROL_VALUE_CONFIGURATION);
             }
-
-            #if DIRECT_CONTROL_SUPPORT
-                if (channelStructure.hasDirectControl) {
-                    channel_controls.push_back(FASTYBIRD_CHANNEL_CONTROL_VALUE_DIRECT_CONTROL);
-                }
-            #endif
 
             #if SCHEDULER_SUPPORT
                 if (channelStructure.hasScheduler) {
@@ -272,7 +274,7 @@ void _fastybirdInitializeSystem() {
                 }
             #endif
 
-            if (!_fastybirdPropagateThingHardwareName(THING)) {
+            if (!_fastybirdPropagateThingHardwareManufacturer(MANUFACTURER)) {
                 return;
             }
 
@@ -280,7 +282,7 @@ void _fastybirdInitializeSystem() {
                 return;
             }
 
-            if (!_fastybirdPropagateThingHardwareManufacturer(MANUFACTURER)) {
+            if (!_fastybirdPropagateThingHardwareVersion(HARWARE_VERSION)) {
                 return;
             }
 
@@ -289,15 +291,15 @@ void _fastybirdInitializeSystem() {
 
         // Describe thing firmware details to cloud broker
         case FASTYBIRD_PUB_FIRMWARE:
+            if (!_fastybirdPropagateThingFirmwareManufacturer(FIRMWARE_MANUFACTURER)) {
+                return;
+            }
+
             if (!_fastybirdPropagateThingFirmwareName(FIRMWARE_MANUFACTURER)) {
                 return;
             }
 
             if (!_fastybirdPropagateThingFirmwareVersion(FIRMWARE_VERSION)) {
-                return;
-            }
-
-            if (!_fastybirdPropagateThingFirmwareManufacturer(FIRMWARE_MANUFACTURER)) {
                 return;
             }
 
@@ -420,34 +422,12 @@ void _fastybirdInitializeSystem() {
                 }
             }
 
-            #if DIRECT_CONTROL_SUPPORT
-                _fastybird_thing_advertisement_progress = FASTYBIRD_PUB_CHANNELS_DIRECT_CONTROL;
-            #else
-                #if SCHEDULER_SUPPORT
-                    _fastybird_thing_advertisement_progress = FASTYBIRD_PUB_CHANNELS_SCHEDULE;
-                #else
-                    _fastybird_thing_advertisement_progress = FASTYBIRD_PUB_HEARTBEAT;
-                #endif
-            #endif
-            break;
-
-        #if DIRECT_CONTROL_SUPPORT
-        case FASTYBIRD_PUB_CHANNELS_DIRECT_CONTROL:
-            if (_fastybird_channels_report_direct_controls_callbacks.size() > 0) {
-                for (uint8_t i = 0; i < _fastybird_channels_report_direct_controls_callbacks.size(); i++) {
-                    if (!(_fastybird_channels_report_direct_controls_callbacks[i])()) {
-                        return;
-                    }
-                }
-            }
-
             #if SCHEDULER_SUPPORT
                 _fastybird_thing_advertisement_progress = FASTYBIRD_PUB_CHANNELS_SCHEDULE;
             #else
                 _fastybird_thing_advertisement_progress = FASTYBIRD_PUB_HEARTBEAT;
             #endif
             break;
-        #endif
 
         #if SCHEDULER_SUPPORT
         case FASTYBIRD_PUB_CHANNELS_SCHEDULE:
@@ -511,31 +491,6 @@ bool fastybirdReportChannelConfiguration(
     String configuration
 ) {
     return fastybirdReportChannelConfiguration(index, 0, configuration);
-}
-
-// -----------------------------------------------------------------------------
-
-bool fastybirdReportChannelDirectControl(
-    const uint8_t index,
-    const uint8_t channelId,
-    String directControls
-) {
-    if (index >= 0 && index < _fastybird_channels.size()) {
-        return _fastybirdPropagateChannelDirectControlConfiguration(
-            _fastybird_channels[index],
-            channelId,
-            directControls
-        );
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-bool fastybirdReportChannelDirectControl(
-    const uint8_t index,
-    String directControls
-) {
-    return fastybirdReportChannelDirectControl(index, 0, directControls);
 }
 
 // -----------------------------------------------------------------------------

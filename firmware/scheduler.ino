@@ -249,6 +249,7 @@ void _schCheck() {
 
             if (minutes_to_trigger == 0) {
                 uint8_t sch_type = _scheduler_records[i].type;
+                uint8_t sch_channel = _scheduler_records[i].channel;
 
                 #if RELAY_PROVIDER != RELAY_PROVIDER_NONE
                     if (sch_type == SCHEDULER_TYPE_SWITCH) {

@@ -126,7 +126,7 @@ bool _fastybirdPropagateThingPropertiesStructure(
 bool _fastybirdPropagateThingPropertiesStructure(
     std::vector<String> properties
 ) {
-    return _fastybirdPropagateThingPropertiesStructure(_fastybird_mqtt_thing_id, properties);
+    return _fastybirdPropagateThingPropertiesStructure((fastybirdThingSN()).c_str(), properties);
 }
 
 // -----------------------------------------------------------------------------
@@ -154,7 +154,7 @@ bool _fastybirdPropagateThingProperty(
     const char * property,
     const char * payload
 ) {
-    return _fastybirdPropagateThingProperty(_fastybird_mqtt_thing_id, property, payload);
+    return _fastybirdPropagateThingProperty((fastybirdThingSN()).c_str(), property, payload);
 }
 
 // -----------------------------------------------------------------------------
@@ -180,7 +180,7 @@ bool _fastybirdPropagateThingName(
 bool _fastybirdPropagateThingName(
     const char * name
 ) {
-    return _fastybirdPropagateThingName(_fastybird_mqtt_thing_id, name);
+    return _fastybirdPropagateThingName((fastybirdThingSN()).c_str(), name);
 }
 
 // -----------------------------------------------------------------------------
@@ -208,24 +208,24 @@ bool _fastybirdPropagateThingHardwareField(
     const char * field,
     const char * payload
 ) {
-    return _fastybirdPropagateThingHardwareField(_fastybird_mqtt_thing_id, field, payload);
+    return _fastybirdPropagateThingHardwareField((fastybirdThingSN()).c_str(), field, payload);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingHardwareName(
+bool _fastybirdPropagateThingHardwareVersion(
     const char * thingId,
     const char * name
 ) {
-    return _fastybirdPropagateThingHardwareField(thingId, "name", name);
+    return _fastybirdPropagateThingHardwareField(thingId, "version", name);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingHardwareName(
+bool _fastybirdPropagateThingHardwareVersion(
     const char * name
 ) {
-    return _fastybirdPropagateThingHardwareName(_fastybird_mqtt_thing_id, name);
+    return _fastybirdPropagateThingHardwareVersion((fastybirdThingSN()).c_str(), name);
 }
 
 // -----------------------------------------------------------------------------
@@ -242,7 +242,7 @@ bool _fastybirdPropagateThingHardwareModelName(
 bool _fastybirdPropagateThingHardwareModelName(
     const char * model
 ) {
-    return _fastybirdPropagateThingHardwareModelName(_fastybird_mqtt_thing_id, model);
+    return _fastybirdPropagateThingHardwareModelName((fastybirdThingSN()).c_str(), model);
 }
 
 // -----------------------------------------------------------------------------
@@ -259,24 +259,7 @@ bool _fastybirdPropagateThingHardwareManufacturer(
 bool _fastybirdPropagateThingHardwareManufacturer(
     const char * manufacturer
 ) {
-    return _fastybirdPropagateThingHardwareManufacturer(_fastybird_mqtt_thing_id, manufacturer);
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateThingHardwareVersion(
-    const char * thingId,
-    const char * version
-) {
-    return _fastybirdPropagateThingHardwareField(thingId, "version", version);
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateThingHardwareVersion(
-    const char * version
-) {
-    return _fastybirdPropagateThingHardwareVersion(_fastybird_mqtt_thing_id, version);
+    return _fastybirdPropagateThingHardwareManufacturer((fastybirdThingSN()).c_str(), manufacturer);
 }
 
 // -----------------------------------------------------------------------------
@@ -304,7 +287,7 @@ bool _fastybirdPropagateThingFirmwareField(
     const char * field,
     const char * payload
 ) {
-    return _fastybirdPropagateThingFirmwareField(_fastybird_mqtt_thing_id, field, payload);
+    return _fastybirdPropagateThingFirmwareField((fastybirdThingSN()).c_str(), field, payload);
 }
 
 // -----------------------------------------------------------------------------
@@ -321,7 +304,7 @@ bool _fastybirdPropagateThingFirmwareName(
 bool _fastybirdPropagateThingFirmwareName(
     const char * name
 ) {
-    return _fastybirdPropagateThingFirmwareName(_fastybird_mqtt_thing_id, name);
+    return _fastybirdPropagateThingFirmwareName((fastybirdThingSN()).c_str(), name);
 }
 
 // -----------------------------------------------------------------------------
@@ -338,7 +321,7 @@ bool _fastybirdPropagateThingFirmwareManufacturer(
 bool _fastybirdPropagateThingFirmwareManufacturer(
     const char * manufacturer
 ) {
-    return _fastybirdPropagateThingFirmwareManufacturer(_fastybird_mqtt_thing_id, manufacturer);
+    return _fastybirdPropagateThingFirmwareManufacturer((fastybirdThingSN()).c_str(), manufacturer);
 }
 
 // -----------------------------------------------------------------------------
@@ -356,7 +339,7 @@ bool _fastybirdPropagateThingFirmwareVersion(
 bool _fastybirdPropagateThingFirmwareVersion(
     const char * version
 ) {
-    return _fastybirdPropagateThingFirmwareVersion(_fastybird_mqtt_thing_id, version);
+    return _fastybirdPropagateThingFirmwareVersion((fastybirdThingSN()).c_str(), version);
 }
 
 // -----------------------------------------------------------------------------
@@ -377,7 +360,7 @@ bool _fastybirdPropagateThingChannels(
         start_index = i;
 
         if (channels[i].length > 0) {
-            strcpy(payload, channels[i].type);
+            strcpy(payload, _fastybirdMqttApiConvertChannelName(channels[i].type).c_str());
 
             if (channels[i].length > 1) {
                 strcat(payload, "[]");
@@ -390,7 +373,7 @@ bool _fastybirdPropagateThingChannels(
     for (uint8_t i = (start_index + 1); i < channels.size(); i++) {
         if (channels[i].length > 0) {
             strcat(payload, ",");
-            strcat(payload, channels[i].type);
+            strcat(payload, _fastybirdMqttApiConvertChannelName(channels[i].type).c_str());
 
             if (channels[i].length > 1) {
                 strcat(payload, "[]");
@@ -417,7 +400,7 @@ bool _fastybirdPropagateThingChannels(
 bool _fastybirdPropagateThingChannels(
     std::vector<fastybird_channel_t> channels
 ) {
-    return _fastybirdPropagateThingChannels(_fastybird_mqtt_thing_id, channels);
+    return _fastybirdPropagateThingChannels((fastybirdThingSN()).c_str(), channels);
 }
 
 // -----------------------------------------------------------------------------
@@ -458,7 +441,7 @@ bool _fastybirdPropagateThingStatsStructure(
 bool _fastybirdPropagateThingStatsStructure(
     std::vector<String> stats
 ) {
-    return _fastybirdPropagateThingStatsStructure(_fastybird_mqtt_thing_id, stats);
+    return _fastybirdPropagateThingStatsStructure((fastybirdThingSN()).c_str(), stats);
 }
 
 // -----------------------------------------------------------------------------
@@ -486,7 +469,7 @@ bool _fastybirdPropagateThingStat(
     const char * stat,
     const char * payload
 ) {
-    return _fastybirdPropagateThingStat(_fastybird_mqtt_thing_id, stat, payload);
+    return _fastybirdPropagateThingStat((fastybirdThingSN()).c_str(), stat, payload);
 }
 
 // -----------------------------------------------------------------------------
@@ -544,7 +527,7 @@ bool _fastybirdPropagateThingControlConfiguration(
     std::vector<String> controls
 ) {
     return _fastybirdPropagateThingControlConfiguration(
-        _fastybird_mqtt_thing_id,
+        (fastybirdThingSN()).c_str(),
         controls
     );
 }
@@ -583,7 +566,7 @@ bool _fastybirdPropagateThingConfigurationSchema(
 bool _fastybirdPropagateThingConfigurationSchema(
     JsonArray& schema
 ) {
-    return _fastybirdPropagateThingConfigurationSchema(_fastybird_mqtt_thing_id, schema);
+    return _fastybirdPropagateThingConfigurationSchema((fastybirdThingSN()).c_str(), schema);
 }
 
 // -----------------------------------------------------------------------------
@@ -620,7 +603,7 @@ bool _fastybirdPropagateThingConfiguration(
 bool _fastybirdPropagateThingConfiguration(
     JsonObject& configuration
 ) {
-    return _fastybirdPropagateThingConfiguration(_fastybird_mqtt_thing_id, configuration);
+    return _fastybirdPropagateThingConfiguration((fastybirdThingSN()).c_str(), configuration);
 }
 
 #endif

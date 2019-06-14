@@ -12,7 +12,6 @@
 #define FASTYBIRD_SWITCH_PAYLOAD_ON                         "on"
 #define FASTYBIRD_SWITCH_PAYLOAD_OFF                        "off"
 #define FASTYBIRD_SWITCH_PAYLOAD_TOGGLE                     "toggle"
-#define FASTYBIRD_SWITCH_PAYLOAD_QUERY                      "query"
 
 #define FASTYBIRD_LED_PAYLOAD_ON                            "on"
 #define FASTYBIRD_LED_PAYLOAD_OFF                           "off"
@@ -28,6 +27,9 @@
 
 #define FASTYBIRD_PROPERTY_IS_SETTABLE                      "true"
 #define FASTYBIRD_PROPERTY_IS_NOT_SETTABLE                  "false"
+
+#define FASTYBIRD_PROPERTY_IS_QUERYABLE                     "true"
+#define FASTYBIRD_PROPERTY_IS_NOT_QUERYABLE                 "false"
 
 #define FASTYBIRD_PROPERTY_DATA_TYPE_FLOAT                  "float"
 #define FASTYBIRD_PROPERTY_DATA_TYPE_INTEGER                "integer"
@@ -100,11 +102,13 @@
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY                    "{channel}/{property}"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_NAME               "{channel}/{property}/$name"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_SETTABLE           "{channel}/{property}/$settable"
+#define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERYABLE          "{channel}/{property}/$queryable"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_DATA_TYPE          "{channel}/{property}/$data-type"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_FORMAT             "{channel}/{property}/$format"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_MAPPING            "{channel}/{property}/$mapping/{mapping}"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_UNIT               "{channel}/{property}/$units"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_RECEIVE            "{channel}/{property}/set"
+#define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERY              "{channel}/{property}/query"
 
 // =============================================================================
 // CHANNELS NAMES
@@ -145,7 +149,6 @@
 #define FASTYBIRD_PUB_READY                                 9
 #define FASTYBIRD_PUB_CONFIGURATION                         10
 #define FASTYBIRD_PUB_CHANNELS_CONFIGURATION                11
-#define FASTYBIRD_PUB_CHANNELS_DIRECT_CONTROL               12
 #define FASTYBIRD_PUB_CHANNELS_SCHEDULE                     13
 #define FASTYBIRD_PUB_HEARTBEAT                             14
 
@@ -159,13 +162,13 @@
 #define FASTYBIRD_PUB_CHANNEL_ARRAY                         3
 #define FASTYBIRD_PUB_CHANNEL_PROPERTY_NAME                 4
 #define FASTYBIRD_PUB_CHANNEL_PROPERTY_SETABLE              5
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_DATA_TYPE            6
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_FORMAT               7
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_MAPPING              8
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_UNIT                 9
-#define FASTYBIRD_PUB_CHANNEL_CONTROL_STRUCTURE             10
-#define FASTYBIRD_PUB_CHANNEL_CONFIGURATION_SCHEMA          11
-#define FASTYBIRD_PUB_CHANNEL_DIRECT_CONTROL                12
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_QUERYABLE            6
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_DATA_TYPE            7
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_FORMAT               8
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_MAPPING              9
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_UNIT                 10
+#define FASTYBIRD_PUB_CHANNEL_CONTROL_STRUCTURE             11
+#define FASTYBIRD_PUB_CHANNEL_CONFIGURATION_SCHEMA          12
 #define FASTYBIRD_PUB_CHANNEL_SCHEDULE                      13
 #define FASTYBIRD_PUB_CHANNEL_DONE                          14
 
@@ -174,19 +177,10 @@
 // =============================================================================
 
 #define FASTYBIRD_CHANNEL_CONTROL_CONFIGURATION             "config"
-#define FASTYBIRD_CHANNEL_CONTROL_DIRECT_CONTROL            "direct-control"
 #define FASTYBIRD_CHANNEL_CONTROL_SCHEDULER                 "scheduler"
 
 #define FASTYBIRD_CHANNEL_CONTROL_VALUE_CONFIGURATION       "config"
-#define FASTYBIRD_CHANNEL_CONTROL_VALUE_DIRECT_CONTROL      "direct-controls"
 #define FASTYBIRD_CHANNEL_CONTROL_VALUE_SCHEDULER           "schedules"
-
-#define FASTYBIRD_DIRECT_CONTROL_EXPRESSION_EQ              "eq"
-#define FASTYBIRD_DIRECT_CONTROL_EXPRESSION_NEQ             "neq"
-#define FASTYBIRD_DIRECT_CONTROL_EXPRESSION_GT              "gt"
-#define FASTYBIRD_DIRECT_CONTROL_EXPRESSION_LT              "lt"
-#define FASTYBIRD_DIRECT_CONTROL_EXPRESSION_GTE             "gte"
-#define FASTYBIRD_DIRECT_CONTROL_EXPRESSION_LTE             "lte"
 
 // =============================================================================
 // CHANNELS TYPES
@@ -201,3 +195,4 @@
 #define FASTYBIRD_CHANNEL_TYPE_LED                          "led"
 #define FASTYBIRD_CHANNEL_TYPE_LIGHT                        "light"
 #define FASTYBIRD_CHANNEL_TYPE_SWITCH                       "switch"
+#define FASTYBIRD_CHANNEL_TYPE_EVENT                        "event"

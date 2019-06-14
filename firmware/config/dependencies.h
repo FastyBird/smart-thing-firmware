@@ -25,11 +25,6 @@
     #define NODES_GATEWAY_SUPPORT       0
 #endif
 
-#if DIRECT_CONTROL_SUPPORT && not MQTT_SUPPORT
-    #undef DIRECT_CONTROL_SUPPORT
-    #define DIRECT_CONTROL_SUPPORT      0           // Direct controls needs MQTT
-#endif
-
 #if BUTTON1_PIN == GPIO_NONE && BUTTON2_PIN == GPIO_NONE && BUTTON3_PIN == GPIO_NONE && BUTTON4_PIN == GPIO_NONE && BUTTON5_PIN == GPIO_NONE && BUTTON6_PIN == GPIO_NONE && BUTTON7_PIN == GPIO_NONE && BUTTON8_PIN == GPIO_NONE
     #undef BUTTON_SUPPORT
     #define BUTTON_SUPPORT              0           // Dissable button when no button is defined
@@ -45,7 +40,7 @@
     #define NTP_SUPPORT                 1           // Scheduler needs NTP
 #endif
 
-#if FASTYBIRD_SUPPORT || SCHEDULER_SUPPORT || DIRECT_CONTROL_SUPPORT
+#if FASTYBIRD_SUPPORT || SCHEDULER_SUPPORT
     #undef SPIFFS_SUPPORT
     #define SPIFFS_SUPPORT              1           // Enabling SPIFFS for storing configuration
 #endif

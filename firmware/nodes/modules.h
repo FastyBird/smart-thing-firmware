@@ -197,6 +197,15 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
                     break;
             }
         }
+
+        JsonArray& event_inputs_register = registers.createNestedArray("event_inputs");
+
+        for (uint8_t j = 0; j < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_EV]; j++) {
+            JsonObject& ev_register = event_inputs_register.createNestedObject();
+
+            ev_register["data_type"] = "u1";
+            ev_register["value"] = _gatewayReadEventRegisterValue(id, GATEWAY_REGISTER_EV, j);
+        }
     }
 #endif
 
@@ -358,7 +367,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     ) {
         fastybird_channel_property_t register_property = {
             FASTYBIRD_PROPERTY_STATE,
-            "Channel state"
+            FASTYBIRD_PROPERTY_STATE
         };
 
         uint8_t nodeId = id;
@@ -367,7 +376,8 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
         {
             case GATEWAY_REGISTER_DI:
                 register_property.settable = false;
-                register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_BOOLEAN;
+                register_property.queryable = false;
+                register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_ENUM;
 
                 register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_ON);
                 register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_OFF);
@@ -385,12 +395,12 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
             case GATEWAY_REGISTER_DO:
                 register_property.settable = true;
-                register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_BOOLEAN;
+                register_property.queryable = false;
+                register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_ENUM;
 
                 register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_ON);
                 register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_OFF);
                 register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_TOGGLE);
-                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_QUERY);
 
                 register_property.mappings.push_back({
                     FASTYBIRD_SWITCH_PAYLOAD_ON,
@@ -407,11 +417,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
                     FASTYBIRD_SWITCH_PAYLOAD_TOGGLE
                 });
 
-                register_property.mappings.push_back({
-                    FASTYBIRD_SWITCH_PAYLOAD_QUERY,
-                    FASTYBIRD_SWITCH_PAYLOAD_QUERY
-                });
-
                 // Add register payload callback
                 register_property.payloadCallback = ([nodeId](uint8_t id, const char * payload) {
                     // Action to perform
@@ -426,11 +431,13 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
             case GATEWAY_REGISTER_AI:
                 register_property.settable = false;
+                register_property.queryable = false;
                 register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_FLOAT;
                 break;
 
             case GATEWAY_REGISTER_AO:
                 register_property.settable = true;
+                register_property.queryable = false;
                 register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_FLOAT;
 
                 // Add register payload callback
@@ -438,6 +445,12 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
                     // TODO: implement it
                     // TODO: _gatewayRequestWritingSingleAnalogRegister(nodeId, id, payload);
                 });
+                break;
+
+            case GATEWAY_REGISTER_EV:
+                register_property.settable = false;
+                register_property.queryable = false;
+                register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_INTEGER;
                 break;
         }
 
@@ -462,7 +475,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
                 _gateway_nodes[id].registers_size[dataRegister],
                 false,
                 false,
-                false,
                 false
             };
 
@@ -471,7 +483,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
                 FASTYBIRD_CHANNEL_TYPE_BINARY_ACTOR,
                 FASTYBIRD_CHANNEL_TYPE_BINARY_ACTOR,
                 _gateway_nodes[id].registers_size[dataRegister],
-                false,
                 false,
                 false,
                 false
@@ -484,7 +495,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
                 _gateway_nodes[id].registers_size[dataRegister],
                 false,
                 false,
-                false,
                 false
             };
 
@@ -494,6 +504,15 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
                 FASTYBIRD_CHANNEL_TYPE_ANALOG_ACTOR,
                 _gateway_nodes[id].registers_size[dataRegister],
                 false,
+                false,
+                false
+            };
+
+        } else if (dataRegister == GATEWAY_REGISTER_EV) {
+            register_channel = {
+                FASTYBIRD_CHANNEL_TYPE_EVENT,
+                FASTYBIRD_CHANNEL_TYPE_EVENT,
+                _gateway_nodes[id].registers_size[dataRegister],
                 false,
                 false,
                 false
@@ -537,6 +556,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
         register_node.channels.push_back(_gatewayFastybirdGetChannelStructure(id, GATEWAY_REGISTER_DO));
         register_node.channels.push_back(_gatewayFastybirdGetChannelStructure(id, GATEWAY_REGISTER_AI));
         register_node.channels.push_back(_gatewayFastybirdGetChannelStructure(id, GATEWAY_REGISTER_AO));
+        register_node.channels.push_back(_gatewayFastybirdGetChannelStructure(id, GATEWAY_REGISTER_EV));
 
         // TODO: implement it
         // TODO: Node configure support
@@ -618,6 +638,26 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
                 payload = String(float_value);
                 break;
         }
+
+        _fastybirdReportNodeChannelValue(
+            _gateway_nodes[id].serial_number,
+            channel,
+            address,
+            payload.c_str()
+        );
+    }
+
+// -----------------------------------------------------------------------------
+
+    void _gatewayReportEventRegisterValue(
+        const uint8_t id,
+        const uint8_t dataRegister,
+        const uint8_t address,
+        const uint8_t channel
+    ) {
+        String payload;
+
+        payload = String(_gatewayReadEventRegisterValue(id, dataRegister, address));
 
         _fastybirdReportNodeChannelValue(
             _gateway_nodes[id].serial_number,

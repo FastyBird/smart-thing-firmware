@@ -107,7 +107,8 @@ void _buttonUpdateConfiguration(
     fastybird_channel_property_t _buttonFastybirdGetChannelStatePropertyStructure() {
         fastybird_channel_property_t property = {
             FASTYBIRD_PROPERTY_STATE,
-            "Button state",
+            FASTYBIRD_PROPERTY_STATE,
+            false,
             false,
             FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
         };
@@ -156,7 +157,7 @@ void _buttonUpdateConfiguration(
 
     fastybird_channel_t _buttonFastybirdGetChannelStructure() {
         fastybird_channel_t channel = {
-            "Buttons",
+            FASTYBIRD_CHANNEL_TYPE_BUTTON,
             FASTYBIRD_CHANNEL_TYPE_BUTTON,
             buttonCount(),
             false,

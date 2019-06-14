@@ -181,9 +181,6 @@ uint8_t _relayParsePayload(
     } else if (strcmp(p, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE) == 0) {
         return 2;
 
-    } else if (strcmp(p, FASTYBIRD_SWITCH_PAYLOAD_QUERY) == 0) {
-        return 3;
-
     } else {
         return 0xFF;
     }
@@ -584,15 +581,15 @@ bool _relayConfigureChannel(
     fastybird_channel_property_t _relayFastybirdGetChannelStatePropertyStructure() {
         fastybird_channel_property_t property = {
             FASTYBIRD_PROPERTY_STATE,
-            "Switch relay state",
+            FASTYBIRD_PROPERTY_STATE,
             true,
+            false,
             FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
         };
 
         property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_ON);
         property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_OFF);
         property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_TOGGLE);
-        property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_QUERY);
 
         property.mappings.push_back({
             FASTYBIRD_SWITCH_PAYLOAD_ON,
@@ -607,11 +604,6 @@ bool _relayConfigureChannel(
         property.mappings.push_back({
             FASTYBIRD_SWITCH_PAYLOAD_TOGGLE,
             FASTYBIRD_SWITCH_PAYLOAD_TOGGLE
-        });
-
-        property.mappings.push_back({
-            FASTYBIRD_SWITCH_PAYLOAD_QUERY,
-            FASTYBIRD_SWITCH_PAYLOAD_QUERY
         });
 
         property.payloadCallback = ([](uint8_t id, const char * payload) {
@@ -631,7 +623,7 @@ bool _relayConfigureChannel(
 
     fastybird_channel_t _relayFastybirdGetChannelStructure() {
         fastybird_channel_t channel = {
-            "Switch relays",
+            FASTYBIRD_CHANNEL_TYPE_SWITCH,
             FASTYBIRD_CHANNEL_TYPE_SWITCH,
             relayCount(),
             true,
@@ -654,31 +646,6 @@ bool _relayConfigureChannel(
 
             DEBUG_MSG(PSTR("[RELAY] Configuration changes were saved\n"));
         });
-
-        #if DIRECT_CONTROL_SUPPORT
-            channel.configureDirectControlsCallback = ([](uint8_t id, JsonArray& configuration){
-                directControlConfigureChannelConfiguration(id, FASTYBIRD_CHANNEL_TYPE_SWITCH, configuration);
-
-                String output;
-                DynamicJsonBuffer jsonBuffer;
-
-                JsonArray& direct_controls = jsonBuffer.createArray();
-
-                directControlReportChannelConfiguration(id, FASTYBIRD_CHANNEL_TYPE_SWITCH, direct_controls);
-                
-                direct_controls.printTo(output);
-
-                fastybirdReportChannelDirectControl(
-                    _relay_fastybird_channel_index,
-                    id,
-                    output
-                );
-
-                DEBUG_MSG(PSTR("[RELAY] Direct controls configuration changes were saved\n"));
-            });
-        #else
-            channel.hasDirectControl = false;
-        #endif
 
         #if SCHEDULER_SUPPORT
             channel.configureSchedulesCallback = ([](uint8_t id, JsonArray& configuration){
@@ -727,33 +694,6 @@ bool _relayConfigureChannel(
     }
 
 // -----------------------------------------------------------------------------
-
-    #if DIRECT_CONTROL_SUPPORT
-        bool _relayFastybirdReportChannelsDirectControl() {
-            String output;
-            DynamicJsonBuffer jsonBuffer;
-
-            for (uint8_t i = 0; i < relayCount(); i++) {
-                JsonArray& direct_controls = jsonBuffer.createArray();
-
-                directControlReportChannelConfiguration(i, FASTYBIRD_CHANNEL_TYPE_SWITCH, direct_controls);
-                
-                direct_controls.printTo(output);
-
-                if (
-                    !fastybirdReportChannelDirectControl(
-                        _relay_fastybird_channel_index,
-                        i,
-                        output
-                    )
-                ) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-    #endif
 
     #if SCHEDULER_SUPPORT
         bool _relayFastybirdReportChannelsScheduler() {
@@ -1372,19 +1312,11 @@ void relaySetup() {
             _relay_fastybird_channel_index = fastybirdRegisterChannel(_relayFastybirdGetChannelStructure());
 
             fastybirdChannelsReportConfigurationRegister(_relayFastybirdReportChannelsConfiguration);
-            
-            #if DIRECT_CONTROL_SUPPORT
-               fastybirdChannelsReportDirectControlsRegister(_relayFastybirdReportChannelsDirectControl);
-            #endif
 
             #if SCHEDULER_SUPPORT
                fastybirdChannelsReportSchedulerRegister(_relayFastybirdReportChannelsScheduler);
             #endif
         }
-    #endif
-
-    #if DIRECT_CONTROL_SUPPORT
-        directControlRegisterChannel(FASTYBIRD_CHANNEL_TYPE_SWITCH, FASTYBIRD_PROPERTY_STATE, _relays.size());
     #endif
 
     DEBUG_MSG(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());

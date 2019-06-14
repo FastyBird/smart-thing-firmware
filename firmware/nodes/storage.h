@@ -76,6 +76,7 @@ void _gatewayAddNodeToStorage(
     node["digital_outputs"] = _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO];
     node["analog_inputs"] = _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI];
     node["analog_outputs"] = _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO];
+    node["event_inputs"] = _gateway_nodes[id].registers_size[GATEWAY_REGISTER_EV];
 
     String output;
 
@@ -183,6 +184,7 @@ void _gatewayRestoreStorageFromMemory() {
         _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] = stored_node["digital_outputs"].as<unsigned int>();
         _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] = stored_node["analog_inputs"].as<unsigned int>();
         _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] = stored_node["analog_outputs"].as<unsigned int>();
+        _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] = stored_node["event_inputs"].as<unsigned int>();
     }
 }
 

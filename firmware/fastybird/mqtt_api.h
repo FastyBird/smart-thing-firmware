@@ -10,8 +10,13 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #include "./callbacks.h"
 
-// Define thing cloud identifier
-const char * _fastybird_mqtt_thing_id = MQTT_USER;
+String fastybirdThingSN() {
+    char buffer[20];
+
+    snprintf_P(buffer, sizeof(buffer), PSTR("%08X"), ESP.getChipId());
+
+    return String(buffer);
+}
 
 // -----------------------------------------------------------------------------
 
@@ -20,10 +25,10 @@ String fastybirdMqttApiBuildTopicPrefix(
 ) {
     String topic_prefix;
 
-    if (_fastybird_mqtt_thing_id != thingId) {
+    if ((fastybirdThingSN()).equals(String(thingId)) == false) {
         // Replace identifier
         topic_prefix = FASTYBIRD_MQTT_NODE_BASE_TOPIC;
-        topic_prefix.replace("{cloudThingId}", _fastybird_mqtt_thing_id);
+        topic_prefix.replace("{cloudThingId}", (fastybirdThingSN()).c_str());
         topic_prefix.replace("{nodeId}", thingId);
 
     } else {
@@ -52,9 +57,45 @@ bool fastybirdMqttApiIsSameTopic(
 
 // -----------------------------------------------------------------------------
 
+String _fastybirdMqttApiConvertChannelName(
+    const char * type
+) {
+    if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_ANALOG_SENSOR) == 0) {
+        return FASTYBIRD_CHANNEL_ANALOG_INPUT;
+
+    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_ANALOG_ACTOR) == 0) {
+        return FASTYBIRD_CHANNEL_ANALOG_OUTPUT;
+
+    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_BINARY_SENSOR) == 0) {
+        return FASTYBIRD_CHANNEL_DIGITAL_INPUT;
+
+    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_BINARY_ACTOR) == 0) {
+        return FASTYBIRD_CHANNEL_DIGITAL_OUTPUT;
+
+    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_BUTTON) == 0) {
+        return FASTYBIRD_CHANNEL_BUTTON;
+
+    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_ENERGY) == 0) {
+        return FASTYBIRD_CHANNEL_ENERGY;
+
+    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_LED) == 0) {
+        return FASTYBIRD_CHANNEL_LED;
+
+    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_LIGHT) == 0) {
+        return FASTYBIRD_CHANNEL_LIGHT;
+
+    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_SWITCH) == 0) {
+        return FASTYBIRD_CHANNEL_RELAY;
+    }
+
+    return String(type);
+}
+
+// -----------------------------------------------------------------------------
+
 void _fastybirdMQTTOnConnect() {
     // Unsubscribe from all thing topics
-    mqttUnsubscribe((fastybirdMqttApiBuildTopicPrefix(_fastybird_mqtt_thing_id) + "#").c_str());
+    mqttUnsubscribe((fastybirdMqttApiBuildTopicPrefix((fastybirdThingSN()).c_str()) + "#").c_str());
 
     fastybirdResetThingInitialization();
 }
@@ -76,7 +117,7 @@ bool _fastybirdIsApiReady() {
 void _fastybirdBeforeInitialization() {
     if (mqttConnected()) {
         // Unsubscribe from all thing topics
-        mqttUnsubscribe((fastybirdMqttApiBuildTopicPrefix(_fastybird_mqtt_thing_id) + "#").c_str());
+        mqttUnsubscribe((fastybirdMqttApiBuildTopicPrefix((fastybirdThingSN()).c_str()) + "#").c_str());
     }
 }
 
@@ -92,21 +133,6 @@ void _fastybirdBeforeInitialization() {
 void _fastybirdApiRestore(
     std::vector<fastybird_channel_t> channels
 ) {
-    #if DIRECT_CONTROL_SUPPORT
-        for (uint8_t i; i < channels.size(); i++) {
-            _fastybirdMqttApiChannelUnsubscribeDirectControls(channels[i]);
-            _fastybirdMqttApiChannelSubscribeDirectControls(channels[i]);
-        }
-
-        if (_fastybird_channels_report_direct_controls_callbacks.size() > 0) {
-            for (uint8_t i = 0; i < _fastybird_channels_report_direct_controls_callbacks.size(); i++) {
-                if (!(_fastybird_channels_report_direct_controls_callbacks[i])()) {
-                    return;
-                }
-            }
-        }
-    #endif
-
     #if SCHEDULER_SUPPORT
         if (_fastybird_channels_report_scheduler_callbacks.size() > 0) {
             for (uint8_t i = 0; i < _fastybird_channels_report_scheduler_callbacks.size(); i++) {
@@ -126,7 +152,7 @@ void _fastybirdApiSetup() {
 
     char buffer[100];
     
-    strcpy(buffer, _fastybirdMqttApiCreatePropertyTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_PROPERTY_STATE).c_str());
+    strcpy(buffer, _fastybirdMqttApiCreatePropertyTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_PROPERTY_STATE).c_str());
 
     mqttSetWill(
         buffer,
@@ -138,34 +164,34 @@ void _fastybirdApiSetup() {
 
 void _fastybirdOnHeartbeat() {
     mqttSend(
-        _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_FREE_HEAP).c_str(),
+        _fastybirdMqttApiCreateStatTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_STAT_FREE_HEAP).c_str(),
         String(getFreeHeap()).c_str()
     );
 
     mqttSend(
-        _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_UPTIME).c_str(),
+        _fastybirdMqttApiCreateStatTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_STAT_UPTIME).c_str(),
         String(getUptime()).c_str()
     );
 
     #if WIFI_SUPPORT
         mqttSend(
-            _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_RSSI).c_str(),
+            _fastybirdMqttApiCreateStatTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_STAT_RSSI).c_str(),
             String(WiFi.RSSI()).c_str()
         );
         mqttSend(
-            _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_SSID).c_str(),
+            _fastybirdMqttApiCreateStatTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_STAT_SSID).c_str(),
             getNetwork().c_str()
         );
     #endif
 
     mqttSend(
-        _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_CPU_LOAD).c_str(),
+        _fastybirdMqttApiCreateStatTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_STAT_CPU_LOAD).c_str(),
         String(systemLoadAverage()).c_str()
     );
 
     #if ADC_MODE_VALUE == ADC_VCC
         mqttSend(
-            _fastybirdMqttApiCreateStatTopicString(_fastybird_mqtt_thing_id, FASTYBIRD_STAT_VCC).c_str(),
+            _fastybirdMqttApiCreateStatTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_STAT_VCC).c_str(),
             String(ESP.getVcc()).c_str()
         );
     #endif

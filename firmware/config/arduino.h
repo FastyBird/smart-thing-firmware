@@ -133,7 +133,6 @@
 //#define RFM69_SUPPORT          1
 //#define RF_SUPPORT             1
 //#define SCHEDULER_SUPPORT      0
-//#define DIRECT_CONTROL_SUPPORT 0
 //#define SENSOR_SUPPORT         1
 //#define SPIFFS_SUPPORT         1
 //#define WIFI_SUPPORT           1

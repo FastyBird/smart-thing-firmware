@@ -33,9 +33,9 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 // =============================================================================
 
 #define LED_MODE_MQTT                           0       // LED will be managed from MQTT (OFF by default)
-#define LED_MODE_WIFI                           2       // LED will blink according to the WIFI status
-#define LED_MODE_ON                             3       // LED always ON
-#define LED_MODE_OFF                            4       // LED always OFF
+#define LED_MODE_WIFI                           1       // LED will blink according to the WIFI status
+#define LED_MODE_ON                             2       // LED always ON
+#define LED_MODE_OFF                            3       // LED always OFF
 
 // =============================================================================
 // BUTTONS
@@ -100,8 +100,10 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define GATEWAY_PACKET_READ_MULTI_AI            0x36   // Master requested AI multiple regiters reading
 #define GATEWAY_PACKET_READ_SINGLE_AO           0x37   // Master requested AO one regiter reading
 #define GATEWAY_PACKET_READ_MULTI_AO            0x38   // Master requested AO multiple regiters reading
+#define GATEWAY_PACKET_READ_SINGLE_EV           0x39   // Master requested EV one regiter reading
+#define GATEWAY_PACKET_READ_MULTI_EV            0x3A   // Master requested EV multiple regiters reading
 
-#define GATEWAY_PACKET_REGISTERS_REDING_MAX     8
+#define GATEWAY_PACKET_REGISTERS_REDING_MAX     10
 
 // Registers writing
 #define GATEWAY_PACKET_WRITE_ONE_DO             0x41
@@ -142,6 +144,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define GATEWAY_REGISTER_DO                     1
 #define GATEWAY_REGISTER_AI                     2
 #define GATEWAY_REGISTER_AO                     3
+#define GATEWAY_REGISTER_EV                     4
 
 // =============================================================================
 // ENCODER

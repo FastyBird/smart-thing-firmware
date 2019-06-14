@@ -448,6 +448,8 @@ void _mqttOnMessage(
                 JsonObject& configuration = module["config"].as<JsonObject&>();
 
                 if (configuration.containsKey("values")) {
+                    bool do_reconnect = false;
+
                     JsonObject& values = configuration["values"].as<JsonObject&>();
 
                     if (values.containsKey("mqtt_keep_alive") && values["mqtt_keep_alive"].as<uint8_t>() != getSetting("mqttKeep").toInt())  {
@@ -475,12 +477,44 @@ void _mqttOnMessage(
                         delSetting("mqttSslFp");
                     #endif
 
+                    if (values.containsKey("mqtt_server") && values["mqtt_server"].as<char *>() != getSetting("mqttServer").c_str())  {
+                        setSetting("mqttServer", values["mqtt_server"].as<char *>());
+
+                        do_reconnect = true;
+                    }
+
+                    if (values.containsKey("mqtt_server_port") && values["mqtt_server_port"].as<uint8_t>() != getSetting("mqttPort").toInt())  {
+                        setSetting("mqttPort", values["mqtt_server_port"].as<uint8_t>());
+
+                        do_reconnect = true;
+                    }
+
+                    if (values.containsKey("mqtt_username") && values["mqtt_username"].as<char *>() != getSetting("mqttUser").c_str())  {
+                        setSetting("mqttUser", values["mqtt_username"].as<char *>());
+
+                        do_reconnect = true;
+                    }
+
+                    if (values.containsKey("mqtt_password") && values["mqtt_password"].as<char *>() != getSetting("mqttPassword").c_str())  {
+                        setSetting("mqttPassword", values["mqtt_password"].as<char *>());
+
+                        do_reconnect = true;
+                    }
+
+                    if (values.containsKey("mqtt_client_id") && values["mqtt_client_id"].as<char *>() != getSetting("mqttClientID").c_str())  {
+                        setSetting("mqttClientID", values["mqtt_client_id"].as<char *>());
+
+                        do_reconnect = true;
+                    }
+
                     wsSend_P(clientId, PSTR("{\"message\": \"mqtt_updated\"}"));
 
                     // Reload & cache settings
                     firmwareReload();
 
-                    mqttDisconnect();
+                    if (do_reconnect) {
+                        mqttDisconnect();
+                    }
                 }
             }
         }
