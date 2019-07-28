@@ -40,7 +40,6 @@
 
 #define FASTYBIRD_PROPERTY_STATE                            "state"
 #define FASTYBIRD_PROPERTY_IP_ADDRESS                       "ip-address"
-#define FASTYBIRD_PROPERTY_STATUS_LED                       "status-led"
 #define FASTYBIRD_PROPERTY_TEMPERATURE                      "temperature"
 #define FASTYBIRD_PROPERTY_HUMIDITY                         "humidity"
 #define FASTYBIRD_PROPERTY_NOISE_LEVEL                      "noise-level"
@@ -55,14 +54,13 @@
 #define FASTYBIRD_PROPERTY_APPARENT_POWER                   "apparent-power"
 #define FASTYBIRD_PROPERTY_POWER_FACTOR                     "power-factor"
 #define FASTYBIRD_PROPERTY_VALUE                            "value"
-
-#define FASTYBIRD_STAT_INTERVAL                             "interval"
-#define FASTYBIRD_STAT_UPTIME                               "uptime"
-#define FASTYBIRD_STAT_FREE_HEAP                            "free-heap"
-#define FASTYBIRD_STAT_CPU_LOAD                             "cpu-load"
-#define FASTYBIRD_STAT_VCC                                  "vcc"
-#define FASTYBIRD_STAT_SSID                                 "ssid"
-#define FASTYBIRD_STAT_RSSI                                 "rssi"
+#define FASTYBIRD_PROPERTY_INTERVAL                         "interval"
+#define FASTYBIRD_PROPERTY_UPTIME                           "uptime"
+#define FASTYBIRD_PROPERTY_FREE_HEAP                        "free-heap"
+#define FASTYBIRD_PROPERTY_CPU_LOAD                         "cpu-load"
+#define FASTYBIRD_PROPERTY_VCC                              "vcc"
+#define FASTYBIRD_PROPERTY_SSID                             "ssid"
+#define FASTYBIRD_PROPERTY_RSSI                             "rssi"
 
 #define FASTYBIRD_HARDWARE_MAC_ADDRESS                      "mac-address"
 
@@ -75,10 +73,16 @@
 #define FASTYBIRD_TOPIC_THING_HW_INFO                       "$hw/{hw}"
 #define FASTYBIRD_TOPIC_THING_FW_INFO                       "$fw/{fw}"
 #define FASTYBIRD_TOPIC_THING_CHANNELS                      "$channels"
-#define FASTYBIRD_TOPIC_THING_STATS_STRUCTURE               "$stats"
-#define FASTYBIRD_TOPIC_THING_STATS                         "$stats/{stats}"
 
 #define FASTYBIRD_TOPIC_THING_PROPERTY                      "{property}"
+#define FASTYBIRD_TOPIC_THING_PROPERTY_NAME                 "{property}/$name"
+#define FASTYBIRD_TOPIC_THING_PROPERTY_SETTABLE             "{property}/$settable"
+#define FASTYBIRD_TOPIC_THING_PROPERTY_QUERYABLE            "{property}/$queryable"
+#define FASTYBIRD_TOPIC_THING_PROPERTY_DATA_TYPE            "{property}/$data-type"
+#define FASTYBIRD_TOPIC_THING_PROPERTY_FORMAT               "{property}/$format"
+#define FASTYBIRD_TOPIC_THING_PROPERTY_MAPPING              "{property}/$mapping/{mapping}"
+#define FASTYBIRD_TOPIC_THING_PROPERTY_RECEIVE              "{property}/set"
+#define FASTYBIRD_TOPIC_THING_PROPERTY_QUERY                "{property}/query"
 
 #define FASTYBIRD_TOPIC_THING_CONTROL                       "$control"
 #define FASTYBIRD_TOPIC_THING_CONTROL_DATA                  "$control/{control}"
@@ -110,27 +114,6 @@
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_RECEIVE            "{channel}/{property}/set"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERY              "{channel}/{property}/query"
 
-// =============================================================================
-// CHANNELS NAMES
-// =============================================================================
-
-#define FASTYBIRD_CHANNEL_BUTTON                            "btn"
-#define FASTYBIRD_CHANNEL_LED                               "led"
-#define FASTYBIRD_CHANNEL_COUNTER                           "counter"
-#define FASTYBIRD_CHANNEL_RELAY                             "relay"
-#define FASTYBIRD_CHANNEL_RF_LEARN                          "rf-learn"
-#define FASTYBIRD_CHANNEL_CLAP                              "clap"
-#define FASTYBIRD_CHANNEL_ANALOG_INPUT                      "analog-in"
-#define FASTYBIRD_CHANNEL_ANALOG_OUTPUT                     "analog-out"
-#define FASTYBIRD_CHANNEL_DIGITAL_INPUT                     "digital-in"
-#define FASTYBIRD_CHANNEL_DIGITAL_OUTPUT                    "digital-out"
-#define FASTYBIRD_CHANNEL_EVENTS                            "events"
-#define FASTYBIRD_CHANNEL_DISTANCE                          "distance"
-#define FASTYBIRD_CHANNEL_LIGHT                             "light"
-#define FASTYBIRD_CHANNEL_ENERGY                            "energy"
-#define FASTYBIRD_CHANNEL_MOVE                              "security-movement"
-#define FASTYBIRD_CHANNEL_ENVIRONMENT                       "env"
-
 #define FASTYBIRD_CHANNEL_ARRAY_SUFFIX                      "_%d"
 
 // =============================================================================
@@ -139,18 +122,18 @@
 
 #define FASTYBIRD_PUB_CONNECTION                            0
 #define FASTYBIRD_PUB_NAME                                  1
-#define FASTYBIRD_PUB_HARDWARE                              2
-#define FASTYBIRD_PUB_FIRMWARE                              3
-#define FASTYBIRD_PUB_CHANNELS                              4
-#define FASTYBIRD_PUB_STATS                                 5
+#define FASTYBIRD_PUB_THING_PROPERTIES                      2
+#define FASTYBIRD_PUB_HARDWARE                              3
+#define FASTYBIRD_PUB_FIRMWARE                              4
+#define FASTYBIRD_PUB_CHANNELS                              5
 #define FASTYBIRD_PUB_CONTROL_STRUCTURE                     6
 #define FASTYBIRD_PUB_CONFIGURATION_SCHEMA                  7
 #define FASTYBIRD_PUB_INITIALIZE_CHANNELS                   8
 #define FASTYBIRD_PUB_READY                                 9
 #define FASTYBIRD_PUB_CONFIGURATION                         10
 #define FASTYBIRD_PUB_CHANNELS_CONFIGURATION                11
-#define FASTYBIRD_PUB_CHANNELS_SCHEDULE                     13
-#define FASTYBIRD_PUB_HEARTBEAT                             14
+#define FASTYBIRD_PUB_CHANNELS_SCHEDULE                     12
+#define FASTYBIRD_PUB_HEARTBEAT                             13
 
 // =============================================================================
 // CHANNEL INITIALIZE SEQUENTIONS
@@ -173,14 +156,22 @@
 #define FASTYBIRD_PUB_CHANNEL_DONE                          14
 
 // =============================================================================
+// THING CONTROLS
+// =============================================================================
+
+#define FASTYBIRD_THING_CONTROL_CONFIGURE                   "configure"
+#define FASTYBIRD_THING_CONTROL_REBOOT                      "reboot"
+#define FASTYBIRD_THING_CONTROL_FACTORY_RESET               "factory-reset"
+#define FASTYBIRD_THING_CONTROL_RECONNECT                   "reconnect"
+#define FASTYBIRD_THING_CONTROL_SEARCH_FOR_NODES            "nodes-search"
+#define FASTYBIRD_THING_CONTROL_DISCONNECT_NODE             "node-disconnect"
+
+// =============================================================================
 // CHANNEL CONTROLS
 // =============================================================================
 
-#define FASTYBIRD_CHANNEL_CONTROL_CONFIGURATION             "config"
-#define FASTYBIRD_CHANNEL_CONTROL_SCHEDULER                 "scheduler"
-
-#define FASTYBIRD_CHANNEL_CONTROL_VALUE_CONFIGURATION       "config"
-#define FASTYBIRD_CHANNEL_CONTROL_VALUE_SCHEDULER           "schedules"
+#define FASTYBIRD_CHANNEL_CONTROL_CONFIGURE                 "configure"
+#define FASTYBIRD_CHANNEL_CONTROL_SCHEDULE                  "schedule"
 
 // =============================================================================
 // CHANNELS TYPES
@@ -196,3 +187,24 @@
 #define FASTYBIRD_CHANNEL_TYPE_LIGHT                        "light"
 #define FASTYBIRD_CHANNEL_TYPE_SWITCH                       "switch"
 #define FASTYBIRD_CHANNEL_TYPE_EVENT                        "event"
+
+// =============================================================================
+// CHANNELS NAMES
+// =============================================================================
+
+#define FASTYBIRD_CHANNEL_BUTTON                            "btn"
+#define FASTYBIRD_CHANNEL_LED                               "led"
+#define FASTYBIRD_CHANNEL_COUNTER                           "counter"
+#define FASTYBIRD_CHANNEL_SWITCH                            "switch"
+#define FASTYBIRD_CHANNEL_RF_LEARN                          "rf-learn"
+#define FASTYBIRD_CHANNEL_CLAP                              "clap"
+#define FASTYBIRD_CHANNEL_ANALOG_INPUT                      "analog-in"
+#define FASTYBIRD_CHANNEL_ANALOG_OUTPUT                     "analog-out"
+#define FASTYBIRD_CHANNEL_DIGITAL_INPUT                     "digital-in"
+#define FASTYBIRD_CHANNEL_DIGITAL_OUTPUT                    "digital-out"
+#define FASTYBIRD_CHANNEL_EVENT                             "event"
+#define FASTYBIRD_CHANNEL_DISTANCE                          "distance"
+#define FASTYBIRD_CHANNEL_LIGHT                             "light"
+#define FASTYBIRD_CHANNEL_ENERGY                            "energy"
+#define FASTYBIRD_CHANNEL_MOVE                              "security-movement"
+#define FASTYBIRD_CHANNEL_ENVIRONMENT                       "env"

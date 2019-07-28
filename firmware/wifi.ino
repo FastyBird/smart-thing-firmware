@@ -2,7 +2,7 @@
 
 WIFI MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -12,6 +12,8 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #include <Ticker.h>
 
 uint32_t _wifi_scan_client_id = 0;
+
+Ticker _wifi_defer;
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
@@ -32,11 +34,12 @@ void _wifiCheckAP() {
 void _wifiConfigure() {
     jw.setHostname(getIdentifier().c_str());
 
-    #if USE_PASSWORD
-        jw.setSoftAP(getIdentifier().c_str(), getAdminPass().c_str());
-    #else
+    if (getSetting("wifiPass", WIFI_PASSWORD).length() == 0) {
         jw.setSoftAP(getIdentifier().c_str());
-    #endif
+
+    } else {
+        jw.setSoftAP(getIdentifier().c_str(), getSetting("wifiPass", WIFI_PASSWORD).c_str());
+    }
 
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
 
@@ -100,10 +103,30 @@ void _wifiScan(
         // Data container
         JsonObject& data = output.createNestedObject("data");
 
+        data["status"] = WiFi.getMode() == WIFI_AP ? String("ap") : String("sta");
+
+        // Registered networks
+        JsonArray& networks = data.createNestedArray("networks");
+
+        for (uint8_t i = 0; i < WIFI_MAX_NETWORKS; i++) {
+            if (!hasSetting("ssid", i)) {
+                break;
+            }
+
+            JsonObject& network = networks.createNestedObject();
+
+            network["ssid"] = getSetting("ssid", i, "");
+            network["pass"] = getSetting("pass", i, "");
+            network["ip"] = getSetting("ip", i, "");
+            network["gw"] = getSetting("gw", i, "");
+            network["mask"] = getSetting("mask", i, "");
+            network["dns"] = getSetting("dns", i, "");
+        }
+
         // Found networks container
         JsonObject& scanResult = data.createNestedObject("scan");
 
-        JsonArray& networks = scanResult.createNestedArray("networks");
+        JsonArray& foundNetworks = scanResult.createNestedArray("networks");
     #endif
 
     uint8_t result = WiFi.scanNetworks();
@@ -151,8 +174,9 @@ void _wifiScan(
             #if WEB_SUPPORT && WS_SUPPORT
                 if (clientId > 0) {
                     scanResult["result"] = String("OK");
+                    scanResult["found"] = result;
 
-                    JsonObject& line = networks.createNestedObject();
+                    JsonObject& line = foundNetworks.createNestedObject();
 
                     snprintf_P(buffer, sizeof(buffer),
                         PSTR("%02X:%02X:%02X:%02X:%02X:%02X"),
@@ -315,7 +339,101 @@ void _wifiInject() {
 
 // -----------------------------------------------------------------------------
 
+#if WEB_SUPPORT
+    void _wifiOnReconnect(
+        AsyncWebServerRequest * request
+    ) {
+        webLog(request);
+
+        if (!webAuthenticate(request)) {
+            return request->requestAuthentication(getIdentifier().c_str());
+        }
+
+        request->send(201);
+
+        DEBUG_MSG(PSTR("[WIFI] Requested reconnect action\n"));
+
+        #if WEB_SUPPORT && WS_SUPPORT
+            // Send notification to all clients
+            wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"reconnect\"}"));
+        #endif
+        
+        _wifi_defer.once_ms(250, wifiDisconnect);
+    }
+
+// -----------------------------------------------------------------------------
+
+    void _wifiOnConfigure(
+        AsyncWebServerRequest * request
+    ) {
+        webLog(request);
+
+        if (!webAuthenticate(request)) {
+            return request->requestAuthentication(getIdentifier().c_str());
+        }
+
+        request->send(201);
+
+        // TODO: finish remote wifi configuration
+    }
+#endif // WEB_SUPPORT
+
+// -----------------------------------------------------------------------------
+
 #if WEB_SUPPORT && WS_SUPPORT
+    /**
+     * Provide module configuration schema
+     */
+    void _wifiReportConfigurationSchema(
+        JsonArray& configuration
+    ) {
+        // Configuration field
+        JsonObject& scan = configuration.createNestedObject();
+
+        scan["name"] = "wifi_scan";
+        scan["type"] = "boolean";
+        scan["default"] = WIFI_SCAN_NETWORKS == 1 ? true : false;
+    }
+
+// -----------------------------------------------------------------------------
+
+    /**
+     * Report module configuration
+     */
+    void _wifiReportConfiguration(
+        JsonObject& configuration
+    ) {
+        configuration["wifi_scan"] = getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1;
+    }
+
+// -----------------------------------------------------------------------------
+
+    /**
+     * Update module configuration via WS or MQTT etc.
+     */
+    bool _wifiUpdateConfiguration(
+        JsonObject& configuration
+    ) {
+        DEBUG_MSG(PSTR("[WIFI] Updating module\n"));
+
+        bool is_updated = false;
+
+        if (
+            configuration.containsKey("wifi_scan")
+            && configuration["wifi_scan"].as<bool>() != (getSetting("wifiScan").toInt() == 1)
+        )  {
+            DEBUG_MSG(PSTR("[WIFI] Setting: \"wifi_scan\" to: %d\n"), configuration["wifi_scan"].as<bool>() ? 1 : 0);
+
+            setSetting("wifiScan", configuration["wifi_scan"].as<bool>() ? 1 : 0);
+
+            is_updated = true;
+        }
+
+        return is_updated;
+    }
+
+// -----------------------------------------------------------------------------
+
     // WS client is connected - send info about module
     void _wifiWSOnClientConnect(
         JsonObject& root
@@ -325,12 +443,6 @@ void _wifiInject() {
         
         module["module"] = "wifi";
         module["visible"] = true;
-
-        // Configuration container
-        JsonObject& configuration = module.createNestedObject("config");
-
-        configuration["max"] = WIFI_MAX_NETWORKS;
-        configuration["scan"] = getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1;
 
         // Data container
         JsonObject& data = module.createNestedObject("data");
@@ -354,6 +466,21 @@ void _wifiInject() {
             network["mask"] = getSetting("mask", i, "");
             network["dns"] = getSetting("dns", i, "");
         }
+
+        // Configuration container
+        JsonObject& configuration = module.createNestedObject("config");
+
+        configuration["max"] = WIFI_MAX_NETWORKS;
+
+        // Configuration values container
+        JsonObject& configuration_values = configuration.createNestedObject("values");
+
+        _wifiReportConfiguration(configuration_values);
+
+        // Configuration schema container
+        JsonArray& configuration_schema = configuration.createNestedArray("schema");
+
+        _wifiReportConfigurationSchema(configuration_schema);
     }
 
 // -----------------------------------------------------------------------------
@@ -367,8 +494,14 @@ void _wifiInject() {
             if (module.containsKey("config")) {
                 JsonObject& configuration = module["config"].as<JsonObject&>();
 
-                if (configuration.containsKey("scan")) {
-                    setSetting("wifiScan", configuration["scan"].as<bool>() ? 1 : 0);
+                if (
+                    configuration.containsKey("values")
+                    && _wifiUpdateConfiguration(configuration["values"])
+                ) {
+                    wsSend_P(clientId, PSTR("{\"message\": \"wifi_updated\"}"));
+
+                    // Reload & cache settings
+                    firmwareReload();
                 }
 
                 if (configuration.containsKey("networks")) {
@@ -395,13 +528,15 @@ void _wifiInject() {
                         setSetting("dns", i, configuration["networks"][i]["dns"].as<char *>());
                     }
 
-                    // Send message
                     wsSend_P(clientId, PSTR("{\"message\": \"wifi_updated\"}"));
+
+                    // Send notification to all clients
+                    wsSend_P(clientId, PSTR("{\"doAction\": \"reload\", \"reason\": \"wifi_reconfigure\"}"));
 
                     // Reconfigure wifi
                     _wifiConfigure();
 
-                    wifiDisconnect();
+                    _wifi_defer.once_ms(250, wifiDisconnect);
                 }
             }
         }
@@ -568,10 +703,17 @@ void wifiSetup() {
         wifiRegister(_wifiDebugCallback);
     #endif
 
-    #if WEB_SUPPORT && WS_SUPPORT
-        wsOnConnectRegister(_wifiWSOnClientConnect);
-        wsOnConfigureRegister(_wifiWSOnConfigure);
-        wsOnActionRegister(_wifiWSOnAction);
+    #if WEB_SUPPORT
+        webEventsRegister([](AsyncWebServer * server) {
+            server->on(WEB_API_NETWORK_RECONNECT, HTTP_PUT, _wifiOnReconnect);
+            server->on(WEB_API_NETWORK_CONFIGURATION, HTTP_POST, _wifiOnConfigure);
+        });
+
+        #if WS_SUPPORT
+            wsOnConnectRegister(_wifiWSOnClientConnect);
+            wsOnConfigureRegister(_wifiWSOnConfigure);
+            wsOnActionRegister(_wifiWSOnAction);
+        #endif
     #endif
 
     #if BUTTON_SUPPORT && WIFI_AP_BTN > 0
@@ -590,12 +732,14 @@ void wifiSetup() {
             [](const char * payload) {
                 DEBUG_MSG(PSTR("[WIFI] Requested reconnect action\n"));
 
-                wifiDisconnect();
-
-                // Reload & cache settings
-                firmwareReload();
+                #if WEB_SUPPORT && WS_SUPPORT
+                    // Send notification to all clients
+                    wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"reconnect\"}"));
+                #endif
+                
+                _wifi_defer.once_ms(250, wifiDisconnect);
             },
-            "reconnect"
+            FASTYBIRD_THING_CONTROL_RECONNECT
         );
     #endif
 

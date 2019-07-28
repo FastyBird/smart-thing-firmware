@@ -2,7 +2,7 @@
 
 STABILTY MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -11,6 +11,33 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #include <EEPROM_Rotate.h>
 
 bool _stability_system_stable = true;
+
+union stabilty_rtcmem_t {
+    struct {
+        uint8_t stability_counter;
+        uint16_t _reserved_;
+    } parts;
+    uint32_t value;
+};
+
+uint8_t _stabilityCounter() {
+    stabilty_rtcmem_t data;
+
+    data.value = Rtcmem->sys;
+
+    return data.parts.stability_counter;
+}
+
+void _stabilityCounter(
+    uint8_t counter
+) {
+    stabilty_rtcmem_t data;
+
+    data.value = Rtcmem->sys;
+    data.parts.stability_counter = counter;
+
+    Rtcmem->sys = data.value;
+}
 
 // -----------------------------------------------------------------------------
 // MODULE API
@@ -34,6 +61,14 @@ void stabiltyCheck(
         DEBUG_MSG(PSTR("[STABILTY] System OK\n"));
 
     } else {
+        if (!rtcmemStatus()) {
+            _stabilityCounter(1);
+
+            return;
+        }
+
+        value = _stabilityCounter();
+
         if (++value > STABILTY_CHECK_MAX) {
             _stability_system_stable = false;
             value = 0;
@@ -42,9 +77,7 @@ void stabiltyCheck(
         }
     }
 
-    EEPROMr.write(EEPROM_CRASH_COUNTER, value);
-
-    eepromCommit();
+    _stabilityCounter(value);
 }
 
 // -----------------------------------------------------------------------------

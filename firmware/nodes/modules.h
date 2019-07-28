@@ -2,7 +2,7 @@
 
 NODES MODULE - MODULES INTERFACES
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -244,15 +244,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
         module["module"] = "nodes";
         module["visible"] = true;
-
-        // Configuration container
-        JsonObject& configuration = module.createNestedObject("config");
-
-        // Configuration values container
-        JsonObject& configuration_values = configuration.createNestedObject("values");
-
-        // Configuration schema container
-        JsonArray& configuration_schema = configuration.createNestedArray("schema");
         
         // Data container
         JsonObject& data = module.createNestedObject("data");
@@ -265,6 +256,15 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
             _gatewayCollectNode(node, i);
         }
+
+        // Configuration container
+        JsonObject& configuration = module.createNestedObject("config");
+
+        // Configuration values container
+        JsonObject& configuration_values = configuration.createNestedObject("values");
+
+        // Configuration schema container
+        JsonArray& configuration_schema = configuration.createNestedArray("schema");
     }
 
 // -----------------------------------------------------------------------------
@@ -348,7 +348,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
                     _gatewayRemoveNodeFromStorage(i);
 
-                    deferredReset(100, CUSTOM_RESET_WEB);
+                    deferredReset(250, CUSTOM_RESET_WEB);
                 }
             }
         }
@@ -744,29 +744,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
         }
 
         request->send(gateway_web_config_success ? 200 : 400);
-    }
-
-// -----------------------------------------------------------------------------
-
-    bool _gatewayWebRequestCallback(
-        AsyncWebServerRequest * request
-    ) {
-        String url = request->url();
-
-        if (url.equals("/gateway/config")) {
-            if (request->method() == HTTP_GET) {
-                _gatewayOnGetConfig(request);
-
-                return true;
-
-            } else if (request->method() == HTTP_POST) {
-                _gatewayOnPostConfig(request);
-
-                return true;
-            }
-        }
-
-        return false;
     }
 #endif
 

@@ -2,7 +2,7 @@
 
 FASTYBIRD THING MQTT MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -43,20 +43,6 @@ String _fastybirdMqttApiCreatePropertyTopicString(
         FASTYBIRD_TOPIC_THING_PROPERTY,
         "property",
         property
-    );
-}
-
-// -----------------------------------------------------------------------------
-
-String _fastybirdMqttApiCreateStatTopicString(
-    const char * thingId,
-    String stat
-) {
-    return _fastybirdMqttApiCreateThingTopicString(
-        thingId,
-        FASTYBIRD_TOPIC_THING_STATS,
-        "stats",
-        stat
     );
 }
 
@@ -401,75 +387,6 @@ bool _fastybirdPropagateThingChannels(
     std::vector<fastybird_channel_t> channels
 ) {
     return _fastybirdPropagateThingChannels((fastybirdThingSN()).c_str(), channels);
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateThingStatsStructure(
-    const char * thingId,
-    std::vector<String> stats
-) {
-    if (stats.size() <= 0) {
-        return true;
-    }
-
-    char payload[80];
-
-    strcpy(payload, stats[0].c_str());
-
-    for (uint8_t i = 1; i < stats.size(); i++) {
-        strcat(payload, ",");
-        strcat(payload, stats[i].c_str());
-    }
-
-    uint8_t packet_id;
-
-    packet_id = mqttSend(
-        _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_STATS_STRUCTURE).c_str(),
-        payload
-    );
-
-    if (packet_id == 0) {
-        return false;
-    }
-
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateThingStatsStructure(
-    std::vector<String> stats
-) {
-    return _fastybirdPropagateThingStatsStructure((fastybirdThingSN()).c_str(), stats);
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateThingStat(
-    const char * thingId,
-    const char * stat,
-    const char * payload
-) {
-    uint8_t packet_id;
-
-    packet_id = mqttSend(
-        _fastybirdMqttApiCreateStatTopicString(thingId, stat).c_str(),
-        payload
-    );
-
-    if (packet_id == 0) return false;
-
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateThingStat(
-    const char * stat,
-    const char * payload
-) {
-    return _fastybirdPropagateThingStat((fastybirdThingSN()).c_str(), stat, payload);
 }
 
 // -----------------------------------------------------------------------------

@@ -1,0 +1,11 @@
+.DS_Store
+html
+bin
+lib
+CMakeFiles
+CMakeScripts
+CMakeCache.txt
+Testing
+install_manifest.txt
+Makefile
+*.cmake

@@ -2,27 +2,23 @@
 
 SETTINGS MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
 #include <EEPROM_Rotate.h>
 #include <vector>
 
-#include "libs/EmbedisWrap.h"
-#include "libs/StreamInjector.h"
-
-StreamInjector _serial = StreamInjector(TERMINAL_BUFFER_SIZE);
-EmbedisWrap embedis(_serial, TERMINAL_BUFFER_SIZE);
-
 bool _settings_save = false;
+bool _web_config_success = false;
+std::vector<uint8_t> * _web_config_buffer;
 
 // -----------------------------------------------------------------------------
 // Reverse engineering EEPROM storage format
 // -----------------------------------------------------------------------------
 
 uint32_t settingsSize() {
-    uint8_t pos = SPI_FLASH_SEC_SIZE - 1;
+    uint32_t pos = SPI_FLASH_SEC_SIZE - 1;
 
     while (size_t len = EEPROMr.read(pos)) {
         if (0xFF == len) {
@@ -37,9 +33,9 @@ uint32_t settingsSize() {
 
 // -----------------------------------------------------------------------------
 
-uint8_t settingsKeyCount() {
-    uint8_t count = 0;
-    uint8_t pos = SPI_FLASH_SEC_SIZE - 1;
+uint32_t settingsKeyCount() {
+    uint32_t count = 0;
+    uint32_t pos = SPI_FLASH_SEC_SIZE - 1;
 
     while (size_t len = EEPROMr.read(pos)) {
         if (0xFF == len) {
@@ -58,12 +54,12 @@ uint8_t settingsKeyCount() {
 // -----------------------------------------------------------------------------
 
 String settingsKeyName(
-    const uint8_t index
+    const uint32_t index
 ) {
     String s;
 
-    uint8_t count = 0;
-    uint8_t pos = SPI_FLASH_SEC_SIZE - 1;
+    uint32_t count = 0;
+    uint32_t pos = SPI_FLASH_SEC_SIZE - 1;
 
     while (size_t len = EEPROMr.read(pos)) {
         if (0xFF == len) {
@@ -75,7 +71,7 @@ String settingsKeyName(
         if (count == index) {
             s.reserve(len);
 
-            for (uint8_t i = 0 ; i < len; i++) {
+            for (uint32_t i = 0 ; i < len; i++) {
                 s += (char) EEPROMr.read(pos + i + 1);
             }
 
@@ -100,14 +96,14 @@ std::vector<String> _settingsKeys() {
     // Get sorted list of keys
     std::vector<String> keys;
 
-    uint8_t size = settingsKeyCount();
+    uint32_t size = settingsKeyCount();
 
-    for (uint8_t i = 0; i < size; i++) {
+    for (uint32_t i = 0; i < size; i++) {
         String _key = settingsKeyName(i);
 
         bool _inserted = false;
 
-        for (uint8_t j = 0; j < keys.size(); j++) {
+        for (uint32_t j = 0; j < keys.size(); j++) {
             // Check if we have to insert it before the current element
             if (keys[j].compareTo(_key) > 0) {
                 keys.insert(keys.begin() + j, _key);
@@ -143,16 +139,18 @@ bool _settingsRestoreJson(
         return false;
     }
 
-    for (uint8_t i = EEPROM_DATA_END; i < SPI_FLASH_SEC_SIZE; i++) {
+    for (unsigned int i = EEPROM_DATA_END; i < SPI_FLASH_SEC_SIZE; i++) {
         EEPROMr.write(i, 0xFF);
     }
 
     for (auto element : data) {
-        if (strcmp(element.key, "thing") == 0) {
-            continue;
-        }
-
-        if (strcmp(element.key, "version") == 0) {
+        if (
+            strcmp(element.key, "thing") == 0
+            || strcmp(element.key, "manufacturer") == 0
+            || strcmp(element.key, "version") == 0
+            || strcmp(element.key, "backup") == 0
+            || strcmp(element.key, "timestamp") == 0
+        ) {
             continue;
         }
 
@@ -189,8 +187,12 @@ bool _settingsRestoreJson(
         response->addHeader("X-Content-Type-Options", "nosniff");
         response->addHeader("X-Frame-Options", "deny");
 
+        snprintf_P(buffer, sizeof(buffer), PSTR("%s-backup.json"), (char *) getIdentifier().c_str());
+
+        response->addHeader("X-Suggested-Filename", buffer);
+
         response->printf("{\n\"thing\": \"%s\"", THING);
-        response->printf("{\n\"manufacturer\": \"%s\"", FIRMWARE_MANUFACTURER);
+        response->printf(",\n\"manufacturer\": \"%s\"", FIRMWARE_MANUFACTURER);
         response->printf(",\n\"version\": \"%s\"", FIRMWARE_VERSION);
         response->printf(",\n\"backup\": \"1\"");
 
@@ -201,10 +203,10 @@ bool _settingsRestoreJson(
         // Write the keys line by line (not sorted)
         uint32_t count = settingsKeyCount();
 
-        for (uint8_t i = 0; i < count; i++) {
+        for (unsigned int i = 0; i < count; i++) {
             String key = settingsKeyName(i);
             String value = getSetting(key);
-
+            
             response->printf(",\n\"%s\": \"%s\"", key.c_str(), value.c_str());
         }
 
@@ -224,47 +226,86 @@ bool _settingsRestoreJson(
             return request->requestAuthentication(getIdentifier().c_str());
         }
 
-        bool settings_web_config_success = false;
+        request->send(_web_config_success ? 200 : 400);
 
-        int params = request->params();
+        if (_web_config_success) {
+            #if WEB_SUPPORT && WS_SUPPORT
+                // Send notification to all clients
+                wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"restore\"}"));
+            #endif
 
-        for (uint8_t i = 0; i < params; i++) {
-            AsyncWebParameter* p = request->getParam(i);
-            
-            if (p->isFile()) {
-                DynamicJsonBuffer jsonBuffer;
-                JsonObject& root = jsonBuffer.parseObject(p->value().c_str());
-
-                if (root.success()) {
-                    settings_web_config_success = _settingsRestoreJson(root);
-                }
-            }
+            deferredReset(250, CUSTOM_RESTORE_WEB);
         }
-
-        request->send(settings_web_config_success ? 200 : 400);
     }
 
 // -----------------------------------------------------------------------------
 
-    bool _settingsWebRequestCallback(
-        AsyncWebServerRequest * request
+    void _settingsOnPostConfigData(
+        AsyncWebServerRequest *request,
+        String filename,
+        size_t index,
+        uint8_t * data,
+        size_t len,
+        bool final
     ) {
-        String url = request->url();
+        if (!webAuthenticate(request)) {
+            return request->requestAuthentication(getIdentifier().c_str());
+        }
 
-        if (url.equals("/control/config")) {
-            if (request->method() == HTTP_GET) {
-                _settingsOnGetConfig(request);
+        // No buffer
+        if (final && (index == 0)) {
+            DynamicJsonBuffer jsonBuffer;
+            JsonObject& root = jsonBuffer.parseObject((char *) data);
 
-                return true;
+            if (root.success()) {
+                _web_config_success = _settingsRestoreJson(root);
+            }
 
-            } else if (request->method() == HTTP_POST) {
-                _settingsOnPostConfig(request);
+            return;
+        }
 
-                return true;
+        // Buffer start => reset
+        if (index == 0) {
+            if (_web_config_buffer) {
+                delete _web_config_buffer;
             }
         }
 
-        return false;
+        // init buffer if it doesn't exist
+        if (!_web_config_buffer) {
+            _web_config_buffer = new std::vector<uint8_t>();
+            _web_config_success = false;
+        }
+
+        // Copy
+        if (len > 0) {
+            _web_config_buffer->reserve(_web_config_buffer->size() + len);
+            _web_config_buffer->insert(_web_config_buffer->end(), data, data + len);
+        }
+
+        // Ending
+        if (final) {
+            _web_config_buffer->push_back(0);
+
+            // Parse JSON
+            DynamicJsonBuffer jsonBuffer;
+            JsonObject& root = jsonBuffer.parseObject((char *) _web_config_buffer->data());
+
+            if (root.success()) {
+                _web_config_success = _settingsRestoreJson(root);
+            }
+
+            delete _web_config_buffer;
+        }
+    }
+
+// -----------------------------------------------------------------------------
+
+    void _settingsWebEvents(
+        AsyncWebServer * server
+    ) {
+        server->on(WEB_API_FIRMWARE_CONFIGURATION, HTTP_GET, _settingsOnGetConfig);
+        server->on(WEB_API_FIRMWARE_CONFIGURATION, HTTP_POST, _settingsOnPostConfig, _settingsOnPostConfigData);
     }
 
 // -----------------------------------------------------------------------------
@@ -277,21 +318,28 @@ bool _settingsRestoreJson(
             JsonObject& data
         ) {
             if (strcmp(action, "factory_reset") == 0) {
+                DEBUG_MSG(PSTR("[SETTINGS] Requested factory reset action\n"));
                 DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
 
                 resetSettings();
+                
+                // Send notification to all clients
+                wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"factory\"}"));
 
-                deferredReset(100, CUSTOM_RESET_FACTORY);
-
+                deferredReset(250, CUSTOM_FACTORY_WEB);
                 return;
 
             } else if (strcmp(action, "restore") == 0) {
                 if (_settingsRestoreJson(data)) {
-                    wsSend_P(clientId, PSTR("{\"message\": \"changes_saved_need_reboot\"}"));
-                    wsSend_P(PSTR("{\"action\": \"reboot\"}"));
+                    wsSend_P(clientId, PSTR("{\"message\": \"restore_finished\"}"));
+
+                    // Send notification to all clients
+                    wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"restore\"}"));
+
+                    deferredReset(250, CUSTOM_RESTORE_WEB);
 
                 } else {
-                    wsSend_P(clientId, PSTR("{\"message\": \"invalid_file\", \"level\": \"error\"}"));
+                    wsSend_P(clientId, PSTR("{\"message\": \"invalid_restore_file\", \"level\": \"error\"}"));
                 }
             }
         }
@@ -317,7 +365,7 @@ void saveSettings() {
 // -----------------------------------------------------------------------------
 
 void resetSettings() {
-    for (uint8_t i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
+    for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
         EEPROMr.write(i, 0xFF);
     }
 
@@ -359,7 +407,7 @@ template<typename T> String getSetting(
 
 template<typename T> String getSetting(
     const String& key,
-    const uint8_t index,
+    const uint32_t index,
     T defaultValue
 ) {
     return getSetting(key + String(index), defaultValue);
@@ -386,7 +434,7 @@ template<typename T> bool setSetting(
 
 template<typename T> bool setSetting(
     const String& key,
-    const uint8_t index,
+    const uint32_t index,
     T value
 ) {
     return setSetting(key + String(index), value);
@@ -404,7 +452,7 @@ bool delSetting(
 
 bool delSetting(
     const String& key,
-    const uint8_t index
+    const uint32_t index
 ) {
     return delSetting(key + String(index));
 }
@@ -421,7 +469,7 @@ bool hasSetting(
 
 bool hasSetting(
     const String& key,
-    uint8_t index
+    uint32_t index
 ) {
     return getSetting(key, index, "").length() != 0;
 }
@@ -432,12 +480,6 @@ bool hasSetting(
 
 void settingsSetup() {
     EEPROMr.begin(SPI_FLASH_SEC_SIZE);
-
-    _serial.callback([](uint8_t ch) {
-        #if DEBUG_SERIAL_SUPPORT
-            DEBUG_PORT.write(ch);
-        #endif
-    });
 
     Embedis::dictionary(F("EEPROM"),
         SPI_FLASH_SEC_SIZE,
@@ -451,7 +493,7 @@ void settingsSetup() {
     );
 
     #if WEB_SUPPORT
-        webOnRequestRegister(_settingsWebRequestCallback);
+        webEventsRegister(_settingsWebEvents);
 
         #if WS_SUPPORT
             wsOnActionRegister(_settingsWSOnAction);
@@ -462,14 +504,57 @@ void settingsSetup() {
         buttonOnEventRegister(
             [](uint8_t event) {
                 if (event == SETTINGS_FACTORY_BTN_EVENT) {
+                    DEBUG_MSG(PSTR("[SETTINGS] Requested factory reset action\n"));
                     DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
 
                     resetSettings();
 
-                    deferredReset(100, CUSTOM_RESET_FACTORY);
+                    #if WEB_SUPPORT && WS_SUPPORT
+                        // Send notification to all clients
+                        wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"factory\"}"));
+                    #endif
+
+                    deferredReset(250, CUSTOM_FACTORY_BUTTON);
                 }
             },
             (uint8_t) (SETTINGS_FACTORY_BTN - 1)
+        );
+    #endif
+
+    #if BUTTON_SUPPORT && SYSTEM_RESET_BTN > 0
+        buttonOnEventRegister(
+            [](uint8_t event) {
+                if (event == SYSTEM_RESET_BTN_EVENT) {
+                    DEBUG_MSG(PSTR("[SETTINGS] Requested reset action\n"));
+
+                    #if WEB_SUPPORT && WS_SUPPORT
+                        // Send notification to all clients
+                        wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"reset\"}"));
+                    #endif
+
+                    deferredReset(250, CUSTOM_RESET_BUTTON);
+                }
+            },
+            (uint8_t) (SYSTEM_RESET_BTN - 1)
+        );
+    #endif
+
+    #if FASTYBIRD_SUPPORT
+        fastybirdOnControlRegister(
+            [](const char * payload) {
+                DEBUG_MSG(PSTR("[SETTINGS] Requested factory reset action\n"));
+                DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
+
+                resetSettings();
+
+                #if WEB_SUPPORT && WS_SUPPORT
+                    // Send notification to all clients
+                    wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"factory\"}"));
+                #endif
+
+                deferredReset(250, CUSTOM_FACTORY_BROKER);
+            },
+            FASTYBIRD_THING_CONTROL_FACTORY_RESET
         );
     #endif
 

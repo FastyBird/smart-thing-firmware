@@ -2,19 +2,13 @@
 
 LED MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
 #if LED_SUPPORT
 
-typedef struct {
-    uint8_t pin;
-    bool reverse;
-    uint8_t mode;
-} led_t;
-
-std::vector<led_t> _leds;
+uint8_t _system_led_mode = STATUS_LED_MODE;
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
@@ -23,16 +17,10 @@ std::vector<led_t> _leds;
 /**
  * Get status of given LED
  */
-bool _ledStatus(
-    const uint8_t id
-) {
-    if (id >= ledCount()) {
-        return false;
-    }
+bool _ledStatus() {
+    bool status = digitalRead(STATUS_LED_PIN);
 
-    bool status = digitalRead(_leds[id].pin);
-
-    return _leds[id].reverse ? !status : status;
+    return STATUS_LED_PIN_INVERSE ? !status : status;
 }
 
 // -----------------------------------------------------------------------------
@@ -41,14 +29,9 @@ bool _ledStatus(
  * Set status of given LED
  */
 bool _ledStatus(
-    const uint8_t id,
     const bool status
 ) {
-    if (id >=ledCount()) {
-        return false;
-    }
-
-    digitalWrite(_leds[id].pin, _leds[id].reverse ? !status : status);
+    digitalWrite(STATUS_LED_PIN, STATUS_LED_PIN_INVERSE ? !status : status);
 
     return status;
 }
@@ -58,14 +41,8 @@ bool _ledStatus(
 /**
  * Toggle status of given LED
  */
-bool _ledToggle(
-    const uint8_t id
-) {
-    if (id >= ledCount()) {
-        return false;
-    }
-
-    return _ledStatus(id, !_ledStatus(id));
+bool _ledToggle() {
+    return _ledStatus(!_ledStatus());
 }
 
 // -----------------------------------------------------------------------------
@@ -73,14 +50,8 @@ bool _ledToggle(
 /**
  * Get mode of given LED
  */
-uint8_t _ledMode(
-    const uint8_t id
-) {
-    if (id >= ledCount()) {
-        return false;
-    }
-
-    return _leds[id].mode;
+uint8_t _ledMode() {
+    return _system_led_mode;
 }
 
 // -----------------------------------------------------------------------------
@@ -89,135 +60,104 @@ uint8_t _ledMode(
  * Set mode of given LED
  */
 void _ledMode(
-    const uint8_t id,
     const uint8_t mode
 ) {
-    if (id >= ledCount()) {
-        return;
-    }
-
-    _leds[id].mode = mode;
+    _system_led_mode = mode;
 }
 
 // -----------------------------------------------------------------------------
 
 void _ledBlink(
-    const uint8_t id,
     const uint32_t delayOff,
     const uint32_t delayOn
 ) {
-    if (id >= ledCount()) {
-        return;
-    }
-
     static uint32_t next = millis();
 
     if (next < millis()) {
-        next += (_ledToggle(id) ? delayOn : delayOff);
+        next += (_ledToggle() ? delayOn : delayOff);
     }
 }
 
+
 // -----------------------------------------------------------------------------
 
-/**
- * Initialize all configured LEDs
- */
-void _ledInitialize() {
-    for (uint8_t i = 0; i < ledCount(); i++) {
-        _ledMode(i, getSetting("ledMode", i, _ledMode(i)).toInt());
+#if FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+    /**
+     * Provide module configuration schema
+     */
+    void _ledReportConfigurationSchema(
+        JsonArray& configuration
+    ) {
+        JsonObject& mode = configuration.createNestedObject();
+
+        mode["name"] = "led_mode";
+        mode["type"] = "select";
+        #if WIFI_SUPPORT
+        mode["default"] = LED_MODE_WIFI;
+        #else
+        mode["default"] = LED_MODE_OFF;
+        #endif
+
+        JsonArray& modeValues = mode.createNestedArray("values");
+
+        #if WIFI_SUPPORT
+            JsonObject& value1 = modeValues.createNestedObject();
+            value1["value"] = LED_MODE_WIFI;
+            value1["name"] = "wifi_status";
+        #endif
+
+        JsonObject& value2 = modeValues.createNestedObject();
+        value2["value"] = LED_MODE_ON;
+        value2["name"] = "always_on";
+
+        JsonObject& value3 = modeValues.createNestedObject();
+        value3["value"] = LED_MODE_OFF;
+        value3["name"] = "always_off";
     }
-}
 
 // -----------------------------------------------------------------------------
 
-void _ledReportChannelConfigurationSchema(
-    JsonArray& container
-) {
-    JsonObject& mode = container.createNestedObject();
-
-    mode["name"] = "led_mode";
-    mode["type"] = "select";
-    #if WIFI_SUPPORT
-    mode["default"] = LED_MODE_WIFI;
-    #else
-    mode["default"] = LED_MODE_OFF;
-    #endif
-
-    JsonArray& modeValues = mode.createNestedArray("values");
-
-    JsonObject& value0 = modeValues.createNestedObject();
-    value0["value"] = LED_MODE_MQTT;
-    value0["name"] = "mqtt_managed";
-
-    #if WIFI_SUPPORT
-        JsonObject& value1 = modeValues.createNestedObject();
-        value1["value"] = LED_MODE_WIFI;
-        value1["name"] = "wifi_status";
-    #endif
-
-    JsonObject& value2 = modeValues.createNestedObject();
-    value2["value"] = LED_MODE_ON;
-    value2["name"] = "always_on";
-
-    JsonObject& value3 = modeValues.createNestedObject();
-    value3["value"] = LED_MODE_OFF;
-    value3["name"] = "always_off";
-}
-
-// -----------------------------------------------------------------------------
-
-String _ledReportChannelConfigurationSchema() {
-    DynamicJsonBuffer jsonBuffer;
-    JsonArray& schema = jsonBuffer.createArray();
-
-    _ledReportChannelConfigurationSchema(schema);
-
-    String output;
-
-    schema.printTo(output);
-
-    return output;
-}
-
-// -----------------------------------------------------------------------------
-
-void _ledReportChannelConfiguration(
-    const uint8_t id,
-    JsonObject& configuration
-) {
-    configuration["led_mode"] = _ledMode(id);
-}
-
-// -----------------------------------------------------------------------------
-
-String _ledReportChannelConfiguration(
-    const uint8_t id
-) {
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& configuration = jsonBuffer.createObject();
-
-    _ledReportChannelConfiguration(id, configuration);
-
-    String output;
-
-    configuration.printTo(output);
-
-    return output;
-}
-
-// -----------------------------------------------------------------------------
-
-// Update module channel configuration via WS or MQTT etc.
-void _ledConfigureChannel(
-    const uint8_t id,
-    JsonObject& configuration
-) {
-    if (configuration.containsKey("led_mode"))  {
-        setSetting("ledMode", id, configuration["led_mode"].as<uint8_t>());
-
-        _ledMode(id, configuration["led_mode"].as<uint8_t>());
+    /**
+     * Report module configuration
+     */
+    void _ledReportConfiguration(
+        JsonObject& configuration
+    ) {
+        configuration["led_mode"] = _ledMode();
     }
-}
+
+// -----------------------------------------------------------------------------
+
+    /**
+     * Update module configuration via WS or MQTT etc.
+     */
+    bool _ledUpdateConfiguration(
+        JsonObject& configuration
+    ) {
+        DEBUG_MSG(PSTR("[LED] Updating module\n"));
+
+        bool is_updated = false;
+
+        if (
+            configuration.containsKey("led_mode")
+            && (
+                configuration["led_mode"].as<uint8_t>() == LED_MODE_WIFI
+                || configuration["led_mode"].as<uint8_t>() == LED_MODE_ON
+                || configuration["led_mode"].as<uint8_t>() == LED_MODE_OFF
+            )
+            && configuration["led_mode"].as<uint8_t>() != getSetting("ledMode").toInt()
+        )  {
+            DEBUG_MSG(PSTR("[LED] Setting: \"led_mode\" to: %d\n"), configuration["led_mode"].as<uint8_t>());
+
+            setSetting("ledMode", configuration["led_mode"].as<uint8_t>());
+
+            is_updated = true;
+        }
+
+        return is_updated;
+    }
+
+#endif // FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
 
 // -----------------------------------------------------------------------------
 
@@ -226,10 +166,6 @@ void _ledConfigureChannel(
     void _ledWSOnConnect(
         JsonObject& root
     ) {
-        if (ledCount() == 0) {
-            return;
-        }
-
         DynamicJsonBuffer jsonBuffer;
 
         JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
@@ -241,71 +177,50 @@ void _ledConfigureChannel(
         // Configuration container
         JsonObject& configuration = module.createNestedObject("config");
 
-        // Channels configuration
-        JsonObject& channels_configuration = configuration.createNestedObject("channels");
+        // Configuration values container
+        JsonObject& configuration_values = configuration.createNestedObject("values");
 
-        JsonArray& channels_configuration_schema = channels_configuration.createNestedArray("schema");
+        _ledReportConfiguration(configuration_values);
 
-        _ledReportChannelConfigurationSchema(channels_configuration_schema);
+        // Configuration schema container
+        JsonArray& configuration_schema = configuration.createNestedArray("schema");
 
-        JsonArray& channels_configuration_values = channels_configuration.createNestedArray("values");
-
-        for (uint8_t i = 0; i < ledCount(); i++) {
-            JsonObject& channel_configuration_values = channels_configuration_values.createNestedObject();
-
-            _ledReportChannelConfiguration(i, channel_configuration_values);
-        }
-
-        // Data container
-        JsonObject& data = module.createNestedObject("data");
-
-        // Channels statuses
-        JsonArray& channels_statuses = data.createNestedArray("channels");
-
-        for (uint8_t i = 0; i < ledCount(); i++) {
-            channels_statuses.add(_ledStatus(i));
-        }
+        _ledReportConfigurationSchema(configuration_schema);
     }
 
 // -----------------------------------------------------------------------------
 
     // WS client requested configuration update
     void _ledWSOnConfigure(
-        const uint32_t clientId,
-        JsonObject& root
+        const uint32_t clientId, 
+        JsonObject& module
     ) {
-        if (ledCount() == 0) {
-            delSetting("ledMode");
+        if (module.containsKey("module") && module["module"] == "led") {
+            if (module.containsKey("config")) {
+                // Extract configuration container
+                JsonObject& configuration = module["config"].as<JsonObject&>();
 
-            return;
-        }
+                if (
+                    configuration.containsKey("values")
+                    && _ledUpdateConfiguration(configuration["values"])
+                ) {
+                    wsSend_P(clientId, PSTR("{\"message\": \"led_updated\"}"));
 
-        if (root.containsKey("module") && root["module"] == "led") {
-            if (root.containsKey("config")) {
-                JsonObject& configuration = root["config"];
-
-                if (configuration.containsKey("channels")) {
-                    for (uint8_t i = 0; i < ledCount(); i++) {
-                        _ledConfigureChannel(i, configuration["channels"][i]);
-                    }
+                    // Reload & cache settings
+                    firmwareReload();
                 }
-
-                // Send message
-                wsSend_P(clientId, PSTR("{\"message\": \"led_updated\"}"));
-
-                // Reload & cache settings
-                firmwareReload();
             }
         }
     }
 #endif
 
 // -----------------------------------------------------------------------------
-// MODULE API
-// -----------------------------------------------------------------------------
 
-uint8_t ledCount() {
-    return _leds.size();
+/**
+ * Initialize all configured LEDs
+ */
+void _ledInitialize() {
+    _ledMode(getSetting("ledMode", STATUS_LED_MODE).toInt());
 }
 
 // -----------------------------------------------------------------------------
@@ -313,43 +228,15 @@ uint8_t ledCount() {
 // -----------------------------------------------------------------------------
 
 void ledSetup() {
-    #if LED1_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED1_PIN, LED1_PIN_INVERSE, LED1_MODE });
-    #endif
+    _system_led_mode = STATUS_LED_MODE;
 
-    #if LED2_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED2_PIN, LED2_PIN_INVERSE, LED2_MODE });
-    #endif
-
-    #if LED3_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED3_PIN, LED3_PIN_INVERSE, LED3_MODE });
-    #endif
-
-    #if LED4_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED4_PIN, LED4_PIN_INVERSE, LED4_MODE });
-    #endif
-
-    #if LED5_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED5_PIN, LED5_PIN_INVERSE, LED5_MODE });
-    #endif
-
-    #if LED6_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED6_PIN, LED6_PIN_INVERSE, LED6_MODE });
-    #endif
-
-    #if LED7_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED7_PIN, LED7_PIN_INVERSE, LED7_MODE });
-    #endif
-
-    #if LED8_PIN != GPIO_NONE
-        _leds.push_back((led_t) { LED8_PIN, LED8_PIN_INVERSE, LED8_MODE });
-    #endif
-
-    for (uint8_t i = 0; i < ledCount(); i++) {
-        pinMode(_leds[i].pin, OUTPUT);
-
-        _ledStatus(i, false);
+    if (!hasSetting("ledMode")) {
+        setSetting("ledMode", STATUS_LED_MODE);
     }
+
+    pinMode(STATUS_LED_PIN, OUTPUT);
+
+    _ledStatus(false);
 
     _ledInitialize();
 
@@ -358,26 +245,12 @@ void ledSetup() {
         wsOnConfigureRegister(_ledWSOnConfigure);
     #endif
 
-    #if FASTYBIRD_SUPPORT && LED1_PIN != GPIO_NONE
-        fastybirdOnControlRegister(
-            [](const char * payload) {
-                DEBUG_MSG(PSTR("[LED] Controling status LED\n"));
-
-                if (strcmp(payload, FASTYBIRD_LED_PAYLOAD_ON) == 0) {
-                    _ledMode(0, LED_MODE_ON);
-
-                } else if (strcmp(payload, FASTYBIRD_LED_PAYLOAD_OFF) == 0) {
-                    _ledMode(0, LED_MODE_OFF);
-
-                } else if (strcmp(payload, FASTYBIRD_LED_PAYLOAD_RESTORE) == 0) {
-                    _ledMode(0, LED_MODE_WIFI);
-                }  
-            },
-            "status-led"
-        );
+    #if FASTYBIRD_SUPPORT
+        // Module schema report
+        fastybirdReportConfigurationSchemaRegister(_ledReportConfigurationSchema);
+        fastybirdReportConfigurationRegister(_ledReportConfiguration);
+        fastybirdOnConfigureRegister(_ledUpdateConfiguration);
     #endif
-
-    DEBUG_MSG(PSTR("[LED] Number of leds: %d\n"), ledCount());
 
     // Register firmware callbacks
     firmwareRegisterLoop(ledLoop);
@@ -387,28 +260,26 @@ void ledSetup() {
 // -----------------------------------------------------------------------------
 
 void ledLoop() {
-    for (uint8_t i = 0; i < ledCount(); i++) {
-        #if WIFI_SUPPORT
-            if (_ledMode(i) == LED_MODE_WIFI) {
-                if (wifiState() & WIFI_STATE_STA) {
-                    _ledBlink(i, 4900, 100);
+    #if WIFI_SUPPORT
+        if (_ledMode() == LED_MODE_WIFI) {
+            if (wifiState() & WIFI_STATE_STA) {
+                _ledBlink(4900, 100);
 
-                } else if (wifiState() & WIFI_STATE_AP) {
-                    _ledBlink(i, 900, 100);
+            } else if (wifiState() & WIFI_STATE_AP) {
+                _ledBlink(900, 100);
 
-                } else {
-                    _ledBlink(i, 500, 500);
-                }
+            } else {
+                _ledBlink(500, 500);
             }
-        #endif
-
-        if (_ledMode(i) == LED_MODE_ON) {
-            _ledStatus(i, true);
         }
+    #endif
 
-        if (_ledMode(i) == LED_MODE_OFF) {
-            _ledStatus(i, false);
-        }
+    if (_ledMode() == LED_MODE_ON) {
+        _ledStatus(true);
+    }
+
+    if (_ledMode() == LED_MODE_OFF) {
+        _ledStatus(false);
     }
 }
 

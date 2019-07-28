@@ -2,7 +2,7 @@
 
 FASTYBIRD MQTT API MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -85,7 +85,7 @@ String _fastybirdMqttApiConvertChannelName(
         return FASTYBIRD_CHANNEL_LIGHT;
 
     } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_SWITCH) == 0) {
-        return FASTYBIRD_CHANNEL_RELAY;
+        return FASTYBIRD_CHANNEL_SWITCH;
     }
 
     return String(type);
@@ -164,34 +164,34 @@ void _fastybirdApiSetup() {
 
 void _fastybirdOnHeartbeat() {
     mqttSend(
-        _fastybirdMqttApiCreateStatTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_STAT_FREE_HEAP).c_str(),
+        _fastybirdMqttApiCreatePropertyTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_PROPERTY_FREE_HEAP).c_str(),
         String(getFreeHeap()).c_str()
     );
 
     mqttSend(
-        _fastybirdMqttApiCreateStatTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_STAT_UPTIME).c_str(),
+        _fastybirdMqttApiCreatePropertyTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_PROPERTY_UPTIME).c_str(),
         String(getUptime()).c_str()
     );
 
     #if WIFI_SUPPORT
         mqttSend(
-            _fastybirdMqttApiCreateStatTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_STAT_RSSI).c_str(),
+            _fastybirdMqttApiCreatePropertyTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_PROPERTY_RSSI).c_str(),
             String(WiFi.RSSI()).c_str()
         );
         mqttSend(
-            _fastybirdMqttApiCreateStatTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_STAT_SSID).c_str(),
+            _fastybirdMqttApiCreatePropertyTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_PROPERTY_SSID).c_str(),
             getNetwork().c_str()
         );
     #endif
 
     mqttSend(
-        _fastybirdMqttApiCreateStatTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_STAT_CPU_LOAD).c_str(),
+        _fastybirdMqttApiCreatePropertyTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_PROPERTY_CPU_LOAD).c_str(),
         String(systemLoadAverage()).c_str()
     );
 
     #if ADC_MODE_VALUE == ADC_VCC
         mqttSend(
-            _fastybirdMqttApiCreateStatTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_STAT_VCC).c_str(),
+            _fastybirdMqttApiCreatePropertyTopicString((fastybirdThingSN()).c_str(), FASTYBIRD_PROPERTY_VCC).c_str(),
             String(ESP.getVcc()).c_str()
         );
     #endif

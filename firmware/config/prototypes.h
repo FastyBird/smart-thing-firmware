@@ -7,10 +7,11 @@
 
 extern "C" {
     #include "user_interface.h"
+    extern struct rst_info resetInfo;
 }
 
 // -----------------------------------------------------------------------------
-// Debug
+// DEBUG MODULE
 // -----------------------------------------------------------------------------
 void debugSend(PGM_P format, ...);
 
@@ -48,9 +49,9 @@ EEPROM_Rotate EEPROMr;
 // -----------------------------------------------------------------------------
 // GPIO
 // -----------------------------------------------------------------------------
-bool gpioValid(unsigned int gpio);
-bool gpioGetLock(unsigned int gpio);
-bool gpioReleaseLock(unsigned int gpio);
+bool gpioValid(uint8_t gpio);
+bool gpioGetLock(uint8_t gpio);
+bool gpioReleaseLock(uint8_t gpio);
 
 // -----------------------------------------------------------------------------
 // I2C
@@ -78,39 +79,41 @@ int16_t i2c_read_int16_le(uint8_t address, uint8_t reg);
 void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len);
 
 // -----------------------------------------------------------------------------
-// OTA
-// -----------------------------------------------------------------------------
-#include "ESPAsyncTCP.h"
-
-// -----------------------------------------------------------------------------
-// Utils
+// FIRMWARE UTILS
 // -----------------------------------------------------------------------------
 char * ltrim(char * s);
-void niceDelay(unsigned long ms);
+void niceDelay(uint32_t ms);
 
 #define ARRAYINIT(type, name, ...) type name[] = {__VA_ARGS__};
 
 // -----------------------------------------------------------------------------
-// WebServer
+// RTC MEMORY
+// -----------------------------------------------------------------------------
+#include "rtcmem.h"
+
+// -----------------------------------------------------------------------------
+// OTA MODULE
+// -----------------------------------------------------------------------------
+#include <ESPAsyncTCP.h>
+
+// -----------------------------------------------------------------------------
+// WEB MODULE
 // -----------------------------------------------------------------------------
 #if WEB_SUPPORT
     #include <ESPAsyncWebServer.h>
-    AsyncWebServer * webServer();
-
-    typedef std::function<bool(AsyncWebServerRequest * request)> web_on_request_callback_f;
-    void webOnRequestRegister(web_on_request_callback_f callback);
+    
+    typedef std::function<void(AsyncWebServer * server)> web_events_callback_f;
+    void webEventsRegister(web_events_callback_f callback);
 #else
     #define AsyncWebServerRequest void
     #define ArRequestHandlerFunction void
     #define AsyncWebSocketClient void
     #define AsyncWebSocket void
     #define AwsEventType void *
-
-    #define web_on_request_callback_f void *
 #endif
 
 // -----------------------------------------------------------------------------
-// WebSockets
+// WS MODULE
 // -----------------------------------------------------------------------------
 #if WEB_SUPPORT && WS_SUPPORT
     typedef std::function<void(JsonObject&)> ws_on_connect_callback_f;
@@ -132,10 +135,10 @@ void niceDelay(unsigned long ms);
 #endif
 
 // -----------------------------------------------------------------------------
-// WIFI
+// WIFI MODULE
 // -----------------------------------------------------------------------------
 #if WIFI_SUPPORT
-    #include "JustWifi.h"
+    #include <JustWifi.h>
 
     typedef std::function<void(justwifi_messages_t code, char * parameter)> wifi_callback_f;
     void wifiRegister(wifi_callback_f callback);
@@ -144,7 +147,7 @@ void niceDelay(unsigned long ms);
 #endif
 
 // -----------------------------------------------------------------------------
-// MQTT
+// MQTT MODULE
 // -----------------------------------------------------------------------------
 #if MQTT_SUPPORT
     typedef std::function<void(const char *, const char *)> mqtt_on_message_callback_f;
@@ -161,7 +164,7 @@ void niceDelay(unsigned long ms);
 #endif
 
 // -----------------------------------------------------------------------------
-// Settings
+// SETTINGS MODULE
 // -----------------------------------------------------------------------------
 #include <Embedis.h>
 
@@ -171,14 +174,13 @@ template<typename T> String getSetting(const String& key, T defaultValue);
 template<typename T> String getSetting(const String& key, unsigned int index, T defaultValue);
 
 // -----------------------------------------------------------------------------
-// System
+// SYSTEM MODULE
 // -----------------------------------------------------------------------------
-
 typedef std::function<void()> system_on_heartbeat_callback_f;
 void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
 
 // -----------------------------------------------------------------------------
-// Button
+// BUTTON MODULE
 // -----------------------------------------------------------------------------
 #if BUTTON_SUPPORT
     #include <DebounceEvent.h>
@@ -190,7 +192,12 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
 #endif
 
 // -----------------------------------------------------------------------------
-// FastyBird
+// RELAY MODULE
+// -----------------------------------------------------------------------------
+#include <bitset>
+
+// -----------------------------------------------------------------------------
+// FASTYBIRD MODULE
 // -----------------------------------------------------------------------------
 #if FASTYBIRD_SUPPORT
     typedef std::function<void(unsigned int, const char *)> fastybird_channels_process_payload_f;
@@ -259,40 +266,42 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
     typedef std::function<bool()> fastybird_channels_report_scheduler_callback_f;
     void fastybirdChannelsReportSchedulerRegister(fastybird_channels_report_scheduler_callback_f callback);
 
-    typedef struct {
-        const char * key;
-        const char * value;
-    } fastybird_node_setting_t;
+    #if NODES_GATEWAY_SUPPORT
+        typedef struct {
+            const char * key;
+            const char * value;
+        } fastybird_node_setting_t;
 
-    typedef struct {
-        const char * name;
-        const char * version;
-        const char * manufacturer;
-    } fastybird_node_hardware_t;
+        typedef struct {
+            const char * name;
+            const char * version;
+            const char * manufacturer;
+        } fastybird_node_hardware_t;
 
-    typedef struct {
-        const char * name;
-        const char * version;
-        const char * manufacturer;
-    } fastybird_node_software_t;
+        typedef struct {
+            const char * name;
+            const char * version;
+            const char * manufacturer;
+        } fastybird_node_software_t;
 
-    typedef struct {
-        // Node basic info
-        const char * id;
+        typedef struct {
+            // Node basic info
+            const char * id;
 
-        fastybird_node_hardware_t hardware;
-        fastybird_node_software_t software;
+            fastybird_node_hardware_t hardware;
+            fastybird_node_software_t software;
 
-        bool initialized;
+            bool initialized;
 
-        // Node channels
-        std::vector<fastybird_channel_t> channels;
+            // Node channels
+            std::vector<fastybird_channel_t> channels;
 
-        std::vector<fastybird_node_setting_t> settings;
-    } fastybird_node_t;
+            std::vector<fastybird_node_setting_t> settings;
+        } fastybird_node_t;
 
-    void fastybirdRegisterNode(fastybird_node_t node);
-    void fastybirdUnregisterNode(const char * nodeId);
+        void fastybirdRegisterNode(fastybird_node_t node);
+        void fastybirdUnregisterNode(const char * nodeId);
+    #endif // NODES_GATEWAY_SUPPORT
 #else
     #define fastybird_report_configuration_schema_callback_f void *
     #define fastybird_report_configuration_callback_f void *
@@ -303,9 +312,8 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
 #endif
 
 // -----------------------------------------------------------------------------
-// Nodes gateway
+// NODES MODULE
 // -----------------------------------------------------------------------------
-
 #if NODES_GATEWAY_SUPPORT
     #define PJON_INCLUDE_TS
 

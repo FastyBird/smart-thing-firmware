@@ -2,7 +2,7 @@
 
 DEFAULT CONFIGURATION
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -158,8 +158,36 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define RELAY8_BTN              0
 #endif
 
-#ifndef RELAY_SWITCH_BTN_EVENT
-#define RELAY_SWITCH_BTN_EVENT  BUTTON_EVENT_CLICK
+#ifndef RELAY1_BTN_EVENT
+#define RELAY1_BTN_EVENT        BUTTON_EVENT_CLICK
+#endif
+
+#ifndef RELAY2_BTN_EVENT
+#define RELAY2_BTN_EVENT        BUTTON_EVENT_CLICK
+#endif
+
+#ifndef RELAY3_BTN_EVENT
+#define RELAY3_BTN_EVENT        BUTTON_EVENT_CLICK
+#endif
+
+#ifndef RELAY4_BTN_EVENT
+#define RELAY4_BTN_EVENT        BUTTON_EVENT_CLICK
+#endif
+
+#ifndef RELAY5_BTN_EVENT
+#define RELAY5_BTN_EVENT        BUTTON_EVENT_CLICK
+#endif
+
+#ifndef RELAY6_BTN_EVENT
+#define RELAY6_BTN_EVENT        BUTTON_EVENT_CLICK
+#endif
+
+#ifndef RELAY7_BTN_EVENT
+#define RELAY7_BTN_EVENT        BUTTON_EVENT_CLICK
+#endif
+
+#ifndef RELAY8_BTN_EVENT
+#define RELAY8_BTN_EVENT        BUTTON_EVENT_CLICK
 #endif
 
 // -----------------------------------------------------------------------------
@@ -268,70 +296,16 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 // LEDs MODULE
 // =============================================================================
 
-#ifndef LED1_PIN
-#define LED1_PIN                GPIO_NONE
+#ifndef STATUS_LED_PIN
+#define STATUS_LED_PIN          GPIO_NONE
 #endif
 
-#ifndef LED2_PIN
-#define LED2_PIN                GPIO_NONE
+#ifndef STATUS_LED_PIN_INVERSE
+#define STATUS_LED_PIN_INVERSE  0
 #endif
 
-#ifndef LED3_PIN
-#define LED3_PIN                GPIO_NONE
-#endif
-
-#ifndef LED4_PIN
-#define LED4_PIN                GPIO_NONE
-#endif
-
-#ifndef LED5_PIN
-#define LED5_PIN                GPIO_NONE
-#endif
-
-#ifndef LED6_PIN
-#define LED6_PIN                GPIO_NONE
-#endif
-
-#ifndef LED7_PIN
-#define LED7_PIN                GPIO_NONE
-#endif
-
-#ifndef LED8_PIN
-#define LED8_PIN                GPIO_NONE
-#endif
-
-// -----------------------------------------------------------------------------
-
-#ifndef LED1_MODE
-#define LED1_MODE               LED_MODE_WIFI
-#endif
-
-#ifndef LED2_MODE
-#define LED2_MODE               LED_MODE_MQTT
-#endif
-
-#ifndef LED3_MODE
-#define LED3_MODE               LED_MODE_MQTT
-#endif
-
-#ifndef LED4_MODE
-#define LED4_MODE               LED_MODE_MQTT
-#endif
-
-#ifndef LED5_MODE
-#define LED5_MODE               LED_MODE_MQTT
-#endif
-
-#ifndef LED6_MODE
-#define LED6_MODE               LED_MODE_MQTT
-#endif
-
-#ifndef LED7_MODE
-#define LED7_MODE               LED_MODE_MQTT
-#endif
-
-#ifndef LED8_MODE
-#define LED8_MODE               LED_MODE_MQTT
+#ifndef STATUS_LED_MODE
+#define STATUS_LED_MODE         LED_MODE_WIFI
 #endif
 
 // =============================================================================
@@ -347,7 +321,69 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 // =============================================================================
-// Encoders
+// SETTINGS MODULE
+// =============================================================================
+
+#ifndef SETTINGS_FACTORY_BTN
+    #ifdef BUTTON1_PIN
+        #define SETTINGS_FACTORY_BTN        1
+    #else
+        #define SETTINGS_FACTORY_BTN        0
+    #endif
+#endif
+
+#ifndef SETTINGS_FACTORY_BTN_EVENT
+    #define SETTINGS_FACTORY_BTN_EVENT      BUTTON_EVENT_LNGLNGCLICK
+#endif
+
+// =============================================================================
+// SYSTEM MODULE
+// =============================================================================
+
+#ifndef SYSTEM_RESET_BTN
+    #ifdef BUTTON1_PIN
+        #define SYSTEM_RESET_BTN            1
+    #else
+        #define SYSTEM_RESET_BTN            0
+    #endif
+#endif
+
+#ifndef SYSTEM_RESET_BTN_EVENT
+    #define SYSTEM_RESET_BTN_EVENT          BUTTON_EVENT_LNGCLICK
+#endif
+
+// =============================================================================
+// WIFI MODULE
+// =============================================================================
+
+#ifndef WIFI_AP_BTN
+    #ifdef BUTTON1_PIN
+        #define WIFI_AP_BTN                 1
+    #else
+        #define WIFI_AP_BTN                 0
+    #endif
+#endif
+
+#ifndef WIFI_AP_BTN_EVENT
+    #define WIFI_AP_BTN_EVENT               BUTTON_EVENT_DBLCLICK
+#endif
+
+// =============================================================================
+// GENERAL SETTINGS
+// =============================================================================
+
+// Relay providers
+#ifndef RELAY_PROVIDER
+    #define RELAY_PROVIDER                  RELAY_PROVIDER_NONE
+#endif
+
+// Light provider
+#ifndef LIGHT_PROVIDER
+    #define LIGHT_PROVIDER                  LIGHT_PROVIDER_NONE
+#endif
+
+// =============================================================================
+// RF ENCODER
 // =============================================================================
 
 #ifndef ENCODER1_PIN1
@@ -522,66 +558,4 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #ifndef ENCODER5_CHANNEL2
 #define ENCODER5_CHANNEL2       1
-#endif
-
-// =============================================================================
-// SETTINGS MODULE
-// =============================================================================
-
-#ifndef SETTINGS_FACTORY_BTN
-    #ifdef BUTTON1_PIN
-        #define SETTINGS_FACTORY_BTN        1
-    #else
-        #define SETTINGS_FACTORY_BTN        0
-    #endif
-#endif
-
-#ifndef SETTINGS_FACTORY_BTN_EVENT
-#define SETTINGS_FACTORY_BTN_EVENT  BUTTON_EVENT_LNGLNGCLICK
-#endif
-
-// =============================================================================
-// SYSTEM MODULE
-// =============================================================================
-
-#ifndef SYSTEM_RESET_BTN
-    #ifdef BUTTON1_PIN
-        #define SYSTEM_RESET_BTN            1
-    #else
-        #define SYSTEM_RESET_BTN            0
-    #endif
-#endif
-
-#ifndef SYSTEM_RESET_BTN_EVENT
-#define SYSTEM_RESET_BTN_EVENT  BUTTON_EVENT_LNGCLICK
-#endif
-
-// =============================================================================
-// WIFI MODULE
-// =============================================================================
-
-#ifndef WIFI_AP_BTN
-    #ifdef BUTTON1_PIN
-        #define WIFI_AP_BTN                 1
-    #else
-        #define WIFI_AP_BTN                 0
-    #endif
-#endif
-
-#ifndef WIFI_AP_BTN_EVENT
-#define WIFI_AP_BTN_EVENT       BUTTON_EVENT_DBLCLICK
-#endif
-
-// =============================================================================
-// General
-// =============================================================================
-
-// Relay providers
-#ifndef RELAY_PROVIDER
-#define RELAY_PROVIDER          RELAY_PROVIDER_NONE
-#endif
-
-// Light provider
-#ifndef LIGHT_PROVIDER
-#define LIGHT_PROVIDER          LIGHT_PROVIDER_NONE
 #endif

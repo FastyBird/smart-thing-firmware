@@ -40,7 +40,12 @@
     #define NTP_SUPPORT                 1           // Scheduler needs NTP
 #endif
 
-#if FASTYBIRD_SUPPORT || SCHEDULER_SUPPORT
+#if NODES_GATEWAY_SUPPORT || SCHEDULER_SUPPORT
     #undef SPIFFS_SUPPORT
     #define SPIFFS_SUPPORT              1           // Enabling SPIFFS for storing configuration
+#endif
+
+#if STATUS_LED_PIN == GPIO_NONE
+    #undef LED_SUPPORT
+    #define LED_SUPPORT                 0           // Disable led module because no status led pin is defined
 #endif

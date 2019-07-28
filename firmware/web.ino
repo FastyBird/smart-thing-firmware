@@ -2,7 +2,7 @@
 
 WEB MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -14,6 +14,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #include <FS.h>
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
+#include <libb64/cencode.h>
 
 #if WEB_EMBEDDED
     #include "static/index.html.gz.h"
@@ -28,16 +29,53 @@ AsyncWebServer * _web_server;
 
 char _web_last_modified[50];
 
-std::vector<web_on_request_callback_f> _web_on_request_callbacks;
+std::vector<web_events_callback_f> _web_events_callbacks;
 
 // -----------------------------------------------------------------------------
 
 void _onReset(
     AsyncWebServerRequest * request
 ) {
-    deferredReset(100, CUSTOM_RESET_WEB);
+    webLog(request);
 
-    request->send(200);
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getIdentifier().c_str());
+    }
+
+    request->send(201);
+
+    #if WS_SUPPORT
+        // Send notification to all clients
+        wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"reset\"}"));
+    #endif
+
+    deferredReset(250, CUSTOM_RESET_WEB);
+}
+
+// -----------------------------------------------------------------------------
+
+void _onFactory(
+    AsyncWebServerRequest * request
+) {
+    webLog(request);
+
+    if (!webAuthenticate(request)) {
+        return request->requestAuthentication(getIdentifier().c_str());
+    }
+
+    DEBUG_MSG(PSTR("[WEB] Requested factory reset action\n"));
+    DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
+
+    request->send(201);
+
+    resetSettings();
+
+    #if WS_SUPPORT
+        // Send notification to all clients
+        wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"factory\"}"));
+    #endif
+
+    deferredReset(250, CUSTOM_FACTORY_WEB);
 }
 
 // -----------------------------------------------------------------------------
@@ -57,6 +95,64 @@ void _onDiscover(
     root["version"] = FIRMWARE_VERSION;
     root["hostname"] = getIdentifier();
     root["thing"] = THING_NAME;
+
+    root.printTo(*response);
+
+    request->send(response);
+}
+
+// -----------------------------------------------------------------------------
+
+void _onSignIn(
+    AsyncWebServerRequest * request
+) {
+    webLog(request);
+
+    String username;
+    String password;
+
+    if (request->hasParam("username", true)) {
+        AsyncWebParameter* pUsername = request->getParam("username", true);
+   
+        if (pUsername->isPost()) {
+            username = pUsername->value();
+        }
+    }
+
+    if (request->hasParam("password", true)) {
+        AsyncWebParameter* pPassword = request->getParam("password", true);
+   
+        if (pPassword->isPost()) {
+            password = pPassword->value();
+        }
+    }
+
+    if (
+        username.equals(String(WEB_USERNAME)) == false
+        || password.equals(getSetting("adminPass", ADMIN_PASSWORD)) == false
+    ) {
+        request->send(401);
+
+        return;
+    }
+
+    size_t toEncodeLen = strlen(username.c_str()) + strlen(password.c_str()) + 1;
+    size_t encodedLen = base64_encode_expected_len(toEncodeLen);
+
+    char * toEncode = new char[toEncodeLen + 1];
+    char * encoded = new char[base64_encode_expected_len(toEncodeLen) + 1];
+
+    sprintf(toEncode, "%s:%s", username.c_str(), password.c_str());
+
+    base64_encode_chars(toEncode, toEncodeLen, encoded);
+
+    AsyncResponseStream *response = request->beginResponseStream("text/json");
+
+    DynamicJsonBuffer jsonBuffer;
+
+    JsonObject &root = jsonBuffer.createObject();
+
+    root["token"] = String("Basic ") + String(encoded);
 
     root.printTo(*response);
 
@@ -91,13 +187,20 @@ void _onUpgrade(
     response->addHeader("X-Frame-Options", "deny");
 
     if (Update.hasError()) {
+        request->send(response);
+
         eepromRotate(true);
 
     } else {
-        deferredReset(100, CUSTOM_RESET_UPGRADE);
-    }
+        request->send(response);
 
-    request->send(response);
+        #if WS_SUPPORT
+            // Send notification to all clients
+            wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"upgrade\", \"module\": \"web\"}"));
+        #endif
+
+        deferredReset(1000, CUSTOM_UPGRADE_WEB);
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -163,7 +266,7 @@ void _onUpgradeData(
             #if ASYNC_TCP_SSL_ENABLED
                 // Chunked response, we calculate the chunks based on free heap (in multiples of 32)
                 // This is necessary when a TLS connection is open since it sucks too much memory
-                DEBUG_MSG_P(PSTR("[MAIN] Free heap: %d bytes\n"), getFreeHeap());
+                DEBUG_MSG(PSTR("[MAIN] Free heap: %d bytes\n"), getFreeHeap());
 
                 size_t max = (getFreeHeap() / 3) & 0xFFE0;
 
@@ -183,10 +286,10 @@ void _onUpgradeData(
                         memcpy_P(buffer, webui_image + index, len);
                     }
 
-                    DEBUG_MSG_P(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / webui_image_len), max);
+                    DEBUG_MSG(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / webui_image_len), max);
 
                     if (len == 0) {
-                        DEBUG_MSG_P(PSTR("\n"));
+                        DEBUG_MSG(PSTR("\n"));
                     }
 
                     // Return the actual length of the chunk (0 for end of file)
@@ -213,13 +316,10 @@ void _onUpgradeData(
 void _onRequest(
     AsyncWebServerRequest * request
 ){
-    // Send request to subscribers
-    for (uint8_t i = 0; i < _web_on_request_callbacks.size(); i++) {
-        bool response = (_web_on_request_callbacks[i])(request);
+    if (request->method() == HTTP_OPTIONS) {
+        request->send(200);
 
-        if (response) {
-            return;
-        }
+        return;
     }
 
     // No subscriber handled the request, return a 404
@@ -294,32 +394,6 @@ AsyncWebServer * webServer() {
 
 // -----------------------------------------------------------------------------
 
-bool webAuthenticate(
-    AsyncWebServerRequest * request
-) {
-    #if USE_PASSWORD
-        String password = getAdminPass();
-
-        char httpPassword[password.length() + 1];
-
-        password.toCharArray(httpPassword, password.length() + 1);
-
-        return request->authenticate(WEB_USERNAME, httpPassword);
-    #else
-        return true;
-    #endif
-}
-
-// -----------------------------------------------------------------------------
-
-void webOnRequestRegister(
-    web_on_request_callback_f callback
-) {
-    _web_on_request_callbacks.push_back(callback);
-}
-
-// -----------------------------------------------------------------------------
-
 uint8_t webPort() {
     #if NETWORK_ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
         return 443;
@@ -334,6 +408,32 @@ void webLog(
     AsyncWebServerRequest * request
 ) {
     DEBUG_MSG(PSTR("[WEBSERVER] Request: %s %s\n"), request->methodToString(), request->url().c_str());
+}
+
+// -----------------------------------------------------------------------------
+
+bool webAuthenticate(
+    AsyncWebServerRequest * request
+) {
+    if (getSetting("adminPass", ADMIN_PASSWORD).length() == 0) {
+        return true;
+    }
+
+    String password = getSetting("adminPass", ADMIN_PASSWORD);
+
+    char httpPassword[password.length() + 1];
+
+    password.toCharArray(httpPassword, password.length() + 1);
+
+    return request->authenticate(WEB_USERNAME, httpPassword);
+}
+
+// -----------------------------------------------------------------------------
+
+void webEventsRegister(
+    web_events_callback_f callback
+) {
+    _web_events_callbacks.push_back(callback);
 }
 
 // -----------------------------------------------------------------------------
@@ -358,9 +458,18 @@ void webSetup() {
     #endif
 
     // Other entry points
-    _web_server->on("/control/reset", HTTP_GET, _onReset);
-    _web_server->on("/control/upgrade", HTTP_POST, _onUpgrade, _onUpgradeData);
-    _web_server->on("/discover", HTTP_GET, _onDiscover);
+    _web_server->on(WEB_API_REBOOT, HTTP_PUT, _onReset);
+    _web_server->on(WEB_API_FACTORY, HTTP_PUT, _onFactory);
+    _web_server->on(WEB_API_FIRMWARE_UPGRADE, HTTP_POST, _onUpgrade, _onUpgradeData);
+
+    _web_server->on(WEB_API_DISCOVER, HTTP_GET, _onDiscover);
+
+    _web_server->on(WEB_API_SIGN_IN, HTTP_POST, _onSignIn);
+
+    // Callbacks
+    for (uint8_t i = 0; i < _web_events_callbacks.size(); i++) {
+        (_web_events_callbacks[i])(_web_server);
+    }
 
     // Serve static files
     #if SPIFFS_SUPPORT
@@ -374,7 +483,11 @@ void webSetup() {
 
     // Handle other requests, including 404
     _web_server->onNotFound(_onRequest);
-
+    
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", getSetting("webRemoteDomain", WEB_REMOTE_DOMAIN).c_str());
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Authorization");
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    DefaultHeaders::Instance().addHeader("Access-Control-Expose-Headers", "X-Suggested-Filename");
     // Run server
     #if NETWORK_ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
         _web_server->onSslFileRequest(_onCertificate, NULL);

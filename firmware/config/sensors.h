@@ -12,6 +12,7 @@
 #define SENSOR_REPORT_EVERY                 10              // Report every this many readings
 #define SENSOR_REPORT_MIN_EVERY             1               // Minimum every value
 #define SENSOR_REPORT_MAX_EVERY             60              // Maximum
+#define SENSOR_REPORT_STEP_EVERY            1               // Step
 
 #ifndef SENSOR_POWER_CHECK_STATUS
 #define SENSOR_POWER_CHECK_STATUS           1               // If set to 1 the reported power/current/energy will be 0 if the relay[0] is OFF
@@ -34,7 +35,7 @@
 #endif
 
 #ifndef ENERGY_MAX_CHANGE
-#define ENERGY_MAX_CHANGE                   0               // Maximum energy change to report (if >0 it will allways report when delta(E) is greater than this)
+#define ENERGY_MAX_CHANGE                   0               // Maximum energy change to report (if > 0 it will allways report when delta(E) is greater than this)
 #endif
 
 #ifndef SENSOR_SAVE_EVERY
@@ -44,10 +45,6 @@
                                                             // after these many reports
                                                             // Warning: this might wear out flash fast!
 #endif
-
-#define SENSOR_PUBLISH_ADDRESSES            0               // Publish sensor addresses
-#define SENSOR_ADDRESS_TOPIC                "address"       // Topic to publish sensor addresses
-
 
 #ifndef SENSOR_TEMPERATURE_UNITS
 #define SENSOR_TEMPERATURE_UNITS            TMP_CELSIUS     // Temperature units (TMP_CELSIUS | TMP_FAHRENHEIT)
@@ -114,7 +111,6 @@
 #define ANALOG_DECIMALS                  2
 #endif
 
-
 //------------------------------------------------------------------------------
 // BH1750
 // Enable support by passing BH1750_SUPPORT=1 build flag
@@ -155,9 +151,14 @@
 #define BMX280_SUPPORT                  0
 #endif
 
-#ifndef BMX280_ADDRESS
-#define BMX280_ADDRESS                  0x00    // 0x00 means auto
+#ifndef BMX280_NUMBER
+#define BMX280_NUMBER                   1       // Number of sensors present. Either 1 or 2 allowed
 #endif
+#ifndef BMX280_ADDRESS
+#define BMX280_ADDRESS                  0x00    // 0x00 means auto (0x76 or 0x77 allowed) for sensor #0
+#endif                                          // If (BMX280_NUMBER == 2) and
+                                                //   (BMX280_ADDRESS == 0x00) then sensor #1 is auto-discovered
+                                                //   (BMX280_ADDRESS != 0x00) then sensor #1 is the unnamed address
 
 #define BMX280_MODE                     1       // 0 for sleep mode, 1 or 2 for forced mode, 3 for normal mode
 #define BMX280_STANDBY                  0       // 0 for 0.5ms, 1 for 62.5ms, 2 for 125ms
@@ -165,8 +166,26 @@
                                                 // 6 for 10ms, 7 for 20ms
 #define BMX280_FILTER                   0       // 0 for OFF, 1 for 2 values, 2 for 4 values, 3 for 8 values and 4 for 16 values
 #define BMX280_TEMPERATURE              1       // Oversampling for temperature (set to 0 to disable magnitude)
+                                                // 0b000 = 0 = Skip measurement
+                                                // 0b001 = 1 = 1x 16bit/0.0050C resolution
+                                                // 0b010 = 2 = 2x 17bit/0.0025C
+                                                // 0b011 = 3 = 4x 18bit/0.0012C
+                                                // 0b100 = 4 = 8x 19bit/0.0006C
+                                                // 0b101 = 5 = 16x 20bit/0.0003C
 #define BMX280_HUMIDITY                 1       // Oversampling for humidity (set to 0 to disable magnitude, only for BME280)
+                                                // 0b000 = 0 = Skip measurement
+                                                // 0b001 = 1 = 1x 0.07% resolution
+                                                // 0b010 = 2 = 2x 0.05%
+                                                // 0b011 = 3 = 4x 0.04%
+                                                // 0b100 = 4 = 8x 0.03%
+                                                // 0b101 = 5 = 16x 0.02%
 #define BMX280_PRESSURE                 1       // Oversampling for pressure (set to 0 to disable magnitude)
+                                                // 0b000 = 0 = Skipped
+                                                // 0b001 = 1 = 1x 16bit/2.62 Pa resolution
+                                                // 0b010 = 2 = 2x 17bit/1.31 Pa
+                                                // 0b011 = 3 = 4x 18bit/0.66 Pa
+                                                // 0b100 = 4 = 8x 19bit/0.33 Pa
+                                                // 0b101 = 5 = 16x 20bit/0.16 Pa
 
 //------------------------------------------------------------------------------
 // Dallas OneWire temperature sensors
@@ -465,6 +484,47 @@
                                                 // Use FALLING for BL0937 / HJL0
 #endif
 
+//------------------------------------------------------------------------------
+// LDR sensor
+// Enable support by passing LDR_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+ 
+#ifndef SENSOR_LUX_CORRECTION
+#define SENSOR_LUX_CORRECTION           0.0     // Offset correction
+#endif
+
+#ifndef LDR_SUPPORT
+#define LDR_SUPPORT                     0
+#endif
+ 
+#ifndef LDR_SAMPLES
+#define LDR_SAMPLES                     10      // Number of samples
+#endif
+ 
+#ifndef LDR_DELAY
+#define LDR_DELAY                       0       // Delay between samples in micros
+#endif
+ 
+#ifndef LDR_TYPE
+#define LDR_TYPE                        LDR_GL5528
+#endif
+ 
+#ifndef LDR_ON_GROUND
+#define LDR_ON_GROUND                   true
+#endif
+ 
+#ifndef LDR_RESISTOR
+#define LDR_RESISTOR                    10000   // Resistance
+#endif
+ 
+#ifndef LDR_MULTIPLICATION
+#define LDR_MULTIPLICATION              32017200
+#endif
+ 
+#ifndef LDR_POWER
+#define LDR_POWER                       1.5832
+#endif
+ 
 //------------------------------------------------------------------------------
 // MHZ19 CO2 sensor
 // Enable support by passing MHZ19_SUPPORT=1 build flag
@@ -829,6 +889,22 @@
 #endif                                                             // often the sensor takes a measurement.
 
 //------------------------------------------------------------------------------
+// MAX6675
+// Enable support by passing MAX6675_SUPPORT=1 build flag
+//------------------------------------------------------------------------------
+#ifndef MAX6675_CS_PIN
+#define MAX6675_CS_PIN                               13
+#endif
+
+#ifndef MAX6675_SO_PIN
+#define MAX6675_SO_PIN                               12
+#endif
+
+#ifndef MAX6675_SCK_PIN
+#define MAX6675_SCK_PIN                              14
+#endif
+
+//------------------------------------------------------------------------------
 // EZOPH pH meter
 // Enable support by passing EZOPH_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
@@ -885,6 +961,7 @@
     GEIGER_SUPPORT || \
     GUVAS12SD_SUPPORT || \
     HLW8012_SUPPORT || \
+    LDR_SUPPORT || \
     MICS2710_SUPPORT || \
     MICS5525_SUPPORT || \
     MHZ19_SUPPORT || \
@@ -901,6 +978,7 @@
     V9261F_SUPPORT || \
     VEML6075_SUPPORT || \
     VL53L1X_SUPPORT || \
+    MAX6675_SUPPORT || \
     EZOPH_SUPPORT || \
     ITEAD_SONOFF_SC_SUPPORT || \
     ITEAD_SONOFF_SC_PRO_SUPPORT \
@@ -1017,8 +1095,12 @@
     #include "../sensors/HLW8012Sensor.h"
 #endif
 
+#if LDR_SUPPORT
+    #include "../sensors/LDRSensor.h"
+#endif
+
 #if MAX6675_SUPPORT
-    #include "../sensors/MAX6675.h"
+    #include "../sensors/MAX6675Sensor.h"
 #endif 
 
 #if MHZ19_SUPPORT

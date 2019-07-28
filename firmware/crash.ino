@@ -1,8 +1,12 @@
-// -----------------------------------------------------------------------------
-// Save crash info
-// Taken from krzychb EspSaveCrash
-// https://github.com/krzychb/EspSaveCrash
-// -----------------------------------------------------------------------------
+/*
+
+CRASH REPORT MODULE
+
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+
+Taken from krzychb EspSaveCrash [https://github.com/krzychb/EspSaveCrash]
+
+*/
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -115,10 +119,18 @@ extern "C" void custom_crash_callback(
 
         AsyncResponseStream *response = request->beginResponseStream("text/plain");
 
-        response->addHeader("Content-Disposition", "inline");
+        char buffer[100];
+
+        snprintf_P(buffer, sizeof(buffer), PSTR("attachment; filename=\"%s-crash_report.txt\""), (char *) getIdentifier().c_str());
+
+        response->addHeader("Content-Disposition", buffer);
         response->addHeader("X-XSS-Protection", "1; mode=block");
         response->addHeader("X-Content-Type-Options", "nosniff");
         response->addHeader("X-Frame-Options", "deny");
+
+        snprintf_P(buffer, sizeof(buffer), PSTR("%s-crash_report.txt"), (char *) getIdentifier().c_str());
+
+        response->addHeader("X-Suggested-Filename", buffer);
 
         uint32_t crash_time;
 
@@ -177,38 +189,21 @@ extern "C" void custom_crash_callback(
 
 // -----------------------------------------------------------------------------
 
-    bool _crashWebRequestCallback(
+    void _crashOnDeleteReport(
         AsyncWebServerRequest * request
     ) {
-        String url = request->url();
+        webLog(request);
 
-        if (url.equals("/control/crash")) {
-            if (request->method() == HTTP_GET) {
-                _crashOnGetReport(request);
-
-                return true;
-
-            } else if (request->method() == HTTP_DELETE) {
-                webLog(request);
-
-                if (!webAuthenticate(request)) {
-                    request->requestAuthentication(getIdentifier().c_str());
-
-                    return false;
-                }
-
-                uint32_t crash_time = 0xFFFFFFFF;
-
-                EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
-                EEPROMr.commit();
-
-                request->send(200);
-
-                return true;
-            }
+        if (!webAuthenticate(request)) {
+            return request->requestAuthentication(getIdentifier().c_str());
         }
 
-        return false;
+        uint32_t crash_time = 0xFFFFFFFF;
+
+        EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
+        EEPROMr.commit();
+
+        request->send(201);
     }
 #endif
 
@@ -218,6 +213,9 @@ extern "C" void custom_crash_callback(
 
 void crashSetup() {
     #if WEB_SUPPORT
-        webOnRequestRegister(_crashWebRequestCallback);
+        webEventsRegister([](AsyncWebServer * server) {
+            server->on(WEB_API_REPORT_CRASH, HTTP_GET, _crashOnGetReport);
+            server->on(WEB_API_REPORT_CRASH, HTTP_DELETE, _crashOnDeleteReport);
+        });
     #endif
 }

@@ -2,7 +2,7 @@
 
 FASTYBIRD CHANNEL MQTT MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -582,7 +582,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
                     i,
                     FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
                     "control",
-                    FASTYBIRD_CHANNEL_CONTROL_CONFIGURATION
+                    FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
                 );
 
             } else {
@@ -591,7 +591,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
                     _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
                     FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
                     "control",
-                    FASTYBIRD_CHANNEL_CONTROL_CONFIGURATION
+                    FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
                 );
             }
 
@@ -635,7 +635,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
                         i,
                         FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
                         "control",
-                        FASTYBIRD_CHANNEL_CONTROL_SCHEDULER
+                        FASTYBIRD_CHANNEL_CONTROL_SCHEDULE
                     );
 
                 } else {
@@ -644,7 +644,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
                         _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
                         FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
                         "control",
-                        FASTYBIRD_CHANNEL_CONTROL_SCHEDULER
+                        FASTYBIRD_CHANNEL_CONTROL_SCHEDULE
                     );
                 }
 
@@ -708,7 +708,7 @@ bool _fastybirdPropagateChannelConfigurationSchema(
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
             FASTYBIRD_TOPIC_CHANNEL_CONTROL_SCHEMA,
             "control",
-            FASTYBIRD_CHANNEL_CONTROL_CONFIGURATION
+            FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
         ).c_str(),
         payload.c_str()
     );
@@ -744,7 +744,7 @@ bool _fastybirdPropagateChannelConfiguration(
             channelId,
             FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
             "control",
-            FASTYBIRD_CHANNEL_CONTROL_CONFIGURATION
+            FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
         );
 
     } else {
@@ -753,7 +753,7 @@ bool _fastybirdPropagateChannelConfiguration(
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
             FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
             "control",
-            FASTYBIRD_CHANNEL_CONTROL_CONFIGURATION
+            FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
         );
     }
 
@@ -796,7 +796,7 @@ bool _fastybirdPropagateChannelSchedulerConfiguration(
             channelId,
             FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
             "control",
-            FASTYBIRD_CHANNEL_CONTROL_SCHEDULER
+            FASTYBIRD_CHANNEL_CONTROL_SCHEDULE
         );
 
     } else {
@@ -805,7 +805,7 @@ bool _fastybirdPropagateChannelSchedulerConfiguration(
             _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
             FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
             "control",
-            FASTYBIRD_CHANNEL_CONTROL_SCHEDULER
+            FASTYBIRD_CHANNEL_CONTROL_SCHEDULE
         );
     }
 

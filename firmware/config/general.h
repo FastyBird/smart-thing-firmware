@@ -2,105 +2,30 @@
 
 FIRMWARE GENERAL SETTINGS
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
-// =============================================================================
+//------------------------------------------------------------------------------
 // GENERAL
-// =============================================================================
+//------------------------------------------------------------------------------
 
 #define THING_NAME                      MANUFACTURER "_" THING      // Concatenate both to get a unique thing name
-
-#ifndef ADMIN_PASS
-#define ADMIN_PASS                      "fibonacci"                 // Default password (WEB, OTA, WIFI SoftAP)
-#endif
-
-#ifndef USE_PASSWORD
-#define USE_PASSWORD                    1                           // Insecurity caution! Disabling this will disable password querying completely.
-#endif
 
 #ifndef LOOP_DELAY_TIME
 #define LOOP_DELAY_TIME                 10                          // Delay for this millis in the main loop [0-250]
 #endif
 
-// =============================================================================
+#ifndef ADMIN_PASSWORD
+#define ADMIN_PASSWORD                  "fibonacci"
+#endif
+
+//------------------------------------------------------------------------------
 // NETWORK
-// =============================================================================
+//------------------------------------------------------------------------------
 
 #ifndef NETWORK_ASYNC_TCP_SSL_ENABLED
 #define NETWORK_ASYNC_TCP_SSL_ENABLED   0                           // Enable SSL
-#endif
-
-// =============================================================================
-// FASTYBIRD MODULE
-// =============================================================================
-
-#ifndef FASTYBIRD_SUPPORT
-#define FASTYBIRD_SUPPORT               1                           // Enable FastyBird cloud connection
-#endif
-
-#ifndef FASTYBIRD_GATEWAY_SUPPORT
-#define FASTYBIRD_GATEWAY_SUPPORT       0                           // Gateway support dissabled by default
-#endif
-
-#ifndef FASTYBIRD_MQTT_BASE_TOPIC
-#define FASTYBIRD_MQTT_BASE_TOPIC       "/v2/{cloudThingId}"
-#endif
-
-#ifndef FASTYBIRD_MQTT_NODE_BASE_TOPIC
-#define FASTYBIRD_MQTT_NODE_BASE_TOPIC  "/v2/{cloudThingId}/child/{nodeId}"
-#endif
-
-// =============================================================================
-// DEBUG MODULE
-// =============================================================================
-
-#ifndef DEBUG_SUPPORT
-#define DEBUG_SUPPORT                   1                           // Enable serial debug log
-#endif
-
-#ifndef DEBUG_SERIAL_SUPPORT
-#define DEBUG_SERIAL_SUPPORT            1                           // Enable serial debug log
-#endif
-
-#ifndef DEBUG_PORT
-#define DEBUG_PORT                      Serial                      // Default debugging port
-#endif
-
-#ifndef DEBUG_WEB_SUPPORT
-#define DEBUG_WEB_SUPPORT               0                           // Enable web debug log (will only work if WEB_SUPPORT is also 1)
-#endif
-
-#ifndef DEBUG_MQTT_SUPPORT
-#define DEBUG_MQTT_SUPPORT              1                           // Enable mqtt debug log
-#endif
-
-#ifndef SERIAL_BAUDRATE
-#define SERIAL_BAUDRATE                 115200                      // Default baudrate
-#endif
-
-#ifndef DEBUG_ADD_TIMESTAMP
-#define DEBUG_ADD_TIMESTAMP             1                           // Add timestamp to debug messages
-                                                                    // (in millis overflowing every 1000 seconds)
-#endif
-
-#define TERMINAL_BUFFER_SIZE            128                         // Max size for commands commands
-
-// Second serial port (used for RX)
-
-#ifndef SERIAL_RX_ENABLED
-#define SERIAL_RX_ENABLED               0                           // Secondary serial port for RX
-#endif
-
-#ifndef SERIAL_RX_PORT
-#define SERIAL_RX_PORT                  Serial                      // This setting is usually defined
-                                                                    // in the hardware.h file for those
-                                                                    // boards that require it
-#endif
-
-#ifndef SERIAL_RX_BAUDRATE
-#define SERIAL_RX_BAUDRATE              115200                      // Default baudrate
 #endif
 
 //------------------------------------------------------------------------------
@@ -182,6 +107,86 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #define OTA_GITHUB_FP                   "D7:9F:07:61:10:B3:92:93:E3:49:AC:89:84:5B:03:80:C1:9E:2F:8B"
 
+
+// =============================================================================
+// =============================================================================
+//
+//                            THING CORE MODULES
+//
+//
+// =============================================================================
+// =============================================================================
+
+
+//------------------------------------------------------------------------------
+// FASTYBIRD MODULE
+//------------------------------------------------------------------------------
+
+#ifndef FASTYBIRD_SUPPORT
+#define FASTYBIRD_SUPPORT               1                           // Enable FastyBird cloud connection
+#endif
+
+#ifndef FASTYBIRD_GATEWAY_SUPPORT
+#define FASTYBIRD_GATEWAY_SUPPORT       0                           // Gateway support dissabled by default
+#endif
+
+#ifndef FASTYBIRD_MQTT_BASE_TOPIC
+#define FASTYBIRD_MQTT_BASE_TOPIC       "/v2/{cloudThingId}"
+#endif
+
+#ifndef FASTYBIRD_MQTT_NODE_BASE_TOPIC
+#define FASTYBIRD_MQTT_NODE_BASE_TOPIC  "/v2/{cloudThingId}/child/{nodeId}"
+#endif
+
+//------------------------------------------------------------------------------
+// DEBUG MODULE
+//------------------------------------------------------------------------------
+
+#ifndef DEBUG_SUPPORT
+#define DEBUG_SUPPORT                   0                           // Thing debug is disabled by default
+#endif
+
+#ifndef DEBUG_SERIAL_SUPPORT
+#define DEBUG_SERIAL_SUPPORT            0                           // Enable serial debug log
+#endif
+
+#ifndef DEBUG_PORT
+#define DEBUG_PORT                      Serial                      // Default debugging port
+#endif
+
+#ifndef DEBUG_WEB_SUPPORT
+#define DEBUG_WEB_SUPPORT               0                           // Enable web debug log (will only work if WEB_SUPPORT is also 1)
+#endif
+
+#ifndef DEBUG_MQTT_SUPPORT
+#define DEBUG_MQTT_SUPPORT              0                           // Enable mqtt debug log
+#endif
+
+#ifndef SERIAL_BAUDRATE
+#define SERIAL_BAUDRATE                 115200                      // Default baudrate
+#endif
+
+#ifndef DEBUG_ADD_TIMESTAMP
+#define DEBUG_ADD_TIMESTAMP             1                           // Add timestamp to debug messages
+                                                                    // (in millis overflowing every 1000 seconds)
+#endif
+
+// Second serial port (used for RX)
+
+#ifndef SERIAL_RX_ENABLED
+#define SERIAL_RX_ENABLED               0                           // Secondary serial port for RX
+#endif
+
+#ifndef SERIAL_RX_PORT
+#define SERIAL_RX_PORT                  Serial                      // This setting is usually defined
+                                                                    // in the hardware.h file for those
+                                                                    // boards that require it
+#endif
+
+#ifndef SERIAL_RX_BAUDRATE
+#define SERIAL_RX_BAUDRATE              115200                      // Default baudrate
+#endif
+
 // -----------------------------------------------------------------------------
 // SETTINGS MODULE
 // -----------------------------------------------------------------------------
@@ -198,6 +203,10 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #ifndef WIFI_SUPPORT
 #define WIFI_SUPPORT                    1                           // Enable wifi support
+#endif
+
+#ifndef WIFI_PASSWORD
+#define WIFI_PASSWORD                   ADMIN_PASSWORD              // AP connect password
 #endif
 
 #ifndef WIFI_CONNECT_TIMEOUT
@@ -282,26 +291,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 // -----------------------------------------------------------------------------
-// NOFUSS MODULE
-// -----------------------------------------------------------------------------
-
-#ifndef NOFUSS_SUPPORT
-#define NOFUSS_SUPPORT                  0                           // Do not enable support for NoFuss by default (12.65Kb)
-#endif
-
-#ifndef NOFUSS_ENABLED
-#define NOFUSS_ENABLED                  0                           // Do not perform NoFUSS updates by default
-#endif
-
-#ifndef NOFUSS_SERVER
-#define NOFUSS_SERVER                   ""                          // Default NoFuss Server
-#endif
-
-#ifndef NOFUSS_INTERVAL
-#define NOFUSS_INTERVAL                 3600000                     // Check for updates every hour
-#endif
-
-// -----------------------------------------------------------------------------
 // WEB MODULE
 // -----------------------------------------------------------------------------
 
@@ -310,7 +299,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 #ifndef WEB_EMBEDDED
-#define WEB_EMBEDDED                    1                           // Build the firmware with the web interface embedded in
+#define WEB_EMBEDDED                    0                           // Build the firmware with the web interface embedded in
 #endif
 
 // This is not working at the moment!!
@@ -319,20 +308,64 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define WEB_SSL_ENABLED                 0                           // Use HTTPS web interface
 #endif
 
-#ifndef WEB_ROOT_USERNAME
-#define WEB_ROOT_USERNAME               "root"                      // HTTP root username
-#endif
-
 #ifndef WEB_USERNAME
 #define WEB_USERNAME                    "admin"                     // HTTP username
 #endif
 
-#ifndef WEB_PASSWORD
-#define WEB_PASSWORD                    ""                          // HTTP password
-#endif
-
 #ifndef WEB_PORT
 #define WEB_PORT                        80                          // HTTP port
+#endif
+
+#ifndef WEB_REMOTE_DOMAIN
+#define WEB_REMOTE_DOMAIN               "*"                          // Enable CORS for all domains
+#endif
+
+#ifndef WEB_API_DISCOVER
+#define WEB_API_DISCOVER                "/discover"                         //
+#endif
+
+#ifndef WEB_API_SIGN_IN
+#define WEB_API_SIGN_IN                 "/control/sign-in"                  //
+#endif
+
+#ifndef WEB_API_REPORT_CRASH
+#define WEB_API_REPORT_CRASH            "/control/report-crash"             // 
+#endif
+
+#ifndef WEB_API_FB_INITIALIZE
+#define WEB_API_FB_INITIALIZE           "/control/fastybird/initialize"     //
+#endif
+
+#ifndef WEB_API_REBOOT
+#define WEB_API_REBOOT                  "/control/system/reboot"            //
+#endif
+
+#ifndef WEB_API_FACTORY
+#define WEB_API_FACTORY                 "/control/system/factory"           //
+#endif
+
+#ifndef WEB_API_FIRMWARE_UPGRADE
+#define WEB_API_FIRMWARE_UPGRADE        "/control/firmware/upgrade"         //
+#endif
+
+#ifndef WEB_API_FIRMWARE_CONFIGURATION
+#define WEB_API_FIRMWARE_CONFIGURATION  "/control/firmware/configuration"   //
+#endif
+
+#ifndef WEB_API_NETWORK_RECONNECT
+#define WEB_API_NETWORK_RECONNECT       "/control/network/reconnect"        //
+#endif
+
+#ifndef WEB_API_NETWORK_CONFIGURATION
+#define WEB_API_NETWORK_CONFIGURATION   "/control/network/configure"        //
+#endif
+
+#ifndef WEB_API_WS_DATA
+#define WEB_API_WS_DATA                 "/ws/data"                          //
+#endif
+
+#ifndef WEB_API_WS_AUTH
+#define WEB_API_WS_AUTH                 "/ws/auth"                          //
 #endif
 
 // -----------------------------------------------------------------------------
@@ -348,11 +381,11 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #endif
 
 #ifndef WS_TIMEOUT
-#define WS_TIMEOUT                      1800000                     // Timeout for secured websocket
+#define WS_TIMEOUT                      300000                      // Timeout for secured websocket
 #endif
 
 #ifndef WS_UPDATE_INTERVAL
-#define WS_UPDATE_INTERVAL              30000                       // Update clients every 30 seconds
+#define WS_UPDATE_INTERVAL              30000                       // Update clients every x seconds
 #endif
 
 // -----------------------------------------------------------------------------
@@ -392,10 +425,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define MQTT_SSL_FINGERPRINT            ""                          // SSL fingerprint of the server
 #endif
 
-#ifndef MQTT_ENABLED
-#define MQTT_ENABLED                    0                           // Do not enable MQTT connection by default
-#endif
-
 #ifndef MQTT_AUTOCONNECT
 #define MQTT_AUTOCONNECT                1                           // If enabled will perform an autodiscover and
 #endif
@@ -414,10 +443,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #ifndef MQTT_PASS
 #define MQTT_PASS                       ""                          // Default MQTT broker password
-#endif
-
-#ifndef MQTT_RETAIN
-#define MQTT_RETAIN                     true                        // MQTT retain flag
 #endif
 
 #ifndef MQTT_QOS
@@ -448,12 +473,267 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define MQTT_SKIP_TIME                  1000                        // Skip messages for 1 second anter connection
 #endif
 
+//------------------------------------------------------------------------------
+// LED MODULE
+//------------------------------------------------------------------------------
+
+#ifndef LED_SUPPORT
+#define LED_SUPPORT                     1
+#endif
+
+
+// =============================================================================
+// =============================================================================
+//
+//                          THING FUNCTIONALS MODULES
+//
+//
+// =============================================================================
+// =============================================================================
+
+
+//------------------------------------------------------------------------------
+// BUTTON MODULE
+//------------------------------------------------------------------------------
+
+#ifndef BUTTON_SUPPORT
+#define BUTTON_SUPPORT                              1
+#endif
+
+#ifndef BUTTON_DEBOUNCE_DELAY
+#define BUTTON_DEBOUNCE_DELAY                       50              // Debounce delay (ms)
+#endif
+
+#ifndef BUTTON_DBLCLICK_DELAY
+#define BUTTON_DBLCLICK_DELAY                       500             // Time in ms to wait for a second (or third...) click
+#endif
+
+#ifndef BUTTON_DEBOUNCE_DBLCLICK_MIN
+#define BUTTON_DEBOUNCE_DBLCLICK_MIN                0
+#endif
+
+#ifndef BUTTON_DEBOUNCE_DBLCLICK_MAX
+#define BUTTON_DEBOUNCE_DBLCLICK_MAX                1000
+#endif
+
+#ifndef BUTTON_DEBOUNCE_DBLCLICK_STEP
+#define BUTTON_DEBOUNCE_DBLCLICK_STEP               100
+#endif
+
+#ifndef BUTTON_LNGCLICK_DELAY
+#define BUTTON_LNGCLICK_DELAY                       1000            // Time in ms holding the button down to get a long click
+#endif
+
+#ifndef BUTTON_LNGLNGCLICK_DELAY
+#define BUTTON_LNGLNGCLICK_DELAY                    10000           // Time in ms holding the button down to get a long-long click
+#endif
+
+//------------------------------------------------------------------------------
+// RELAY MODULE
+//------------------------------------------------------------------------------
+
+// Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
+#ifndef RELAY_BOOT_MODE
+#define RELAY_BOOT_MODE                             RELAY_BOOT_OFF
+#endif
+
+// 0 means ANY, 1 zero or one and 2 one and only one
+#ifndef RELAY_SYNC
+#define RELAY_SYNC                                  RELAY_SYNC_ANY
+#endif
+
+// Default pulse mode: 0 means no pulses, 1 means normally off, 2 normally on
+#ifndef RELAY_PULSE_MODE
+#define RELAY_PULSE_MODE                            RELAY_PULSE_NONE
+#endif
+
+// Default pulse time in seconds
+#ifndef RELAY_PULSE_TIME
+#define RELAY_PULSE_TIME                            1.0
+#endif
+
+// Relay requests flood protection window - in seconds
+#ifndef RELAY_FLOOD_WINDOW
+#define RELAY_FLOOD_WINDOW                          3
+#endif
+
+// Allowed actual relay changes inside requests flood protection window
+#ifndef RELAY_FLOOD_CHANGES
+#define RELAY_FLOOD_CHANGES                         5
+#endif
+
+// Pulse with in milliseconds for a latched relay
+#ifndef RELAY_LATCHING_PULSE
+#define RELAY_LATCHING_PULSE                        10
+#endif
+
+// Do not save relay state after these many milliseconds
+#ifndef RELAY_SAVE_DELAY
+#define RELAY_SAVE_DELAY                            1000
+#endif
+
+// TODO Only single EEPROM address is used to store state, which is 1 byte
+// Relay status is stored using bitfield.
+// This means that, atm, we are only storing the status of the first 8 relays.
+#define RELAY_SAVE_MASK_MAX                         8
+
+// -----------------------------------------------------------------------------
+// NODES GATEWAY MODULE
+// -----------------------------------------------------------------------------
+
+#ifndef NODES_GATEWAY_SUPPORT
+#define NODES_GATEWAY_SUPPORT                       0               // Do not build with gateway support by default
+#endif
+
+#ifndef NODES_GATEWAY_MAX_NODES
+#define NODES_GATEWAY_MAX_NODES                     10              // Define maximum slave nodes count that could connect to the master
+#endif
+
+#ifndef NODES_GATEWAY_MAX_INIT_ATTEMPTS
+#define NODES_GATEWAY_MAX_INIT_ATTEMPTS             5               // Maximum count of attempts before gateway delay node initialization process
+#endif
+
+#ifndef NODES_GATEWAY_INIT_DELAY
+#define NODES_GATEWAY_INIT_DELAY                    15000           // Delay in ms after reaching maximum initialization attempts
+#endif
+
+#ifndef NODES_GATEWAY_PACKET_REPLY_DELAY
+#define NODES_GATEWAY_PACKET_REPLY_DELAY            3000            // Delay in ms to wait for response on packet from node
+#endif
+
+#ifndef NODES_GATEWAY_NODES_CHECK_INTERVAL
+#define NODES_GATEWAY_NODES_CHECK_INTERVAL          8000            // Nodes heartbeat check interval
+#endif
+
+#ifndef NODES_GATEWAY_ADDRESSING_TIMEOUT
+#define NODES_GATEWAY_ADDRESSING_TIMEOUT            4000            // After timeout is reached, gateway stop searching for connected nodes
+#endif
+
+#ifndef NODES_GATEWAY_LIST_ADDRESSES_TIME
+#define NODES_GATEWAY_LIST_ADDRESSES_TIME           250             // Master reception time during GATEWAY_ACQUIRE_ADDRESS_LIST broadcast (250 milliseconds)
+#endif
+
+#ifndef NODES_GATEWAY_DI_READING_INTERVAL
+#define NODES_GATEWAY_DI_READING_INTERVAL           150
+#endif
+
+#ifndef NODES_GATEWAY_DO_READING_INTERVAL
+#define NODES_GATEWAY_DO_READING_INTERVAL           3000
+#endif
+
+#ifndef NODES_GATEWAY_AI_READING_INTERVAL
+#define NODES_GATEWAY_AI_READING_INTERVAL           150
+#endif
+
+#ifndef NODES_GATEWAY_AO_READING_INTERVAL
+#define NODES_GATEWAY_AO_READING_INTERVAL           3000
+#endif
+
+#ifndef NODES_GATEWAY_EV_READING_INTERVAL
+#define NODES_GATEWAY_EV_READING_INTERVAL           150
+#endif
+
+#ifndef NODES_GATEWAY_NODES_BUFFER_FULL
+#define NODES_GATEWAY_NODES_BUFFER_FULL             254
+#endif
+
+#ifndef NODES_GATEWAY_NODES_NOT_FOUND
+#define NODES_GATEWAY_NODES_NOT_FOUND               255
+#endif
+
+#ifndef NODES_GATEWAY_FAIL
+#define NODES_GATEWAY_FAIL                          65535
+#endif
+
+#ifndef NODES_GATEWAY_START_DELAY
+#define NODES_GATEWAY_START_DELAY                   6000            // Little delay before gateway start communication with nodes
+#endif
+
+#ifndef NODES_GATEWAY_FLOOD_WINDOW
+#define NODES_GATEWAY_FLOOD_WINDOW                  3               // Register change requests flood protection window - in seconds
+#endif
+
+#ifndef NODES_GATEWAY_FLOOD_CHANGES
+#define NODES_GATEWAY_FLOOD_CHANGES                 5               // Allowed actual registers changes inside requests flood protection window
+#endif
+
+#ifndef NODES_GATEWAY_MAX_SEARCH_ATTEMPTS
+#define NODES_GATEWAY_MAX_SEARCH_ATTEMPTS           5               // Maximum count of attempts before gateway end searching process
+#endif
+
+#ifndef NODES_GATEWAY_SEARCHING_TIMEOUT
+#define NODES_GATEWAY_SEARCHING_TIMEOUT             4000            // After timeout is reached, gateway stop searching for new nodes
+#endif
+
+#ifndef NODES_GATEWAY_SEARCHING_WAITING_TIMEOUT
+#define NODES_GATEWAY_SEARCHING_WAITING_TIMEOUT     4000            // After timeout is reached, gateway discard node reserved slot
+#endif
+
+
+// =============================================================================
+// =============================================================================
+//
+//                          THING OTHER MODULES
+//
+//
+// =============================================================================
+// =============================================================================
+
+
+// -----------------------------------------------------------------------------
+// SCHEDULER MODULE
+// -----------------------------------------------------------------------------
+
+#ifndef SCHEDULER_SUPPORT
+#define SCHEDULER_SUPPORT               0           // Enable scheduler (1.77Kb)
+#endif
+
+#ifndef SCHEDULER_MAX_SCHEDULES
+#define SCHEDULER_MAX_SCHEDULES         10          // Max schedules alowed
+#endif
+
+// -----------------------------------------------------------------------------
+// ALEXA MODULE
+// -----------------------------------------------------------------------------
+
+// This setting defines whether Alexa support should be built into the firmware
+#ifndef ALEXA_SUPPORT
+#define ALEXA_SUPPORT                   0           // Enable Alexa support by default (10.84Kb)
+#endif
+
+// This is default value for the alexaEnabled setting that defines whether
+// this device should be discoberable and respond to Alexa commands.
+// Both ALEXA_SUPPORT and alexaEnabled should be 1 for Alexa support to work.
+#ifndef ALEXA_ENABLED
+#define ALEXA_ENABLED                   1
+#endif
+
+// -----------------------------------------------------------------------------
+// NOFUSS MODULE
+// -----------------------------------------------------------------------------
+
+#ifndef NOFUSS_SUPPORT
+#define NOFUSS_SUPPORT                  0                           // Do not enable support for NoFuss by default (12.65Kb)
+#endif
+
+#ifndef NOFUSS_ENABLED
+#define NOFUSS_ENABLED                  0                           // Do not perform NoFUSS updates by default
+#endif
+
+#ifndef NOFUSS_SERVER
+#define NOFUSS_SERVER                   ""                          // Default NoFuss Server
+#endif
+
+#ifndef NOFUSS_INTERVAL
+#define NOFUSS_INTERVAL                 3600000                     // Check for updates every hour
+#endif
+
 // -----------------------------------------------------------------------------
 // NTP MODULE
 // -----------------------------------------------------------------------------
 
 #ifndef NTP_SUPPORT
-#define NTP_SUPPORT                     1                           // Build with NTP support by default (6.78Kb)
+#define NTP_SUPPORT                     0                           // Build with NTP support by default (6.78Kb)
 #endif
 
 #ifndef NTP_SERVER
@@ -488,89 +768,22 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define NTP_DST_REGION                  0                           // 0 for Europe, 1 for USA (defined in NtpClientLib)
 #endif
 
-//------------------------------------------------------------------------------
-// BUTTON MODULE
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// VIRTUAL BUTTON MODULE
+// -----------------------------------------------------------------------------
 
-#ifndef BUTTON_SUPPORT
-#define BUTTON_SUPPORT                  1
+#ifndef VIRTUAL_BTN_SUPPORT
+#define VIRTUAL_BTN_SUPPORT             0
 #endif
 
-#ifndef BUTTON_DEBOUNCE_DELAY
-#define BUTTON_DEBOUNCE_DELAY           50                          // Debounce delay (ms)
+#ifndef VIRTUAL_BTN_COUNT
+#define VIRTUAL_BTN_COUNT               5
 #endif
 
-#ifndef BUTTON_DBLCLICK_DELAY
-#define BUTTON_DBLCLICK_DELAY           500                         // Time in ms to wait for a second (or third...) click
+#ifndef VIRTUAL_BTN_CLEAR_INTERVAL
+#define VIRTUAL_BTN_CLEAR_INTERVAL      60000
 #endif
 
-#ifndef BUTTON_LNGCLICK_DELAY
-#define BUTTON_LNGCLICK_DELAY           1000                        // Time in ms holding the button down to get a long click
-#endif
-
-#ifndef BUTTON_LNGLNGCLICK_DELAY
-#define BUTTON_LNGLNGCLICK_DELAY        10000                       // Time in ms holding the button down to get a long-long click
-#endif
-
-//------------------------------------------------------------------------------
-// ENCODER
-//------------------------------------------------------------------------------
-
-#ifndef ENCODER_SUPPORT
-#define ENCODER_SUPPORT                 0
-#endif
-
-//------------------------------------------------------------------------------
-// LED MODULE
-//------------------------------------------------------------------------------
-
-#ifndef LED_SUPPORT
-#define LED_SUPPORT                     1
-#endif
-
-//------------------------------------------------------------------------------
-// RELAY MODULE
-//------------------------------------------------------------------------------
-
-// Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
-#ifndef RELAY_BOOT_MODE
-#define RELAY_BOOT_MODE                 RELAY_BOOT_OFF
-#endif
-
-// 0 means ANY, 1 zero or one and 2 one and only one
-#ifndef RELAY_SYNC
-#define RELAY_SYNC                      RELAY_SYNC_ANY
-#endif
-
-// Default pulse mode: 0 means no pulses, 1 means normally off, 2 normally on
-#ifndef RELAY_PULSE_MODE
-#define RELAY_PULSE_MODE                RELAY_PULSE_NONE
-#endif
-
-// Default pulse time in seconds
-#ifndef RELAY_PULSE_TIME
-#define RELAY_PULSE_TIME                1.0
-#endif
-
-// Relay requests flood protection window - in seconds
-#ifndef RELAY_FLOOD_WINDOW
-#define RELAY_FLOOD_WINDOW              3
-#endif
-
-// Allowed actual relay changes inside requests flood protection window
-#ifndef RELAY_FLOOD_CHANGES
-#define RELAY_FLOOD_CHANGES             5
-#endif
-
-// Pulse with in milliseconds for a latched relay
-#ifndef RELAY_LATCHING_PULSE
-#define RELAY_LATCHING_PULSE            10
-#endif
-
-// Do not save relay state after these many milliseconds
-#ifndef RELAY_SAVE_DELAY
-#define RELAY_SAVE_DELAY                1000
-#endif
 
 // -----------------------------------------------------------------------------
 // LIGHT MODULE
@@ -659,7 +872,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
                                                     // this factor is used to scale the white channel to match brightness
 #endif
 
-
 #ifndef LIGHT_USE_TRANSITIONS
 #define LIGHT_USE_TRANSITIONS           1           // Transitions between colors
 #endif
@@ -672,122 +884,10 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define LIGHT_TRANSITION_TIME           500         // Time in millis from color to color
 #endif
 
-// -----------------------------------------------------------------------------
-// SCHEDULER MODULE
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// ENCODER
+//------------------------------------------------------------------------------
 
-#ifndef SCHEDULER_SUPPORT
-#define SCHEDULER_SUPPORT               1           // Enable scheduler (1.77Kb)
-#endif
-
-#ifndef SCHEDULER_MAX_SCHEDULES
-#define SCHEDULER_MAX_SCHEDULES         10          // Max schedules alowed
-#endif
-
-// -----------------------------------------------------------------------------
-// ALEXA MODULE
-// -----------------------------------------------------------------------------
-
-// This setting defines whether Alexa support should be built into the firmware
-#ifndef ALEXA_SUPPORT
-#define ALEXA_SUPPORT                   1               // Enable Alexa support by default (10.84Kb)
-#endif
-
-// This is default value for the alexaEnabled setting that defines whether
-// this device should be discoberable and respond to Alexa commands.
-// Both ALEXA_SUPPORT and alexaEnabled should be 1 for Alexa support to work.
-#ifndef ALEXA_ENABLED
-#define ALEXA_ENABLED                   1
-#endif
-
-// =============================================================================
-// GATEWAY MODULE
-// =============================================================================
-
-#ifndef NODES_GATEWAY_SUPPORT
-#define NODES_GATEWAY_SUPPORT                       0               // Do not build with gateway support by default
-#endif
-
-#ifndef NODES_GATEWAY_MAX_NODES
-#define NODES_GATEWAY_MAX_NODES                     10              // Define maximum slave nodes count that could connect to the master
-#endif
-
-#ifndef NODES_GATEWAY_MAX_INIT_ATTEMPTS
-#define NODES_GATEWAY_MAX_INIT_ATTEMPTS             5               // Maximum count of attempts before gateway delay node initialization process
-#endif
-
-#ifndef NODES_GATEWAY_INIT_DELAY
-#define NODES_GATEWAY_INIT_DELAY                    15000           // Delay in ms after reaching maximum initialization attempts
-#endif
-
-#ifndef NODES_GATEWAY_PACKET_REPLY_DELAY
-#define NODES_GATEWAY_PACKET_REPLY_DELAY            3000            // Delay in ms to wait for response on packet from node
-#endif
-
-#ifndef NODES_GATEWAY_NODES_CHECK_INTERVAL
-#define NODES_GATEWAY_NODES_CHECK_INTERVAL          8000            // Nodes heartbeat check interval
-#endif
-
-#ifndef NODES_GATEWAY_ADDRESSING_TIMEOUT
-#define NODES_GATEWAY_ADDRESSING_TIMEOUT            4000            // After timeout is reached, gateway stop searching for connected nodes
-#endif
-
-#ifndef NODES_GATEWAY_LIST_ADDRESSES_TIME
-#define NODES_GATEWAY_LIST_ADDRESSES_TIME           250             // Master reception time during GATEWAY_ACQUIRE_ADDRESS_LIST broadcast (250 milliseconds)
-#endif
-
-#ifndef NODES_GATEWAY_DI_READING_INTERVAL
-#define NODES_GATEWAY_DI_READING_INTERVAL           150
-#endif
-
-#ifndef NODES_GATEWAY_DO_READING_INTERVAL
-#define NODES_GATEWAY_DO_READING_INTERVAL           3000
-#endif
-
-#ifndef NODES_GATEWAY_AI_READING_INTERVAL
-#define NODES_GATEWAY_AI_READING_INTERVAL           150
-#endif
-
-#ifndef NODES_GATEWAY_AO_READING_INTERVAL
-#define NODES_GATEWAY_AO_READING_INTERVAL           3000
-#endif
-
-#ifndef NODES_GATEWAY_EV_READING_INTERVAL
-#define NODES_GATEWAY_EV_READING_INTERVAL           150
-#endif
-
-#ifndef NODES_GATEWAY_NODES_BUFFER_FULL
-#define NODES_GATEWAY_NODES_BUFFER_FULL             254
-#endif
-
-#ifndef NODES_GATEWAY_NODES_NOT_FOUND
-#define NODES_GATEWAY_NODES_NOT_FOUND               255
-#endif
-
-#ifndef NODES_GATEWAY_FAIL
-#define NODES_GATEWAY_FAIL                          65535
-#endif
-
-#ifndef NODES_GATEWAY_START_DELAY
-#define NODES_GATEWAY_START_DELAY                   6000           // Little delay before gateway start communication with nodes
-#endif
-
-#ifndef NODES_GATEWAY_FLOOD_WINDOW
-#define NODES_GATEWAY_FLOOD_WINDOW                  3               // Register change requests flood protection window - in seconds
-#endif
-
-#ifndef NODES_GATEWAY_FLOOD_CHANGES
-#define NODES_GATEWAY_FLOOD_CHANGES                 5               // Allowed actual registers changes inside requests flood protection window
-#endif
-
-#ifndef NODES_GATEWAY_MAX_SEARCH_ATTEMPTS
-#define NODES_GATEWAY_MAX_SEARCH_ATTEMPTS           5               // Maximum count of attempts before gateway end searching process
-#endif
-
-#ifndef NODES_GATEWAY_SEARCHING_TIMEOUT
-#define NODES_GATEWAY_SEARCHING_TIMEOUT             4000            // After timeout is reached, gateway stop searching for new nodes
-#endif
-
-#ifndef NODES_GATEWAY_SEARCHING_WAITING_TIMEOUT
-#define NODES_GATEWAY_SEARCHING_WAITING_TIMEOUT     4000            // After timeout is reached, gateway discard node reserved slot
+#ifndef ENCODER_SUPPORT
+#define ENCODER_SUPPORT                 0
 #endif

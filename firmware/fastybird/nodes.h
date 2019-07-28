@@ -2,7 +2,7 @@
 
 FASTYBIRD NODES MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -24,7 +24,7 @@ void _fastybirdNodeSendHeartbeat() {
         if (_fastybird_gateway_nodes[i].initialized) {
             _fastybirdPropagateThingProperty(
                 _fastybird_gateway_nodes[i].id,
-                FASTYBIRD_STAT_UPTIME,
+                FASTYBIRD_PROPERTY_UPTIME,
                 String(getUptime()).c_str()
             );
         }
@@ -206,10 +206,17 @@ void _fastybirdInitializeNode(
             }
 
             // Collect all node thing properties...
+            node_properties.push_back(FASTYBIRD_PROPERTY_UPTIME);
+            node_properties.push_back(FASTYBIRD_PROPERTY_INTERVAL);
             node_properties.push_back(FASTYBIRD_PROPERTY_STATE);
 
             // ...and pass them to the broker
             if (!_fastybirdPropagateThingPropertiesStructure(_fastybird_gateway_nodes[nodeId].id, node_properties)) {
+                return;
+            }
+
+            // Heartbeat interval
+            if (!_fastybirdPropagateThingProperty(_fastybird_gateway_nodes[nodeId].id, FASTYBIRD_PROPERTY_INTERVAL, String(HEARTBEAT_INTERVAL / 1000).c_str())) {
                 return;
             }
 
@@ -260,7 +267,7 @@ void _fastybirdInitializeNode(
 
         case FASTYBIRD_PUB_CHANNELS:
             if (_fastybird_gateway_nodes[nodeId].channels.size() <= 0) {
-                _fastybird_node_advertisement_progress = FASTYBIRD_PUB_STATS;
+                _fastybird_node_advertisement_progress = FASTYBIRD_PUB_CONTROL_STRUCTURE;
 
                 return;
             }
@@ -268,22 +275,6 @@ void _fastybirdInitializeNode(
             if (!_fastybirdPropagateThingChannels(_fastybird_gateway_nodes[nodeId].id, _fastybird_gateway_nodes[nodeId].channels)) {
                 return;
             }
-            _fastybird_node_advertisement_progress = FASTYBIRD_PUB_STATS;
-            break;
-
-        case FASTYBIRD_PUB_STATS:
-            node_stats.push_back(FASTYBIRD_STAT_UPTIME);
-            node_stats.push_back(FASTYBIRD_STAT_INTERVAL);
-
-            if (!_fastybirdPropagateThingStatsStructure(_fastybird_gateway_nodes[nodeId].id, node_stats)) {
-                return;
-            }
-
-            // Heartbeat interval
-            if (!_fastybirdPropagateThingStat(_fastybird_gateway_nodes[nodeId].id, FASTYBIRD_STAT_INTERVAL, String(HEARTBEAT_INTERVAL / 1000).c_str())) {
-                return;
-            }
-
             _fastybird_node_advertisement_progress = FASTYBIRD_PUB_CONTROL_STRUCTURE;
             break;
 

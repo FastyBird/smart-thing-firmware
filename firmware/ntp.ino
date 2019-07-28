@@ -2,7 +2,7 @@
 
 NTP MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -13,95 +13,131 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #include <WiFiClient.h>
 #include <Ticker.h>
 
-unsigned long _ntp_start = 0;
+uint32_t _ntp_start = 0;
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-/**
- * Provide module configuration schema
- */
-void _ntpReportConfigurationSchema(
-    JsonArray& configuration
-) {
-    // Configuration field
-    JsonObject& server = configuration.createNestedObject();
+#if FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+    /**
+     * Provide module configuration schema
+     */
+    void _ntpReportConfigurationSchema(
+        JsonArray& configuration
+    ) {
+        // Configuration field
+        JsonObject& server = configuration.createNestedObject();
 
-    server["name"] = "ntp_server";
-    server["type"] = "text";
-    server["default"] = NTP_SERVER;
+        server["name"] = "ntp_server";
+        server["type"] = "text";
+        server["default"] = NTP_SERVER;
 
-    // Configuration field
-    JsonObject& offset = configuration.createNestedObject();
+        // Configuration field
+        JsonObject& offset = configuration.createNestedObject();
 
-    offset["name"] = "ntp_offset";
-    offset["type"] = "text";
-    offset["default"] = NTP_TIME_OFFSET;
+        offset["name"] = "ntp_offset";
+        offset["type"] = "text";
+        offset["default"] = NTP_TIME_OFFSET;
 
-    // Configuration field
-    JsonObject& dst = configuration.createNestedObject();
+        // Configuration field
+        JsonObject& dst = configuration.createNestedObject();
 
-    dst["name"] = "ntp_dst";
-    dst["type"] = "boolean";
-    dst["default"] = NTP_DAY_LIGHT;
+        dst["name"] = "ntp_dst";
+        dst["type"] = "boolean";
+        dst["default"] = NTP_DAY_LIGHT;
 
-    // Configuration field
-    JsonObject& region = configuration.createNestedObject();
+        // Configuration field
+        JsonObject& region = configuration.createNestedObject();
 
-    region["name"] = "ntp_region";
-    region["type"] = "select";
-    region["default"] = NTP_DST_REGION;
+        region["name"] = "ntp_region";
+        region["type"] = "select";
+        region["default"] = NTP_DST_REGION;
 
-    JsonArray& regionValues = region.createNestedArray("values");
+        JsonArray& regionValues = region.createNestedArray("values");
 
-    JsonObject& regionValue0 = regionValues.createNestedObject();
-    regionValue0["value"] = 0;
-    regionValue0["name"] = "europe";
+        JsonObject& regionValue0 = regionValues.createNestedObject();
+        regionValue0["value"] = 0;
+        regionValue0["name"] = "europe";
 
-    JsonObject& regionValue1 = regionValues.createNestedObject();
-    regionValue1["value"] = 1;
-    regionValue1["name"] = "usa";
-}
+        JsonObject& regionValue1 = regionValues.createNestedObject();
+        regionValue1["value"] = 1;
+        regionValue1["name"] = "usa";
+    }
 
 // -----------------------------------------------------------------------------
 
-/**
- * Provide module current configuration
- */
-void _ntpReportConfiguration(
-    JsonObject& configuration
-) {
-    configuration["ntp_server"] = getSetting("ntpServer", NTP_SERVER);
-    configuration["ntp_offset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
-    configuration["ntp_dst"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
-    configuration["ntp_region"] = getSetting("ntpRegion", NTP_DST_REGION).toInt();
-}
+    /**
+     * Provide module current configuration
+     */
+    void _ntpReportConfiguration(
+        JsonObject& configuration
+    ) {
+        configuration["ntp_server"] = getSetting("ntpServer", NTP_SERVER);
+        configuration["ntp_offset"] = getSetting("ntpOffset", NTP_TIME_OFFSET).toInt();
+        configuration["ntp_dst"] = getSetting("ntpDST", NTP_DAY_LIGHT).toInt() == 1;
+        configuration["ntp_region"] = getSetting("ntpRegion", NTP_DST_REGION).toInt();
+    }
 
 // -----------------------------------------------------------------------------
 
-/**
- * Update module configuration via WS or MQTT etc.
- */
-void _ntpUpdateConfiguration(
-    JsonObject& configuration
-) {
-    if (configuration.containsKey("ntp_server"))  {
-        setSetting("ntpServer", configuration["ntp_server"].as<char *>());
-    }
+    /**
+     * Update module configuration via WS or MQTT etc.
+     */
+    bool _ntpUpdateConfiguration(
+        JsonObject& configuration
+    ) {
+        DEBUG_MSG(PSTR("[NTP] Updating module\n"));
 
-    if (configuration.containsKey("ntp_offset"))  {
-        setSetting("ntpOffset", configuration["ntp_offset"].as<uint8_t>());
-    }
+        bool is_updated = false;
 
-    if (configuration.containsKey("ntp_dst"))  {
-        setSetting("ntpDST", configuration["ntp_dst"].as<uint8_t>());
-    }
+        if (
+            configuration.containsKey("ntp_server")
+            && configuration["ntp_server"].as<char *>() != getSetting("ntpServer").c_str()
+        )  {
+            DEBUG_MSG(PSTR("[NTP] Setting: \"ntp_server\" to: %s\n"), configuration["ntp_server"].as<char *>());
 
-    if (configuration.containsKey("ntp_region"))  {
-        setSetting("ntpRegion", configuration["ntp_region"].as<uint8_t>());
+            setSetting("ntpServer", configuration["ntp_server"].as<char *>());
+
+            is_updated = true;
+        }
+
+        if (
+            configuration.containsKey("ntp_offset")
+            && configuration["ntp_offset"].as<uint8_t>() != getSetting("ntpOffset").toInt()
+        )  {
+            DEBUG_MSG(PSTR("[NTP] Setting: \"ntp_offset\" to: %d\n"), configuration["ntp_offset"].as<uint8_t>());
+
+            setSetting("ntpOffset", configuration["ntp_offset"].as<uint8_t>());
+
+            is_updated = true;
+        }
+
+        if (
+            configuration.containsKey("ntp_dst")
+            && configuration["ntp_dst"].as<bool>() != (getSetting("ntpDST").toInt() == 1)
+        )  {
+            DEBUG_MSG(PSTR("[NTP] Setting: \"ntp_dst\" to: %d\n"), configuration["ntp_dst"].as<bool>() ? 1 : 0);
+
+            setSetting("ntpDST", configuration["ntp_dst"].as<bool>() ? 1 : 0);
+
+            is_updated = true;
+        }
+
+        if (
+            configuration.containsKey("ntp_region")
+            && configuration["ntp_region"].as<uint8_t>() != getSetting("ntpRegion").toInt()
+        )  {
+            DEBUG_MSG(PSTR("[NTP] Setting: \"ntp_region\" to: %d\n"), configuration["ntp_region"].as<uint8_t>());
+
+            setSetting("ntpRegion", configuration["ntp_region"].as<uint8_t>());
+
+            is_updated = true;
+        }
+
+        return is_updated;
     }
-}
+#endif // FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
 
 // -----------------------------------------------------------------------------
 
@@ -116,6 +152,12 @@ void _ntpUpdateConfiguration(
         module["module"] = "ntp";
         module["visible"] = true;
 
+        // Data container
+        JsonObject& data = module.createNestedObject("data");
+
+        data["now"] = ntpSynced() ? ((char *) ntpDateTimeAtom().c_str()) : NULL;
+        data["status"] = ntpSynced() ? timeStatus() == timeSet : false;
+
         // Configuration container
         JsonObject& configuration = module.createNestedObject("config");
 
@@ -128,12 +170,6 @@ void _ntpUpdateConfiguration(
         JsonArray& configuration_schema = configuration.createNestedArray("schema");
 
         _ntpReportConfigurationSchema(configuration_schema);
-
-        // Data container
-        JsonObject& data = module.createNestedObject("data");
-
-        data["now"] = ntpSynced() ? ((char *) ntpDateTimeAtom().c_str()) : NULL;
-        data["status"] = ntpSynced() ? timeStatus() == timeSet : false;
     }
 
 // -----------------------------------------------------------------------------
@@ -148,10 +184,10 @@ void _ntpUpdateConfiguration(
                 // Extract configuration container
                 JsonObject& configuration = module["config"].as<JsonObject&>();
 
-                if (configuration.containsKey("values")) {
-                    // Update module
-                    _ntpUpdateConfiguration(configuration["values"]);
-
+                if (
+                    configuration.containsKey("values")
+                    && _ntpUpdateConfiguration(configuration["values"])
+                ) {
                     wsSend_P(clientId, PSTR("{\"message\": \"ntp_updated\"}"));
 
                     // Reload & cache settings
@@ -240,7 +276,7 @@ void _ntpConfigure() {
 
 void _ntpUpdate() {
     #if WEB_SUPPORT && WS_SUPPORT
-        wsSend(_ntpWSOnConnect);
+        wsSend(_ntpWSOnUpdate);
     #endif
 
     if (ntpSynced()) {
@@ -326,7 +362,7 @@ void ntpSetup() {
     NTP.onNTPSyncEvent([](NTPSyncEvent_t error) {
         if (error) {
             #if WEB_SUPPORT && WS_SUPPORT
-                wsSend_P(PSTR("{\"ntpStatus\": false}"));
+                wsSend(_ntpWSOnUpdate);
             #endif
 
             if (error == noResponse) {
@@ -356,6 +392,7 @@ void ntpSetup() {
     #endif
 
     #if FASTYBIRD_SUPPORT
+        // Module schema report
         fastybirdReportConfigurationSchemaRegister(_ntpReportConfigurationSchema);
         fastybirdReportConfigurationRegister(_ntpReportConfiguration);
         fastybirdOnConfigureRegister(_ntpUpdateConfiguration);

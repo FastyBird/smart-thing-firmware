@@ -2,7 +2,7 @@
 
 WEBSOCKET MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -16,7 +16,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #include "libs/WebSocketIncommingBuffer.h"
 
-AsyncWebSocket _ws_client("/ws");
+AsyncWebSocket _ws_client(WEB_API_WS_DATA);
 
 Ticker _web_defer;
 
@@ -30,77 +30,79 @@ typedef struct {
     uint32_t timestamp = 0;
 } ws_ticket_t;
 
-ws_ticket_t _ticket[WS_BUFFER_SIZE];
+ws_ticket_t _ws_ticket[WS_BUFFER_SIZE];
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-void _onAuth(
-    AsyncWebServerRequest * request
-) {
-    webLog(request);
+#ifndef NOWSAUTH
+    void _onAuth(
+        AsyncWebServerRequest * request
+    ) {
+        webLog(request);
 
-    if (!webAuthenticate(request)) {
-        return request->requestAuthentication();
-    }
-
-    IPAddress ip = request->client()->remoteIP();
-
-    uint32_t now = millis();
-    uint16_t index;
-
-    for (index = 0; index < WS_BUFFER_SIZE; index++) {
-        if (_ticket[index].ip == ip) {
-            break;
+        if (!webAuthenticate(request)) {
+            return request->requestAuthentication();
         }
 
-        if (_ticket[index].timestamp == 0) {
-            break;
+        IPAddress ip = request->client()->remoteIP();
+
+        uint32_t now = millis();
+        uint16_t index;
+
+        for (index = 0; index < WS_BUFFER_SIZE; index++) {
+            if (_ws_ticket[index].ip == ip) {
+                break;
+            }
+
+            if (_ws_ticket[index].timestamp == 0) {
+                break;
+            }
+
+            if (now - _ws_ticket[index].timestamp > WS_TIMEOUT) {
+                break;
+            }
         }
 
-        if (now - _ticket[index].timestamp > WS_TIMEOUT) {
-            break;
+        if (index == WS_BUFFER_SIZE) {
+            request->send(429);
+
+        } else {
+            _ws_ticket[index].ip = ip;
+            _ws_ticket[index].timestamp = now;
+
+            request->send(200, "text/plain", "OK");
         }
     }
-
-    if (index == WS_BUFFER_SIZE) {
-        request->send(429);
-
-    } else {
-        _ticket[index].ip = ip;
-        _ticket[index].timestamp = now;
-
-        request->send(200, "text/plain", "OK");
-    }
-}
 
 // -----------------------------------------------------------------------------
 
-bool _wsAuth(
-    AsyncWebSocketClient * client
-) {
-    IPAddress ip = client->remoteIP();
+    bool _wsAuth(
+        AsyncWebSocketClient * client
+    ) {
+        IPAddress ip = client->remoteIP();
 
-    uint32_t now = millis();
-    uint16_t index = 0;
+        uint32_t now = millis();
+        uint16_t index = 0;
 
-    for (index = 0; index < WS_BUFFER_SIZE; index++) {
-        if (_ticket[index].ip == ip && (now - _ticket[index].timestamp < WS_TIMEOUT)) {
-            break;
+        for (index = 0; index < WS_BUFFER_SIZE; index++) {
+            if (_ws_ticket[index].ip == ip && (now - _ws_ticket[index].timestamp < WS_TIMEOUT)) {
+                break;
+            }
         }
+
+        if (index == WS_BUFFER_SIZE) {
+            DEBUG_MSG(PSTR("[WEBSOCKET] Validation check failed\n"));
+
+            wsSend_P(client->id(), PSTR("{\"message\": \"ws_authentication_failed\", \"level\": \"error\"}"));
+
+            return false;
+        }
+
+        return true;
     }
-
-    if (index == WS_BUFFER_SIZE) {
-        DEBUG_MSG(PSTR("[WEBSOCKET] Validation check failed\n"));
-
-        wsSend_P(client->id(), PSTR("{\"message\": 10}"));
-
-        return false;
-    }
-
-    return true;
-}
+#endif
 
 // -----------------------------------------------------------------------------
 
@@ -133,12 +135,18 @@ void _wsParse(
         DEBUG_MSG(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
 
         if (strcmp(action, "reboot") == 0) {
-            deferredReset(100, CUSTOM_RESET_WEB);
+            // Send notification to all clients
+            wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"reset\"}"));
+
+            deferredReset(250, CUSTOM_RESET_WEB);
             return;
 
         } else if (strcmp(action, "reconnect") == 0) {
             #if WIFI_SUPPORT
-                _web_defer.once_ms(100, wifiDisconnect);
+                // Send notification to all clients
+                wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"reconnect\"}"));
+
+                _web_defer.once_ms(250, wifiDisconnect);
             #endif
             return;
 
@@ -329,60 +337,22 @@ void wsOnActionRegister(
 void wsSend(
     ws_on_connect_callback_f callback
 ) {
-    if (wsConnected()) {
-        DynamicJsonBuffer jsonBuffer;
+    DynamicJsonBuffer jsonBuffer;
 
-        JsonObject& root = jsonBuffer.createObject();
+    JsonObject& root = jsonBuffer.createObject();
 
-        callback(root);
+    callback(root);
 
-        String output;
+    String output;
 
-        root.printTo(output);
+    root.printTo(output);
 
-        jsonBuffer.clear();
+    jsonBuffer.clear();
 
-        _ws_client.textAll((char *) output.c_str());
-    }
+    _ws_client.textAll((char *) output.c_str());
 }
 
 // -----------------------------------------------------------------------------
-
-void wsSend(
-    const char * payload
-) {
-    if (wsConnected()) {
-        _ws_client.textAll(payload);
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-void wsSend(
-    JsonObject& payload
-) {
-    if (wsConnected() && payload.size() > 0) {
-        String output;
-
-        payload.printTo(output);
-
-        _ws_client.textAll((char *) output.c_str());
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-void wsSend_P(
-    PGM_P payload
-) {
-    if (wsConnected()) {
-        char buffer[strlen_P(payload)];
-
-        strcpy_P(buffer, payload);
-
-        wsSend(buffer);
-    }
-}
 
 void wsSend(
     uint32_t clientId,
@@ -406,10 +376,44 @@ void wsSend(
 // -----------------------------------------------------------------------------
 
 void wsSend(
+    const char * payload
+) {
+    _ws_client.textAll(payload);
+}
+
+// -----------------------------------------------------------------------------
+
+void wsSend(
     uint32_t clientId,
     const char * payload
 ) {
     _ws_client.text(clientId, payload);
+}
+
+// -----------------------------------------------------------------------------
+
+void wsSend(
+    JsonObject& payload
+) {
+    if (payload.size() > 0) {
+        String output;
+
+        payload.printTo(output);
+
+        _ws_client.textAll((char *) output.c_str());
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+void wsSend_P(
+    PGM_P payload
+) {
+    char buffer[strlen_P(payload)];
+
+    strcpy_P(buffer, payload);
+
+    wsSend(buffer);
 }
 
 // -----------------------------------------------------------------------------
@@ -434,13 +438,9 @@ void wsSetup() {
 
     webServer()->addHandler(&_ws_client);
 
-    // CORS
-    #ifdef WEB_REMOTE_DOMAIN
-        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", WEB_REMOTE_DOMAIN);
-        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
+    #ifndef NOWSAUTH
+        webServer()->on(WEB_API_WS_AUTH, HTTP_PUT, _onAuth);
     #endif
-
-    webServer()->on("/auth", HTTP_GET, _onAuth);
 
     firmwareRegisterLoop(wsLoop);
 }

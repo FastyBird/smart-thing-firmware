@@ -2,7 +2,7 @@
 
 UTILS MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -12,18 +12,6 @@ String getIdentifier() {
     snprintf_P(buffer, sizeof(buffer), PSTR("FB_%08X"), ESP.getChipId());
 
     return String(buffer);
-}
-
-// -----------------------------------------------------------------------------
-
-String getAdminPass() {
-    return getSetting("adminPass", WEB_PASSWORD);
-}
-
-// -----------------------------------------------------------------------------
-
-String getRootPass() {
-    return getSetting("rootPass", WEB_PASSWORD);
 }
 
 // -----------------------------------------------------------------------------
@@ -57,18 +45,18 @@ String getCoreRevision() {
 // WTF
 // Calling ESP.getFreeHeap() is making the system crash on a specific
 // AiLight bulb, but anywhere else...
-uint8_t getFreeHeap() {
+uint16_t getFreeHeap() {
     if (getSetting("wtfHeap", 0).toInt() == 1) {
-        return (uint8_t) 9999;
+        return (uint16_t) 9999;
     }
 
-    return (uint8_t) ESP.getFreeHeap();
+    return (uint16_t) ESP.getFreeHeap();
 }
 
 // -----------------------------------------------------------------------------
 
-uint8_t getInitialFreeHeap() {
-    static uint8_t heap = 0;
+uint16_t getInitialFreeHeap() {
+    static uint16_t heap = 0;
 
     if (heap == 0) {
         heap = getFreeHeap();
@@ -79,7 +67,7 @@ uint8_t getInitialFreeHeap() {
 
 // -----------------------------------------------------------------------------
 
-unsigned int getUsedHeap() {
+uint16_t getUsedHeap() {
     return getInitialFreeHeap() - getFreeHeap();
 }
 
@@ -91,24 +79,26 @@ String getFirmwareModules() {
 
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT
-    String getFirmwareSensors() {
+String getFirmwareSensors() {
+    #if SENSOR_SUPPORT
         return FPSTR(firmware_sensors);
-    }
-#endif
+    #else
+        return String();
+    #endif
+}
 
 // -----------------------------------------------------------------------------
 
 String getBuildTime() {
     const char time_now[] = __TIME__;   // hh:mm:ss
-    unsigned int hour = atoi(&time_now[0]);
-    unsigned int minute = atoi(&time_now[3]);
-    unsigned int second = atoi(&time_now[6]);
+    uint16_t hour = atoi(&time_now[0]);
+    uint16_t minute = atoi(&time_now[3]);
+    uint16_t second = atoi(&time_now[6]);
 
     const char date_now[] = __DATE__;   // Mmm dd yyyy
     const char * monts[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
-    unsigned int month = 0;
+    uint16_t month = 0;
 
     for (int i = 0; i < 12; i++) {
         if (strncmp(date_now, monts[i], 3) == 0 ) {
@@ -117,8 +107,8 @@ String getBuildTime() {
         }
     }
 
-    unsigned int day = atoi(&date_now[3]);
-    unsigned int year = atoi(&date_now[7]);
+    uint16_t day = atoi(&date_now[3]);
+    uint16_t year = atoi(&date_now[7]);
 
     char buffer[20];
 
@@ -132,9 +122,9 @@ String getBuildTime() {
 
 // -----------------------------------------------------------------------------
 
-unsigned long getUptime() {
-    static unsigned long last_uptime = 0;
-    static unsigned int uptime_overflows = 0;
+uint32_t getUptime() {
+    static uint32_t last_uptime = 0;
+    static uint32_t uptime_overflows = 0;
 
     if (millis() < last_uptime) {
         ++uptime_overflows;
@@ -142,7 +132,7 @@ unsigned long getUptime() {
 
     last_uptime = millis();
 
-    unsigned long uptime_seconds = uptime_overflows * (UPTIME_OVERFLOW / 1000) + (last_uptime / 1000);
+    uint32_t uptime_seconds = uptime_overflows * (UPTIME_OVERFLOW / 1000) + (last_uptime / 1000);
 
     return uptime_seconds;
 }
@@ -165,12 +155,11 @@ unsigned long getUptime() {
         }
 
         // walk the fingerprint
-        for (unsigned int i = 0; i<20; i++) {
+        for (uint8_t i = 0; i < 20; i++) {
             bytearray[i] = strtol(fingerprint + 3*i, NULL, 16);
         }
 
         return true;
-
     }
 
 // -----------------------------------------------------------------------------
@@ -185,7 +174,7 @@ unsigned long getUptime() {
         strncpy(destination, fingerprint, 59);
 
         // walk the fingerprint replacing ':' for ' '
-        for (unsigned int i = 0; i<59; i++) {
+        for (uint8_t i = 0; i < 59; i++) {
             if (destination[i] == ':') {
                 destination[i] = ' ';
             }
@@ -199,22 +188,33 @@ unsigned long getUptime() {
 
 char * ltrim(char * s) {
     char *p = s;
-    while ((unsigned int) *p == ' ') ++p;
+
+    while ((unsigned int) *p == ' ') {
+        ++p;
+    }
+
     return p;
 }
 
 // -----------------------------------------------------------------------------
 
-double roundTo(double num, unsigned int positions) {
+double roundTo(
+    double num,
+    unsigned int positions
+) {
     double multiplier = 1;
-    while (positions-- > 0) multiplier *= 10;
+
+    while (positions-- > 0) {
+        multiplier *= 10;
+    }
+
     return round(num * multiplier) / multiplier;
 }
 
 // -----------------------------------------------------------------------------
 
-void niceDelay(unsigned long ms) {
-    unsigned long start = millis();
+void niceDelay(uint32_t ms) {
+    uint32_t start = millis();
     while (millis() - start < ms) delay(1);
 }
 

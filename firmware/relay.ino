@@ -2,7 +2,7 @@
 
 RELAY MODULE
 
-Copyright (C) 2017 - 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2017 - 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -41,7 +41,7 @@ std::vector<relay_t> _relays;
 
 bool _relayRecursive = false;
 
-Ticker _relaySaveTicker;
+Ticker _relay_save_ticker;
 
 #if FASTYBIRD_SUPPORT
     uint8_t _relay_fastybird_channel_index = 0xFF;
@@ -80,10 +80,18 @@ void _relayBoot() {
 
     uint8_t bit = 1;
     bool trigger_save = false;
+    uint32_t stored_mask = 0;
 
-    // Get last statuses from EEPROM
-    uint8_t mask = EEPROMr.read(EEPROM_RELAY_STATUS);
-    DEBUG_MSG(PSTR("[RELAY] Retrieving mask: %d\n"), mask);
+    if (rtcmemStatus()) {
+        stored_mask = _relayMaskRtcmem();
+
+    } else {
+        stored_mask = EEPROMr.read(EEPROM_RELAY_STATUS);
+    }
+
+    DEBUG_MSG(PSTR("[RELAY] Retrieving mask: %d\n"), stored_mask);
+
+    auto mask = std::bitset<RELAY_SAVE_MASK_MAX>(stored_mask);
 
     // Walk the relays
     bool status;
@@ -98,14 +106,14 @@ void _relayBoot() {
         switch (boot_mode) {
             case RELAY_BOOT_SAME:
                 if (i < 8) {
-                    status = ((mask & bit) == bit);
+                    status = mask.test(i);
                 }
                 break;
 
             case RELAY_BOOT_TOGGLE:
                 if (i < 8) {
-                    status = ((mask & bit) != bit);
-                    mask ^= bit;
+                    status = !mask[i];
+                    mask.flip(i);
                     trigger_save = true;
                 }
                 break;
@@ -133,7 +141,9 @@ void _relayBoot() {
 
     // Save if there is any relay in the RELAY_BOOT_TOGGLE mode
     if (trigger_save) {
-        EEPROMr.write(EEPROM_RELAY_STATUS, mask);
+        _relayMaskRtcmem(mask.to_ulong());
+
+        EEPROMr.write(EEPROM_RELAY_STATUS, mask.to_ulong());
         eepromCommit();
     }
 
@@ -188,235 +198,255 @@ uint8_t _relayParsePayload(
 
 // -----------------------------------------------------------------------------
 
-/**
- * Provide module configuration schema
- */
-void _relayReportConfigurationSchema(
-    JsonArray& configuration
-) {
-    if (relayCount() > 1) {
-        JsonObject& sync = configuration.createNestedObject();
+#if FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+    /**
+     * Provide module configuration schema
+     */
+    void _relayReportConfigurationSchema(
+        JsonArray& configuration
+    ) {
+        if (relayCount() > 1) {
+            JsonObject& sync = configuration.createNestedObject();
 
-        sync["name"] = "relays_sync";
-        sync["type"] = "select";
-        sync["default"] = RELAY_SYNC;
+            sync["name"] = "relays_sync";
+            sync["type"] = "select";
+            sync["default"] = RELAY_SYNC;
 
-        JsonArray& relaysSyncValues = sync.createNestedArray("values");
+            JsonArray& relaysSyncValues = sync.createNestedArray("values");
 
-        JsonObject& relaysSyncValue0 = relaysSyncValues.createNestedObject();
-        relaysSyncValue0["value"] = 0;
-        relaysSyncValue0["name"] = "disabled";
+            JsonObject& relaysSyncValue0 = relaysSyncValues.createNestedObject();
+            relaysSyncValue0["value"] = 0;
+            relaysSyncValue0["name"] = "disabled";
 
-        JsonObject& relaysSyncValue1 = relaysSyncValues.createNestedObject();
-        relaysSyncValue1["value"] = 1;
-        relaysSyncValue1["name"] = "zero_or_one";
+            JsonObject& relaysSyncValue1 = relaysSyncValues.createNestedObject();
+            relaysSyncValue1["value"] = 1;
+            relaysSyncValue1["name"] = "zero_or_one";
 
-        JsonObject& relaysSyncValue2 = relaysSyncValues.createNestedObject();
-        relaysSyncValue2["value"] = 2;
-        relaysSyncValue2["name"] = "only_one";
+            JsonObject& relaysSyncValue2 = relaysSyncValues.createNestedObject();
+            relaysSyncValue2["value"] = 2;
+            relaysSyncValue2["name"] = "only_one";
 
-        JsonObject& relaysSyncValue3 = relaysSyncValues.createNestedObject();
-        relaysSyncValue3["value"] = 3;
-        relaysSyncValue3["name"] = "all_synchronized";
+            JsonObject& relaysSyncValue3 = relaysSyncValues.createNestedObject();
+            relaysSyncValue3["value"] = 3;
+            relaysSyncValue3["name"] = "all_synchronized";
+        }
     }
-}
 
 // -----------------------------------------------------------------------------
 
-/**
- * Report module configuration
- */
-void _relayReportConfiguration(
-    JsonObject& configuration
-) {
-    if (relayCount() > 1) {
-        configuration["relays_sync"] = getSetting("relaysSync", RELAY_SYNC).toInt();
+    /**
+     * Report module configuration
+     */
+    void _relayReportConfiguration(
+        JsonObject& configuration
+    ) {
+        if (relayCount() > 1) {
+            configuration["relays_sync"] = getSetting("relaysSync", RELAY_SYNC).toInt();
+        }
     }
-}
 
 // -----------------------------------------------------------------------------
 
-/**
- * Update module configuration via WS or MQTT etc.
- */
-void _relayUpdateConfiguration(
-    JsonObject& configuration
-) {
-    DEBUG_MSG(PSTR("[RELAY] Updating module\n"));
+    /**
+     * Update module configuration via WS or MQTT etc.
+     */
+    bool _relayUpdateConfiguration(
+        JsonObject& configuration
+    ) {
+        DEBUG_MSG(PSTR("[RELAY] Updating module\n"));
 
-    if (relayCount() > 1) {
-        if (configuration.containsKey("relays_sync"))  {
-            setSetting("relaysSync", configuration["relays_sync"].as<uint8_t>());
+        if (relayCount() > 1) {
+            if (configuration.containsKey("relays_sync"))  {
+                setSetting("relaysSync", configuration["relays_sync"].as<uint8_t>());
+
+                return true;
+            }
+
+        } else {
+            delSetting("relaysSync");
         }
 
-    } else {
-        delSetting("relaysSync");
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-void _relayReportChannelConfigurationSchema(
-    JsonArray& container
-) {
-    JsonObject& relayMode = container.createNestedObject();
-
-    relayMode["name"] = "relay_boot";
-    relayMode["type"] = "select";
-    relayMode["default"] = RELAY_BOOT_MODE;
-
-    JsonArray& relayModeValues = relayMode.createNestedArray("values");
-
-    JsonObject& relayModeValue0 = relayModeValues.createNestedObject();
-    relayModeValue0["value"] = 0;
-    relayModeValue0["name"] = "always_off";
-
-    JsonObject& relayModeValue1 = relayModeValues.createNestedObject();
-    relayModeValue1["value"] = 1;
-    relayModeValue1["name"] = "always_on";
-
-    JsonObject& relayModeValue2 = relayModeValues.createNestedObject();
-    relayModeValue2["value"] = 2;
-    relayModeValue2["name"] = "same_before";
-
-    JsonObject& relayModeValue3 = relayModeValues.createNestedObject();
-    relayModeValue3["value"] = 3;
-    relayModeValue3["name"] = "toggle_before";
-
-    // -------------------------------------------------------------------------
-
-    JsonObject& relayPulseMode = container.createNestedObject();
-
-    relayPulseMode["name"] = "pulse_mode";
-    relayPulseMode["type"] = "select";
-    relayPulseMode["default"] = RELAY_PULSE_MODE;
-
-    JsonArray& relayPulseModeValues = relayPulseMode.createNestedArray("values");
-
-    JsonObject& relayPulseModeValue0 = relayPulseModeValues.createNestedObject();
-    relayPulseModeValue0["value"] = 0;
-    relayPulseModeValue0["name"] = "disabled";
-
-    JsonObject& relayPulseModeValue1 = relayPulseModeValues.createNestedObject();
-    relayPulseModeValue1["value"] = 1;
-    relayPulseModeValue1["name"] = "normally_off";
-
-    JsonObject& relayPulseModeValue2 = relayPulseModeValues.createNestedObject();
-    relayPulseModeValue2["value"] = 2;
-    relayPulseModeValue2["name"] = "normally_on";
-
-    // -------------------------------------------------------------------------
-
-    JsonObject& relayPulseTime = container.createNestedObject();
-
-    relayPulseTime["name"] = "pulse_time";
-    relayPulseTime["type"] = "number";
-    relayPulseTime["default"] = RELAY_PULSE_TIME;
-    relayPulseTime["min"] = 1;
-    relayPulseTime["max"] = 60;
-    relayPulseTime["step"] = 0.1;
-
-    // -------------------------------------------------------------------------
-
-    JsonObject& onDisconnect = container.createNestedObject();
-
-    onDisconnect["name"] = "on_disconnect";
-    onDisconnect["type"] = "select";
-    onDisconnect["default"] = RELAY_PULSE_MODE;
-
-    JsonArray& onDisconnectValues = onDisconnect.createNestedArray("values");
-
-    JsonObject& onDisconnectValue0 = onDisconnectValues.createNestedObject();
-    onDisconnectValue0["value"] = 0;
-    onDisconnectValue0["name"] = "no_change";
-
-    JsonObject& onDisconnectValue1 = onDisconnectValues.createNestedObject();
-    onDisconnectValue1["value"] = 1;
-    onDisconnectValue1["name"] = "turn_off";
-
-    JsonObject& onDisconnectValue3 = onDisconnectValues.createNestedObject();
-    onDisconnectValue3["value"] = 2;
-    onDisconnectValue3["name"] = "turn_on";
-}
-
-// -----------------------------------------------------------------------------
-
-String _relayReportChannelConfigurationSchema() {
-    DynamicJsonBuffer jsonBuffer;
-    JsonArray& schema = jsonBuffer.createArray();
-
-    _relayReportChannelConfigurationSchema(schema);
-
-    String output;
-
-    schema.printTo(output);
-
-    return output;
-}
-
-// -----------------------------------------------------------------------------
-
-void _relayReportChannelConfiguration(
-    const uint8_t id,
-    JsonObject& configuration
-) {
-    configuration["relay_boot"] = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
-    configuration["pulse_mode"] = getSetting("relayPulse", id, RELAY_PULSE_MODE).toInt();
-    configuration["pulse_time"] = getSetting("relayTime", id, RELAY_PULSE_TIME).toFloat();
-    configuration["on_disconnect"] = getSetting("relayOnDisc", id, 0).toInt();
-}
-
-// -----------------------------------------------------------------------------
-
-String _relayReportChannelConfiguration(
-    const uint8_t id
-) {
-    DynamicJsonBuffer jsonBuffer;
-    JsonObject& configuration = jsonBuffer.createObject();
-
-    _relayReportChannelConfiguration(id, configuration);
-
-    String output;
-
-    configuration.printTo(output);
-
-    return output;
-}
-
-// -----------------------------------------------------------------------------
-
-bool _relayConfigureChannel(
-    const uint8_t id,
-    JsonObject& configuration
-) {
-    DEBUG_MSG(PSTR("[RELAY] Updating channel: %d\n"), id);
-
-    if (configuration.containsKey("relay_boot"))  {
-        DEBUG_MSG(PSTR("[RELAY] Setting: \"relay_boot\" to: %d\n"), configuration["relay_boot"].as<uint8_t>());
-
-        setSetting("relayBoot", id, configuration["relay_boot"].as<uint8_t>());
+        return false;
     }
 
-    if (configuration.containsKey("pulse_mode"))  {
-        DEBUG_MSG(PSTR("[RELAY] Setting: \"pulse_mode\" to: %d\n"), configuration["pulse_mode"].as<uint8_t>());
+// -----------------------------------------------------------------------------
 
-        setSetting("relayPulseMode", id, configuration["pulse_mode"].as<uint8_t>());
+    void _relayReportChannelConfigurationSchema(
+        JsonArray& container
+    ) {
+        JsonObject& relayMode = container.createNestedObject();
+
+        relayMode["name"] = "relay_boot";
+        relayMode["type"] = "select";
+        relayMode["default"] = RELAY_BOOT_MODE;
+
+        JsonArray& relayModeValues = relayMode.createNestedArray("values");
+
+        JsonObject& relayModeValue0 = relayModeValues.createNestedObject();
+        relayModeValue0["value"] = 0;
+        relayModeValue0["name"] = "always_off";
+
+        JsonObject& relayModeValue1 = relayModeValues.createNestedObject();
+        relayModeValue1["value"] = 1;
+        relayModeValue1["name"] = "always_on";
+
+        JsonObject& relayModeValue2 = relayModeValues.createNestedObject();
+        relayModeValue2["value"] = 2;
+        relayModeValue2["name"] = "same_before";
+
+        JsonObject& relayModeValue3 = relayModeValues.createNestedObject();
+        relayModeValue3["value"] = 3;
+        relayModeValue3["name"] = "toggle_before";
+
+        // -------------------------------------------------------------------------
+
+        JsonObject& relayPulseMode = container.createNestedObject();
+
+        relayPulseMode["name"] = "pulse_mode";
+        relayPulseMode["type"] = "select";
+        relayPulseMode["default"] = RELAY_PULSE_MODE;
+
+        JsonArray& relayPulseModeValues = relayPulseMode.createNestedArray("values");
+
+        JsonObject& relayPulseModeValue0 = relayPulseModeValues.createNestedObject();
+        relayPulseModeValue0["value"] = 0;
+        relayPulseModeValue0["name"] = "disabled";
+
+        JsonObject& relayPulseModeValue1 = relayPulseModeValues.createNestedObject();
+        relayPulseModeValue1["value"] = 1;
+        relayPulseModeValue1["name"] = "normally_off";
+
+        JsonObject& relayPulseModeValue2 = relayPulseModeValues.createNestedObject();
+        relayPulseModeValue2["value"] = 2;
+        relayPulseModeValue2["name"] = "normally_on";
+
+        // -------------------------------------------------------------------------
+
+        JsonObject& relayPulseTime = container.createNestedObject();
+
+        relayPulseTime["name"] = "pulse_time";
+        relayPulseTime["type"] = "number";
+        relayPulseTime["default"] = RELAY_PULSE_TIME;
+        relayPulseTime["min"] = 1;
+        relayPulseTime["max"] = 60;
+        relayPulseTime["step"] = 0.1;
+
+        // -------------------------------------------------------------------------
+
+        JsonObject& onDisconnect = container.createNestedObject();
+
+        onDisconnect["name"] = "on_disconnect";
+        onDisconnect["type"] = "select";
+        onDisconnect["default"] = RELAY_PULSE_MODE;
+
+        JsonArray& onDisconnectValues = onDisconnect.createNestedArray("values");
+
+        JsonObject& onDisconnectValue0 = onDisconnectValues.createNestedObject();
+        onDisconnectValue0["value"] = 0;
+        onDisconnectValue0["name"] = "no_change";
+
+        JsonObject& onDisconnectValue1 = onDisconnectValues.createNestedObject();
+        onDisconnectValue1["value"] = 1;
+        onDisconnectValue1["name"] = "turn_off";
+
+        JsonObject& onDisconnectValue3 = onDisconnectValues.createNestedObject();
+        onDisconnectValue3["value"] = 2;
+        onDisconnectValue3["name"] = "turn_on";
     }
 
-    if (configuration.containsKey("pulse_time"))  {
-        if (configuration["pulse_time"].as<float>() >= 1.0 && configuration["pulse_time"].as<float>() <= 60.0) {
+// -----------------------------------------------------------------------------
+
+    String _relayReportChannelConfigurationSchema() {
+        DynamicJsonBuffer jsonBuffer;
+        JsonArray& schema = jsonBuffer.createArray();
+
+        _relayReportChannelConfigurationSchema(schema);
+
+        String output;
+
+        schema.printTo(output);
+
+        return output;
+    }
+
+// -----------------------------------------------------------------------------
+
+    void _relayReportChannelConfiguration(
+        const uint8_t id,
+        JsonObject& configuration
+    ) {
+        configuration["relay_boot"] = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
+        configuration["pulse_mode"] = getSetting("relayPulse", id, RELAY_PULSE_MODE).toInt();
+        configuration["pulse_time"] = getSetting("relayTime", id, RELAY_PULSE_TIME).toFloat();
+        configuration["on_disconnect"] = getSetting("relayOnDisc", id, 0).toInt();
+    }
+
+// -----------------------------------------------------------------------------
+
+    String _relayReportChannelConfiguration(
+        const uint8_t id
+    ) {
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& configuration = jsonBuffer.createObject();
+
+        _relayReportChannelConfiguration(id, configuration);
+
+        String output;
+
+        configuration.printTo(output);
+
+        return output;
+    }
+
+// -----------------------------------------------------------------------------
+
+    bool _relayConfigureChannel(
+        const uint8_t id,
+        JsonObject& configuration
+    ) {
+        DEBUG_MSG(PSTR("[RELAY] Updating channel: %d\n"), id);
+
+        bool is_updated = false;
+
+        if (configuration.containsKey("relay_boot"))  {
+            DEBUG_MSG(PSTR("[RELAY] Setting: \"relay_boot\" to: %d\n"), configuration["relay_boot"].as<uint8_t>());
+
+            setSetting("relayBoot", id, configuration["relay_boot"].as<uint8_t>());
+
+            is_updated = true;
+        }
+
+        if (configuration.containsKey("pulse_mode"))  {
+            DEBUG_MSG(PSTR("[RELAY] Setting: \"pulse_mode\" to: %d\n"), configuration["pulse_mode"].as<uint8_t>());
+
+            setSetting("relayPulseMode", id, configuration["pulse_mode"].as<uint8_t>());
+
+            is_updated = true;
+        }
+
+        if (
+            configuration.containsKey("pulse_time")
+            && configuration["pulse_time"].as<float>() >= 1.0
+            && configuration["pulse_time"].as<float>() <= 60.0
+        )  {
             DEBUG_MSG(PSTR("[RELAY] Setting: \"pulse_time\" to: %d\n"), configuration["pulse_time"].as<uint8_t>());
 
             setSetting("relayPulseTime", id, configuration["pulse_time"].as<float>());
+
+            is_updated = true;
         }
-    }
 
-    if (configuration.containsKey("on_disconnect"))  {
-        DEBUG_MSG(PSTR("[RELAY] Setting: \"on_disconnect\" to: %d\n"), configuration["on_disconnect"].as<uint8_t>());
+        if (configuration.containsKey("on_disconnect"))  {
+            DEBUG_MSG(PSTR("[RELAY] Setting: \"on_disconnect\" to: %d\n"), configuration["on_disconnect"].as<uint8_t>());
 
-        setSetting("relayOnDisc", id, configuration["on_disconnect"].as<uint8_t>());
+            setSetting("relayOnDisc", id, configuration["on_disconnect"].as<uint8_t>());
+
+            is_updated = true;
+        }
+
+        return is_updated;
     }
-}
+#endif // FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
 
 // -----------------------------------------------------------------------------
 
@@ -431,10 +461,10 @@ bool _relayConfigureChannel(
         JsonObject& container = root.createNestedObject("data");
 
         // Relays status container
-        JsonArray& relay = container.createNestedArray("status");
+        JsonArray& channels = container.createNestedArray("channels");
 
         for (uint8_t i = 0; i < relayCount(); i++) {
-            relay.add(_relays[i].target_status ? 1 : 0);
+            channels.add(_relays[i].target_status);
         }
     }
 
@@ -455,6 +485,16 @@ bool _relayConfigureChannel(
 
         module["module"] = "relay";
         module["visible"] = true;
+
+        // Data container
+        JsonObject& data = module.createNestedObject("data");
+
+        // Channels statuses
+        JsonArray& channels = data.createNestedArray("channels");
+
+        for (uint8_t i = 0; i < relayCount(); i++) {
+            channels.add(_relays[i].target_status);
+        }
 
         // Configuration container
         JsonObject& configuration = module.createNestedObject("config");
@@ -485,25 +525,13 @@ bool _relayConfigureChannel(
         JsonArray& channels_configuration_values = channels_configuration.createNestedArray("values");
 
         for (uint8_t i = 0; i < relayCount(); i++) {
-            JsonObject& channel_configuration_values = channels_configuration_values.createNestedObject();
+            JsonObject& channel_configuration_value = channels_configuration_values.createNestedObject();
 
-            channel_configuration_values["gpio"] = _relays[i].pin;
-            channel_configuration_values["type"] = _relays[i].type;
-            channel_configuration_values["reset"] = _relays[i].reset_pin;
-            channel_configuration_values["relay_boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
-            channel_configuration_values["on_disconnect"] = getSetting("relayOnDisc", i, 0).toInt();
-            channel_configuration_values["pulse_mode"] = _relays[i].pulse;
-            channel_configuration_values["pulse_time"] = _relays[i].pulse_ms / 1000.0;
-        }
-
-        // Data container
-        JsonObject& data = module.createNestedObject("data");
-
-        // Channels statuses
-        JsonArray& channels_statuses = data.createNestedArray("channels");
-
-        for (uint8_t i = 0; i < relayCount(); i++) {
-            channels_statuses.add(_relays[i].target_status);
+            channel_configuration_value["gpio"] = _relays[i].pin;
+            channel_configuration_value["relay_boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
+            channel_configuration_value["on_disconnect"] = getSetting("relayOnDisc", i, 0).toInt();
+            channel_configuration_value["pulse_mode"] = _relays[i].pulse;
+            channel_configuration_value["pulse_time"] = _relays[i].pulse_ms / 1000.0;
         }
     }
 
@@ -518,11 +546,13 @@ bool _relayConfigureChannel(
             if (module.containsKey("config")) {
                 DEBUG_MSG(PSTR("[RELAY] Found configuration for module\n"));
 
+                bool is_configuration_updated = false;
+
                 // Extract configuration container
                 JsonObject& configuration = module["config"].as<JsonObject&>();
 
-                if (configuration.containsKey("values")) {
-                    _relayUpdateConfiguration(configuration["values"]);
+                if (configuration.containsKey("values") && _relayUpdateConfiguration(configuration["values"])) {
+                    is_configuration_updated = true;
                 }
 
                 if (configuration.containsKey("channels")) {
@@ -530,17 +560,41 @@ bool _relayConfigureChannel(
 
                     if (channels_configuration.containsKey("values")) {
                         for (uint8_t i = 0; i < channels_configuration["values"].size(); i++) {
-                            _relayConfigureChannel(i, channels_configuration["values"][i]);
+                            if (_relayConfigureChannel(i, channels_configuration["values"][i])) {
+                                is_configuration_updated = true;
+                            }
                         }
                     }
                 }
 
-                // Send message
-                wsSend_P(clientId, PSTR("{\"message\": \"relay_updated\"}"));
+                if (is_configuration_updated) {
+                    wsSend_P(clientId, PSTR("{\"message\": \"relay_updated\"}"));
 
-                // Reload & cache settings
-                firmwareReload();
+                    // Reload & cache settings
+                    firmwareReload();
+                }
             }
+        }
+    }
+
+// -----------------------------------------------------------------------------
+
+    void _relayWSOnUpdate(
+        JsonObject& root
+    ) {
+        JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
+        JsonObject& module = modules.createNestedObject();
+
+        module["module"] = "relay";
+
+        // Data container
+        JsonObject& data = module.createNestedObject("data");
+
+        // Channels statuses
+        JsonArray& channels_statuses = data.createNestedArray("channels");
+
+        for (uint8_t i = 0; i < relayCount(); i++) {
+            channels_statuses.add(_relays[i].target_status);
         }
     }
 
@@ -573,7 +627,7 @@ bool _relayConfigureChannel(
             }
         }
     }
-#endif
+#endif // WEB_SUPPORT && WS_SUPPORT
 
 // -----------------------------------------------------------------------------
 
@@ -582,7 +636,7 @@ bool _relayConfigureChannel(
         fastybird_channel_property_t property = {
             FASTYBIRD_PROPERTY_STATE,
             FASTYBIRD_PROPERTY_STATE,
-            true,
+            false,
             false,
             FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
         };
@@ -607,13 +661,22 @@ bool _relayConfigureChannel(
         });
 
         property.payloadCallback = ([](uint8_t id, const char * payload) {
-            // Action to perform
+            // Toggle relay status
             if (strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE) == 0) {
                 relayToggle(id);
 
+            // Set relay status
             } else {
                 relayStatus(id, strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_ON) == 0);
             }
+        });
+
+        property.queryCallback = ([](uint8_t id, const char * payload) {
+            fastybirdReportChannelValue(
+                _relay_fastybird_channel_index,
+                id,
+                relayStatus(id) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
+            );
         });
 
         return property;
@@ -628,7 +691,7 @@ bool _relayConfigureChannel(
             relayCount(),
             true,
             true,
-            true
+            false
         };
 
         channel.properties.push_back(_relayFastybirdGetChannelStatePropertyStructure());
@@ -721,10 +784,38 @@ bool _relayConfigureChannel(
             return true;
         }
     #endif
-#endif
+#endif // FASTYBIRD_SUPPORT
+
+// -----------------------------------------------------------------------------
+
+#if MQTT_SUPPORT
+    void _relayMQTTOnConnect() {
+        // TODO: implement functionality
+    }
+
+// -----------------------------------------------------------------------------
+
+    void _relayMQTTOnDisconnect() {
+        // TODO: implement functionality
+    }
+#endif // MQTT_SUPPORT
 
 // -----------------------------------------------------------------------------
 // RELAY PROVIDERS
+// -----------------------------------------------------------------------------
+
+void _relayMaskRtcmem(
+    uint32_t mask
+) {
+    Rtcmem->relay = mask;
+}
+
+// -----------------------------------------------------------------------------
+
+uint32_t _relayMaskRtcmem() {
+    return Rtcmem->relay;
+}
+
 // -----------------------------------------------------------------------------
 
 void _relayProviderStatus(
@@ -745,7 +836,7 @@ void _relayProviderStatus(
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_DUAL
         // Calculate mask
-        uint8_t mask=0;
+        uint8_t mask = 0;
 
         for (uint8_t i = 0; i < _relays.size(); i++) {
             if (_relays[i].current_status) {
@@ -892,9 +983,9 @@ void _relayProcess(
             // We will trigger a commit only if
             // we care about current relay status on boot
             uint8_t boot_mode = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
-            bool do_commit = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
+            bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
 
-            _relaySaveTicker.once_ms(RELAY_SAVE_DELAY, relaySave, do_commit);
+            _relay_save_ticker.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
 
             #if WEB_SUPPORT && WS_SUPPORT
                 wsSend(_relayWebSocketUpdate);
@@ -1072,38 +1163,34 @@ uint8_t relayCount() {
 // -----------------------------------------------------------------------------
 
 void relaySave(
-    const bool doCommit
+    const bool eeprom
 ) {
-    // Relay status is stored in a single byte
-    // This means that, atm,
-    // we are only storing the status of the first 8 relays.
-    uint8_t bit = 1;
-    uint8_t mask = 0;
-    uint8_t count = _relays.size();
+    auto mask = std::bitset<RELAY_SAVE_MASK_MAX>(0);
 
-    if (count > 8) {
-        count = 8;
+    uint8_t count = relayCount();
+
+    if (count > RELAY_SAVE_MASK_MAX) {
+        count = RELAY_SAVE_MASK_MAX;
     }
 
-    for (uint8_t i = 0; i < count; i++) {
-        if (relayStatus(i)) {
-            mask += bit;
-        }
-
-        bit += bit;
+    for (uint8_t i = 0; i < count; ++i) {
+        mask.set(i, relayStatus(i));
     }
 
-    EEPROMr.write(EEPROM_RELAY_STATUS, mask);
+    const uint32_t mask_value = mask.to_ulong();
 
     DEBUG_MSG(PSTR("[RELAY] Setting relay mask: %d\n"), mask);
 
-    // The 'doCommit' flag controls wether we are commiting this change or not.
+    // Persist only to rtcmem, unless requested to save to the eeprom
+    _relayMaskRtcmem(mask_value);
+
+    // The 'eeprom' flag controls wether we are commiting this change or not.
     // It is useful to set it to 'false' if the relay change triggering the
     // save involves a relay whose boot mode is independent from current mode,
     // thus storing the last relay value is not absolutely necessary.
     // Nevertheless, we store the value in the EEPROM buffer so it will be written
     // on the next commit.
-    if (doCommit) {
+    if (eeprom) {
         // We are actually enqueuing the commit so it will be
         // executed on the main loop, in case this is called from a callback
         eepromCommit();
@@ -1113,7 +1200,7 @@ void relaySave(
 // -----------------------------------------------------------------------------
 
 void relaySave() {
-    relaySave(true);
+    relaySave(false);
 }
 
 // -----------------------------------------------------------------------------
@@ -1195,7 +1282,7 @@ void relaySetup() {
         #if RELAY1_BTN > 0
             buttonOnEventRegister(
                 [](uint8_t event) {
-                    if (event == RELAY_SWITCH_BTN_EVENT) {
+                    if (event == RELAY1_BTN_EVENT) {
                         relayToggle(0);
                     }
                 },
@@ -1206,7 +1293,7 @@ void relaySetup() {
         #if RELAY2_BTN > 0
             buttonOnEventRegister(
                 [](uint8_t event) {
-                    if (event == RELAY_SWITCH_BTN_EVENT) {
+                    if (event == RELAY2_BTN_EVENT) {
                         relayToggle(1);
                     }
                 },
@@ -1217,7 +1304,7 @@ void relaySetup() {
         #if RELAY3_BTN > 0
             buttonOnEventRegister(
                 [](uint8_t event) {
-                    if (event == RELAY_SWITCH_BTN_EVENT) {
+                    if (event == RELAY3_BTN_EVENT) {
                         relayToggle(2);
                     }
                 },
@@ -1228,7 +1315,7 @@ void relaySetup() {
         #if RELAY4_BTN > 0
             buttonOnEventRegister(
                 [](uint8_t event) {
-                    if (event == RELAY_SWITCH_BTN_EVENT) {
+                    if (event == RELAY4_BTN_EVENT) {
                         relayToggle(3);
                     }
                 },
@@ -1239,7 +1326,7 @@ void relaySetup() {
         #if RELAY5_BTN > 0
             buttonOnEventRegister(
                 [](uint8_t event) {
-                    if (event == RELAY_SWITCH_BTN_EVENT) {
+                    if (event == RELAY5_BTN_EVENT) {
                         relayToggle(4);
                     }
                 },
@@ -1250,7 +1337,7 @@ void relaySetup() {
         #if RELAY6_BTN > 0
             buttonOnEventRegister(
                 [](uint8_t event) {
-                    if (event == RELAY_SWITCH_BTN_EVENT) {
+                    if (event == RELAY6_BTN_EVENT) {
                         relayToggle(5);
                     }
                 },
@@ -1261,7 +1348,7 @@ void relaySetup() {
         #if RELAY7_BTN > 0
             buttonOnEventRegister(
                 [](uint8_t event) {
-                    if (event == RELAY_SWITCH_BTN_EVENT) {
+                    if (event == RELAY7_BTN_EVENT) {
                         relayToggle(6);
                     }
                 },
@@ -1272,7 +1359,7 @@ void relaySetup() {
         #if RELAY8_BTN > 0
             buttonOnEventRegister(
                 [](uint8_t event) {
-                    if (event == RELAY_SWITCH_BTN_EVENT) {
+                    if (event == RELAY8_BTN_EVENT) {
                         relayToggle(7);
                     }
                 },
@@ -1300,14 +1387,17 @@ void relaySetup() {
     #if WEB_SUPPORT && WS_SUPPORT
         wsOnConnectRegister(_relayWSOnConnect);
         wsOnConfigureRegister(_relayWSOnConfigure);
+        wsOnUpdateRegister(_relayWSOnUpdate);
         wsOnActionRegister(_relayWSOnAction);
     #endif
 
     #if FASTYBIRD_SUPPORT
+        // Module schema report
         fastybirdReportConfigurationSchemaRegister(_relayReportConfigurationSchema);
         fastybirdReportConfigurationRegister(_relayReportConfiguration);
         fastybirdOnConfigureRegister(_relayUpdateConfiguration);
 
+        // Channels registration
         if (relayCount() > 0) {
             _relay_fastybird_channel_index = fastybirdRegisterChannel(_relayFastybirdGetChannelStructure());
 
@@ -1319,7 +1409,12 @@ void relaySetup() {
         }
     #endif
 
-    DEBUG_MSG(PSTR("[RELAY] Number of relays: %d\n"), _relays.size());
+    #if MQTT_SUPPORT
+        mqttOnConnectRegister(_relayMQTTOnConnect);
+        mqttOnDisconnectRegister(_relayMQTTOnDisconnect);
+    #endif
+
+    DEBUG_MSG(PSTR("[RELAY] Number of relays: %d\n"), relayCount());
 }
 
 //------------------------------------------------------------------------------

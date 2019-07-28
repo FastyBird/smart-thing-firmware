@@ -2,7 +2,7 @@
 
 BUTTON MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -60,46 +60,63 @@ uint8_t _buttonMapEvent(
 
 // -----------------------------------------------------------------------------
 
-/**
- * Provide module configuration schema
- */
-void _buttonReportConfigurationSchema(
-    JsonArray& configuration
-) {
-    // Configuration field
-    JsonObject& delay = configuration.createNestedObject();
+#if FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+    /**
+     * Provide module configuration schema
+     */
+    void _buttonReportConfigurationSchema(
+        JsonArray& configuration
+    ) {
+        // Configuration field
+        JsonObject& delay = configuration.createNestedObject();
 
-    delay["name"] = "btn_delay";
-    delay["type"] = "number";
-    delay["min"] = 0;
-    delay["max"] = 1000;
-    delay["step"] = 100;
-    delay["default"] = BUTTON_DBLCLICK_DELAY;
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * Report module configuration
- */
-void _buttonReportConfiguration(
-    JsonObject& configuration
-) {
-    configuration["btn_delay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * Update module configuration via WS or MQTT etc.
- */
-void _buttonUpdateConfiguration(
-    JsonObject& configuration
-) {
-    if (configuration.containsKey("btn_delay"))  {
-        setSetting("btnDelay", configuration["btn_delay"].as<uint8_t>());
+        delay["name"] = "btn_delay";
+        delay["type"] = "number";
+        delay["min"] = BUTTON_DEBOUNCE_DBLCLICK_MIN;
+        delay["max"] = BUTTON_DEBOUNCE_DBLCLICK_MAX;
+        delay["step"] = BUTTON_DEBOUNCE_DBLCLICK_STEP;
+        delay["default"] = BUTTON_DBLCLICK_DELAY;
     }
-}
+
+// -----------------------------------------------------------------------------
+
+    /**
+     * Report module configuration
+     */
+    void _buttonReportConfiguration(
+        JsonObject& configuration
+    ) {
+        configuration["btn_delay"] = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
+    }
+
+// -----------------------------------------------------------------------------
+
+    /**
+     * Update module configuration via WS or MQTT etc.
+     */
+    bool _buttonUpdateConfiguration(
+        JsonObject& configuration
+    ) {
+        DEBUG_MSG(PSTR("[BUTTON] Updating module\n"));
+
+        bool is_updated = false;
+
+        if (
+            configuration.containsKey("btn_delay")
+            && configuration["btn_delay"].as<uint16_t>() >= BUTTON_DEBOUNCE_DBLCLICK_MIN
+            && configuration["btn_delay"].as<uint16_t>() <= BUTTON_DEBOUNCE_DBLCLICK_MAX
+            && configuration["btn_delay"].as<uint16_t>() != getSetting("btnDelay").toInt()
+        )  {
+            DEBUG_MSG(PSTR("[BUTTON] Setting: \"btn_delay\" to: %d\n"), configuration["btn_delay"].as<uint16_t>());
+
+            setSetting("btnDelay", configuration["btn_delay"].as<uint16_t>());
+
+            is_updated = true;
+        }
+
+        return is_updated;
+    }
+#endif // FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
 
 // -----------------------------------------------------------------------------
 
@@ -120,33 +137,41 @@ void _buttonUpdateConfiguration(
         property.format.push_back(String(BUTTON_EVENT_LNGCLICK).c_str());
         property.format.push_back(String(BUTTON_EVENT_LNGLNGCLICK).c_str());
 
+        char payload[2];
+
+        itoa(BUTTON_EVENT_PRESSED, payload, 10);
         property.mappings.push_back({
-            "1",
+            payload,
             FASTYBIRD_BTN_PAYLOAD_PRESS
         });
 
+        itoa(BUTTON_EVENT_CLICK, payload, 10);
         property.mappings.push_back({
-            "2",
+            payload,
             FASTYBIRD_BTN_PAYLOAD_CLICK
         });
 
+        itoa(BUTTON_EVENT_DBLCLICK, payload, 10);
         property.mappings.push_back({
-            "3",
+            payload,
             FASTYBIRD_BTN_PAYLOAD_DBL_CLICK
         });
 
+        itoa(BUTTON_EVENT_TRIPLECLICK, payload, 10);
         property.mappings.push_back({
-            "6",
+            payload,
             FASTYBIRD_BTN_PAYLOAD_TRIPLE_CLICK
         });
 
+        itoa(BUTTON_EVENT_LNGCLICK, payload, 10);
         property.mappings.push_back({
-            "4",
+            payload,
             FASTYBIRD_BTN_PAYLOAD_LNG_CLICK
         });
 
+        itoa(BUTTON_EVENT_LNGLNGCLICK, payload, 10);
         property.mappings.push_back({
-            "5",
+            payload,
             FASTYBIRD_BTN_PAYLOAD_LNG_LNG_CLICK
         });
 
@@ -159,7 +184,7 @@ void _buttonUpdateConfiguration(
         fastybird_channel_t channel = {
             FASTYBIRD_CHANNEL_TYPE_BUTTON,
             FASTYBIRD_CHANNEL_TYPE_BUTTON,
-            buttonCount(),
+            _buttons.size(),
             false,
             false,
             false
@@ -169,7 +194,7 @@ void _buttonUpdateConfiguration(
 
         return channel;
     }
-#endif
+#endif // FASTYBIRD_SUPPORT
 
 // -----------------------------------------------------------------------------
 
@@ -210,10 +235,10 @@ void _buttonUpdateConfiguration(
                 // Extract configuration container
                 JsonObject& configuration = module["config"].as<JsonObject&>();
 
-                if (configuration.containsKey("values")) {
-                    // Update module
-                    _buttonUpdateConfiguration(configuration["values"]);
-
+                if (
+                    configuration.containsKey("values")
+                    && _buttonUpdateConfiguration(configuration["values"])
+                ) {
                     wsSend_P(clientId, PSTR("{\"message\": \"btn_updated\"}"));
 
                     // Reload & cache settings
@@ -222,7 +247,7 @@ void _buttonUpdateConfiguration(
             }
         }
     }
-#endif
+#endif // WEB_SUPPORT && WS_SUPPORT
 
 // -----------------------------------------------------------------------------
 
@@ -259,7 +284,7 @@ void buttonOnEventRegister(
     button_on_event_callback_f callback,
     const uint8_t id
 ) {
-    if (id >= buttonCount()) {
+    if (id >= _buttons.size()) {
         return;
     }
 
@@ -267,17 +292,11 @@ void buttonOnEventRegister(
 }
 
 // -----------------------------------------------------------------------------
-
-int buttonCount() {
-    return _buttons.size();
-}
-
-// -----------------------------------------------------------------------------
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
 void buttonSetup() {
-    uint32_t btn_delay = BUTTON_DBLCLICK_DELAY;
+    uint32_t btn_delay = getSetting("btnDelay", BUTTON_DBLCLICK_DELAY).toInt();
 
     #if BUTTON1_PIN != GPIO_NONE
     {
@@ -327,7 +346,7 @@ void buttonSetup() {
     }
     #endif
 
-    DEBUG_MSG(PSTR("[BUTTON] Number of buttons: %u\n"), buttonCount());
+    DEBUG_MSG(PSTR("[BUTTON] Number of buttons: %u\n"), _buttons.size());
 
     #if WEB_SUPPORT && WS_SUPPORT
         wsOnConnectRegister(_buttonWSOnConnect);
@@ -335,11 +354,13 @@ void buttonSetup() {
     #endif
 
     #if FASTYBIRD_SUPPORT
+        // Module schema report
         fastybirdReportConfigurationSchemaRegister(_buttonReportConfigurationSchema);
         fastybirdReportConfigurationRegister(_buttonReportConfiguration);
         fastybirdOnConfigureRegister(_buttonUpdateConfiguration);
 
-        if (buttonCount() > 0) {
+        // Channels registration
+        if (_buttons.size() > 0) {
             _button_fastybird_channel_index = fastybirdRegisterChannel(_buttonFastybirdGetChannelStructure());
         }
     #endif

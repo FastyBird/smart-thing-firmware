@@ -2,7 +2,7 @@
 
 FIRMWARE DEBUG CONFIGURATION
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 

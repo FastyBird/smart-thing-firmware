@@ -6,19 +6,22 @@
 // Reset reasons
 //--------------------------------------------------------------------------------
 
-const char custom_reset_hardware[] PROGMEM  = "Hardware button";
 const char custom_reset_web[] PROGMEM       = "Reboot from web interface";
-const char custom_reset_mqtt[] PROGMEM      = "Reboot from MQTT";
-const char custom_reset_ota[] PROGMEM       = "Reboot after successful OTA update";
-const char custom_reset_nofuss[] PROGMEM    = "Reboot after successful NoFUSS update";
-const char custom_reset_upgrade[] PROGMEM   = "Reboot after successful web update";
-const char custom_reset_factory[] PROGMEM   = "Factory reset";
+const char custom_reset_broker[] PROGMEM    = "Reboot from MQTT";
+const char custom_reset_button[] PROGMEM    = "Reboot by button";
+const char custom_factory_web[] PROGMEM     = "Reboot by factory reset from web interface";
+const char custom_factory_broker[] PROGMEM  = "Reboot by factory reset from MQTT";
+const char custom_factory_button[] PROGMEM  = "Reboot by factory reset by bytton";
+const char custom_upgrade_web[] PROGMEM     = "Reboot after successful web update";
+const char custom_upgrade_ota[] PROGMEM     = "Reboot after successful OTA update";
+const char custom_upgrade_nofuss[] PROGMEM  = "Reboot after successful NoFUSS update";
+const char custom_restore_web[] PROGMEM     = "Reboot by settings restore from web interface";
 
 PROGMEM const char * const custom_reset_string[] = {
-    custom_reset_hardware, custom_reset_web,
-    custom_reset_mqtt, custom_reset_ota,
-    custom_reset_nofuss, custom_reset_upgrade,
-    custom_reset_factory
+    custom_reset_web, custom_reset_broker, custom_reset_button,
+    custom_factory_web, custom_factory_broker, custom_factory_button,
+    custom_upgrade_web, custom_upgrade_ota, custom_upgrade_nofuss,
+    custom_restore_web
 };
 
 //--------------------------------------------------------------------------------
@@ -271,6 +274,9 @@ PROGMEM const char firmware_sensors[] =
     #if HLW8012_SUPPORT
         "HLW8012 "
     #endif
+    #if LDR_SUPPORT
+        "LDR "
+    #endif
     #if MHZ19_SUPPORT
         "MHZ19 "
     #endif
@@ -322,6 +328,111 @@ PROGMEM const char firmware_sensors[] =
     #if EZOPH_SUPPORT
         "EZOPH "
     #endif
+    #if ITEAD_SONOFF_SC_SUPPORT
+        "SONOFF_SC "
+    #endif
+    #if ITEAD_SONOFF_SC_PRO_SUPPORT
+        "SONOFF_SC_PRO "
+    #endif
     "";
+
+PROGMEM const uint8_t magnitude_decimals[] = {
+    0,
+    1, 0, 2, // THP
+    3, 0, 0, 0, 0, 0, 0, 0, // Power decimals
+    0, 0, 0, // analog, digital, event
+    0, 0, 0, // PM
+    0, 0,
+    0, 0, 3, // UVA, UVB, UVI
+    3, 0,
+    4, 4, // Geiger Counter decimals
+    0,
+    0, 0, 0, 3    // NO2, CO, Ohms, pH
+};
+
+PROGMEM const char magnitude_unknown_name[] = "unknown";
+PROGMEM const char magnitude_temperature_name[] =  "temperature";
+PROGMEM const char magnitude_humidity_name[] = "humidity";
+PROGMEM const char magnitude_pressure_name[] = "pressure";
+PROGMEM const char magnitude_current_name[] = "current";
+PROGMEM const char magnitude_voltage_name[] = "voltage";
+PROGMEM const char magnitude_active_power_name[] = "power";
+PROGMEM const char magnitude_apparent_power_name[] = "apparent";
+PROGMEM const char magnitude_reactive_power_name[] = "reactive";
+PROGMEM const char magnitude_power_factor_name[] = "factor";
+PROGMEM const char magnitude_energy_name[] = "energy";
+PROGMEM const char magnitude_energy_delta_name[] = "energy_delta";
+PROGMEM const char magnitude_analog_name[] = "analog";
+PROGMEM const char magnitude_digital_name[] = "digital";
+PROGMEM const char magnitude_event_name[] = "event";
+PROGMEM const char magnitude_pm1dot0_name[] = "pm1dot0";
+PROGMEM const char magnitude_pm2dot5_name[] = "pm2dot5";
+PROGMEM const char magnitude_pm10_name[] = "pm10";
+PROGMEM const char magnitude_co2_name[] = "co2";
+PROGMEM const char magnitude_lux_name[] = "lux";
+PROGMEM const char magnitude_uva_name[] = "uva";
+PROGMEM const char magnitude_uvb_name[] = "uvb";
+PROGMEM const char magnitude_uvi_name[] = "uvi";
+PROGMEM const char magnitude_distance_name[] = "distance";
+PROGMEM const char magnitude_hcho_name[] = "hcho";
+PROGMEM const char magnitude_geiger_cpm_name[] = "ldr_cpm";  // local dose rate [Counts per minute]
+PROGMEM const char magnitude_geiger_sv_name[] = "ldr_uSvh";  // local dose rate [µSievert per hour]
+PROGMEM const char magnitude_count_name[] = "count";
+PROGMEM const char magnitude_no2_name[] = "no2";
+PROGMEM const char magnitude_co_name[] = "co";
+PROGMEM const char magnitude_resistance_name[] = "resistance";
+PROGMEM const char magnitude_ph_name[] = "ph";
+
+PROGMEM const char* const magnitude_names[] = {
+    magnitude_unknown_name, magnitude_temperature_name, magnitude_humidity_name,
+    magnitude_pressure_name, magnitude_current_name, magnitude_voltage_name,
+    magnitude_active_power_name, magnitude_apparent_power_name, magnitude_reactive_power_name,
+    magnitude_power_factor_name, magnitude_energy_name, magnitude_energy_delta_name,
+    magnitude_analog_name, magnitude_digital_name, magnitude_event_name,
+    magnitude_pm1dot0_name, magnitude_pm2dot5_name, magnitude_pm10_name,
+    magnitude_co2_name, magnitude_lux_name,
+    magnitude_uva_name, magnitude_uvb_name, magnitude_uvi_name,
+    magnitude_distance_name, magnitude_hcho_name,
+    magnitude_geiger_cpm_name, magnitude_geiger_sv_name,
+    magnitude_count_name,
+    magnitude_no2_name, magnitude_co_name, magnitude_resistance_name, magnitude_ph_name
+};
+
+PROGMEM const char magnitude_empty[] = "";
+PROGMEM const char magnitude_celsius[] =  "°C";
+PROGMEM const char magnitude_fahrenheit[] =  "°F";
+PROGMEM const char magnitude_percentage[] = "%";
+PROGMEM const char magnitude_hectopascals[] = "hPa";
+PROGMEM const char magnitude_amperes[] = "A";
+PROGMEM const char magnitude_volts[] = "V";
+PROGMEM const char magnitude_watts[] = "W";
+PROGMEM const char magnitude_kw[] = "kW";
+PROGMEM const char magnitude_joules[] = "J";
+PROGMEM const char magnitude_kwh[] = "kWh";
+PROGMEM const char magnitude_ugm3[] = "µg/m³";
+PROGMEM const char magnitude_ppm[] = "ppm";
+PROGMEM const char magnitude_lux[] = "lux";
+PROGMEM const char magnitude_distance[] = "m";
+PROGMEM const char magnitude_mgm3[] = "mg/m³";
+PROGMEM const char magnitude_geiger_cpm[] = "cpm";    // Counts per Minute: Unit of local dose rate (Geiger counting)
+PROGMEM const char magnitude_geiger_sv[] = "µSv/h";   // µSievert per hour: 2nd unit of local dose rate (Geiger counting)
+PROGMEM const char magnitude_resistance[] = "ohm";
+
+PROGMEM const char* const magnitude_units[] = {
+    magnitude_empty, magnitude_celsius, magnitude_percentage,
+    magnitude_hectopascals, magnitude_amperes, magnitude_volts,
+    magnitude_watts, magnitude_watts, magnitude_watts,
+    magnitude_percentage, magnitude_joules, magnitude_joules,
+    magnitude_empty, magnitude_empty, magnitude_empty,
+    magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
+    magnitude_ppm, magnitude_lux,
+    magnitude_empty, magnitude_empty, magnitude_empty,
+    magnitude_distance, magnitude_mgm3,
+    magnitude_geiger_cpm, magnitude_geiger_sv,                  // Geiger counter units
+    magnitude_empty,                                            //
+    magnitude_ppm, magnitude_ppm,                               // NO2 & CO2
+    magnitude_resistance,
+    magnitude_empty                                             // pH
+};
 
 #endif // SENSOR_SUPPORT

@@ -2,7 +2,7 @@
 
 MQTT MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -31,11 +31,8 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     #endif // NETWORK_ASYNC_TCP_SSL_ENABLED
 #endif // MQTT_USE_ASYNC
 
-bool _mqtt_enabled = MQTT_ENABLED;
-bool _mqtt_retain = MQTT_RETAIN;
+bool _mqtt_enabled = true;
 uint32_t _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
-uint8_t _mqtt_qos = MQTT_QOS;
-uint32_t _mqtt_keepalive = MQTT_KEEPALIVE;
 
 char * _mqtt_user = 0;
 char * _mqtt_pass = 0;
@@ -118,11 +115,11 @@ void _mqttConnect() {
     #if MQTT_USE_ASYNC
         _mqtt.setServer(host, port);
         _mqtt.setClientId(_mqtt_clientid);
-        _mqtt.setKeepAlive(_mqtt_keepalive);
+        _mqtt.setKeepAlive(MQTT_KEEPALIVE);
         _mqtt.setCleanSession(false);
 
         if (strcmp(_mqtt_will, "") != 0) {
-            _mqtt.setWill(_mqtt_will, _mqtt_qos, _mqtt_retain, _mqtt_will_content);
+            _mqtt.setWill(_mqtt_will, MQTT_QOS, true, _mqtt_will_content);
         }
 
         if ((strlen(_mqtt_user) > 0) && (strlen(_mqtt_pass) > 0)) {
@@ -151,9 +148,8 @@ void _mqttConnect() {
         #endif // NETWORK_ASYNC_TCP_SSL_ENABLED
 
         DEBUG_MSG(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid);
-        DEBUG_MSG(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
-        DEBUG_MSG(PSTR("[MQTT] Retain flag: %d\n"), _mqtt_retain ? 1 : 0);
-        DEBUG_MSG(PSTR("[MQTT] Keepalive time: %ds\n"), _mqtt_keepalive);
+        DEBUG_MSG(PSTR("[MQTT] QoS: %d\n"), MQTT_QOS);
+        DEBUG_MSG(PSTR("[MQTT] Keepalive time: %ds\n"), MQTT_KEEPALIVE);
 
         if (strcmp(_mqtt_will, "") != 0) {
             DEBUG_MSG(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
@@ -216,8 +212,8 @@ void _mqttConnect() {
                     _mqtt_user,
                     _mqtt_pass,
                     _mqtt_will,
-                    _mqtt_qos,
-                    _mqtt_retain,
+                    MQTT_QOS,
+                    true,
                     _mqtt_will_content
                 );
 
@@ -225,16 +221,15 @@ void _mqttConnect() {
                 response = _mqtt.connect(
                     _mqtt_clientid,
                     _mqtt_will,
-                    _mqtt_qos,
-                    _mqtt_retain,
+                    MQTT_QOS,
+                    true,
                     _mqtt_will_content
                 );
             }
 
             DEBUG_MSG(PSTR("[MQTT] Client ID: %s\n"), _mqtt_clientid);
-            DEBUG_MSG(PSTR("[MQTT] QoS: %d\n"), _mqtt_qos);
-            DEBUG_MSG(PSTR("[MQTT] Retain flag: %d\n"), _mqtt_retain ? 1 : 0);
-            DEBUG_MSG(PSTR("[MQTT] Keepalive time: %ds\n"), _mqtt_keepalive);
+            DEBUG_MSG(PSTR("[MQTT] QoS: %d\n"), MQTT_QOS);
+            DEBUG_MSG(PSTR("[MQTT] Keepalive time: %ds\n"), MQTT_KEEPALIVE);
 
             if (strcmp(_mqtt_will, "") != 0) {
                 DEBUG_MSG(PSTR("[MQTT] Will topic: %s\n"), _mqtt_will);
@@ -255,21 +250,266 @@ void _mqttConnect() {
 // -----------------------------------------------------------------------------
 
 void _mqttConfigure() {
-    // MQTT options
-    _mqtt_qos = getSetting("mqttQoS", MQTT_QOS).toInt();
-    _mqtt_retain = getSetting("mqttRetain", MQTT_RETAIN).toInt() == 1;
-    _mqtt_keepalive = getSetting("mqttKeep", MQTT_KEEPALIVE).toInt();
-
     // Enable
     if (getSetting("mqttServer", MQTT_SERVER).length() == 0) {
-        mqttEnabled(false);
+        _mqtt_enabled = false;
 
     } else {
-        _mqtt_enabled = getSetting("mqttEnabled", MQTT_ENABLED).toInt() == 1;
+        _mqtt_enabled = true;
     }
 
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 }
+
+// -----------------------------------------------------------------------------
+
+#if FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+    /**
+     * Provide module configuration schema
+     */
+    void _mqttReportConfigurationSchema(
+        JsonArray& configuration
+    ) {
+        // Configuration field
+        JsonObject& server = configuration.createNestedObject();
+
+        server["name"] = "mqtt_server";
+        server["type"] = "text";
+        server["default"] = MQTT_SERVER;
+
+        JsonObject& server_port = configuration.createNestedObject();
+
+        server_port["name"] = "mqtt_server_port";
+        server_port["type"] = "number";
+        server_port["min"] = 1;
+        server_port["max"] = 36000;
+        server_port["default"] = MQTT_PORT;
+
+        JsonObject& username = configuration.createNestedObject();
+
+        username["name"] = "mqtt_username";
+        username["type"] = "text";
+        username["default"] = MQTT_USER;
+
+        JsonObject& password = configuration.createNestedObject();
+
+        password["name"] = "mqtt_password";
+        password["type"] = "text";
+        password["default"] = MQTT_PASS;
+
+        JsonObject& client_id = configuration.createNestedObject();
+
+        client_id["name"] = "mqtt_client_id";
+        client_id["type"] = "text";
+        client_id["default"] = getIdentifier();
+
+        #if ASYNC_TCP_SSL_ENABLED
+            JsonObject& ssl_enabled = configuration.createNestedObject();
+
+            ssl_enabled["name"] = "mqtt_ssl_enabled";
+            ssl_enabled["type"] = "boolean";
+            ssl_enabled["default"] = false;
+
+            JsonObject& ssl_fp = configuration.createNestedObject();
+
+            ssl_fp["name"] = "mqtt_ssl_fp";
+            ssl_fp["type"] = "text";
+            ssl_fp["default"] = "";
+        #endif
+    }
+
+// -----------------------------------------------------------------------------
+
+    /**
+     * Report module configuration
+     */
+    void _mqttReportConfiguration(
+        JsonObject& configuration
+    ) {
+        configuration["mqtt_server"] = getSetting("mqttServer", MQTT_SERVER);
+        configuration["mqtt_server_port"] = getSetting("mqttPort", MQTT_PORT).toInt();
+        configuration["mqtt_username"] = getSetting("mqttUser", MQTT_USER);
+        configuration["mqtt_password"] = getSetting("mqttPassword", MQTT_PASS);
+        configuration["mqtt_client_id"] = getSetting("mqttClientID", getIdentifier());
+        
+        #if ASYNC_TCP_SSL_ENABLED
+            configuration["mqtt_use_ssl"] = getSetting("mqttUseSsl", 0).toInt() == 1;
+            configuration["mqtt_fp"] = getSetting("mqttSslFp");
+        #endif
+    }
+
+// -----------------------------------------------------------------------------
+
+    /**
+     * Update module configuration via WS or MQTT etc.
+     */
+    bool _mqttUpdateConfiguration(
+        JsonObject& configuration
+    ) {
+        DEBUG_MSG(PSTR("[MQTT] Updating module\n"));
+
+        bool is_updated = false;
+
+        if (
+            configuration.containsKey("mqtt_server")
+            && configuration["mqtt_server"].as<char *>() != getSetting("mqttServer").c_str()
+        )  {
+            DEBUG_MSG(PSTR("[MQTT] Setting: \"mqtt_server\" to: %s\n"), configuration["mqtt_server"].as<char *>());
+
+            setSetting("mqttServer", configuration["mqtt_server"].as<char *>());
+
+            is_updated = true;
+        }
+
+        if (
+            configuration.containsKey("mqtt_server_port")
+            && configuration["mqtt_server_port"].as<uint16_t>() != getSetting("mqttPort").toInt()
+        )  {
+            DEBUG_MSG(PSTR("[MQTT] Setting: \"mqtt_server_port\" to: %d\n"), configuration["mqtt_server_port"].as<uint16_t>());
+
+            setSetting("mqttPort", configuration["mqtt_server_port"].as<uint16_t>());
+
+            is_updated = true;
+        }
+
+        if (
+            configuration.containsKey("mqtt_username")
+            && configuration["mqtt_username"].as<char *>() != getSetting("mqttUser").c_str()
+        )  {
+            DEBUG_MSG(PSTR("[MQTT] Setting: \"mqtt_username\" to: %s\n"), configuration["mqtt_username"].as<char *>());
+
+            setSetting("mqttUser", configuration["mqtt_username"].as<char *>());
+
+            is_updated = true;
+        }
+
+        if (
+            configuration.containsKey("mqtt_password")
+            && configuration["mqtt_password"].as<char *>() != getSetting("mqttPassword").c_str()
+        )  {
+            DEBUG_MSG(PSTR("[MQTT] Setting: \"mqtt_password\" to: %s\n"), configuration["mqtt_password"].as<char *>());
+
+            setSetting("mqttPassword", configuration["mqtt_password"].as<char *>());
+
+            is_updated = true;
+        }
+
+        if (
+            configuration.containsKey("mqtt_client_id")
+            && configuration["mqtt_client_id"].as<char *>() != getSetting("mqttClientID").c_str()
+        )  {
+            DEBUG_MSG(PSTR("[MQTT] Setting: \"mqtt_client_id\" to: %s\n"), configuration["mqtt_client_id"].as<char *>());
+
+            setSetting("mqttClientID", configuration["mqtt_client_id"].as<char *>());
+
+            is_updated = true;
+        }
+
+        #if ASYNC_TCP_SSL_ENABLED
+            if (
+                configuration.containsKey("mqtt_ssl_enabled")
+                && configuration["mqtt_ssl_enabled"].as<bool>() != (getSetting("mqttUseSsl").toInt() == 1)
+            )  {
+                DEBUG_MSG(PSTR("[MQTT] Setting: \"mqtt_ssl_enabled\" to: %d\n"), (configuration["mqtt_ssl_enabled"].as<bool>() ? 1 : 0));
+
+                setSetting("mqttUseSsl", configuration["mqtt_ssl_enabled"].as<bool>() ? 1 : 0);
+
+                is_updated = true;
+            }
+
+            if (
+                configuration.containsKey("mqtt_ssl_fp")
+                && configuration["mqtt_ssl_fp"].as<char *>() != getSetting("mqttSslFp").c_str()
+            )  {
+                setSetting("mqttSslFp", configuration["mqtt_ssl_fp"].as<char *>());
+
+                is_updated = true;
+            }
+        #else
+            delSetting("mqttUseSsl");
+            delSetting("mqttSslFp");
+        #endif
+
+        return is_updated;
+    }
+#endif // FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+
+// -----------------------------------------------------------------------------
+
+#if WEB_SUPPORT && WS_SUPPORT
+    // WS client is connected
+    void _mqttWSOnConnect(
+        JsonObject& root
+    ) {
+        JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
+        JsonObject& module = modules.createNestedObject();
+
+        module["module"] = "mqtt";
+        module["visible"] = true;
+
+        // Data container
+        JsonObject& data = module.createNestedObject("data");
+
+        data["status"] = mqttConnected() ? true : false;
+
+        // Configuration container
+        JsonObject& configuration = module.createNestedObject("config");
+
+        // Configuration values container
+        JsonObject& configuration_values = configuration.createNestedObject("values");
+
+        _mqttReportConfiguration(configuration_values);
+        
+        // Configuration schema container
+        JsonArray& configuration_schema = configuration.createNestedArray("schema");
+
+        _mqttReportConfigurationSchema(configuration_schema);
+    }
+
+// -----------------------------------------------------------------------------
+
+    // WS client sent configure module request
+    void _mqttWSOnConfigure(
+        const uint32_t clientId, 
+        JsonObject& module
+    ) {
+        if (module.containsKey("module") && module["module"] == "mqtt") {
+            if (module.containsKey("config")) {
+                // Extract configuration container
+                JsonObject& configuration = module["config"].as<JsonObject&>();
+
+                if (
+                    configuration.containsKey("values")
+                    && _mqttUpdateConfiguration(configuration["values"])
+                ) {
+                    wsSend_P(clientId, PSTR("{\"message\": \"mqtt_updated\"}"));
+
+                    // Reload & cache settings
+                    firmwareReload();
+
+                    // MQTT confiugration has changed, force reconnet
+                    mqttDisconnect();
+                }
+            }
+        }
+    }
+
+// -----------------------------------------------------------------------------
+
+    void _mqttWSOnUpdate(
+        JsonObject& root
+    ) {
+        JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
+        JsonObject& module = modules.createNestedObject();
+
+        module["module"] = "mqtt";
+
+        // Data container
+        JsonObject& data = module.createNestedObject("data");
+
+        data["status"] = mqttConnected() ? true : false;
+    }
+#endif
 
 // -----------------------------------------------------------------------------
 // MODULE CALLBACKS
@@ -293,7 +533,7 @@ void _mqttOnConnect() {
     }
     
     #if WEB_SUPPORT && WS_SUPPORT
-        wsSend_P(PSTR("{\"mqttStatus\": true}"));
+        wsSend(_mqttWSOnUpdate);
     #endif
 }
 
@@ -308,7 +548,7 @@ void _mqttOnDisconnect() {
     }
 
     #if WEB_SUPPORT && WS_SUPPORT
-        wsSend_P(PSTR("{\"mqttStatus\": false}"));
+        wsSend(_mqttWSOnUpdate);
     #endif
 }
 
@@ -348,196 +588,6 @@ void _mqttOnMessage(
 }
 
 // -----------------------------------------------------------------------------
-
-#if WEB_SUPPORT && WS_SUPPORT
-    // WS client is connected
-    void _mqttWSOnConnect(
-        JsonObject& root
-    ) {
-        JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
-        JsonObject& module = modules.createNestedObject();
-
-        module["module"] = "mqtt";
-        module["visible"] = true;
-
-        // Configuration container
-        JsonObject& configuration = module.createNestedObject("config");
-
-        // Configuration values container
-        JsonObject& configuration_values = configuration.createNestedObject("values");
-
-        configuration_values["mqtt_server"] = getSetting("mqttServer", MQTT_SERVER);
-        configuration_values["mqtt_server_port"] = getSetting("mqttPort", MQTT_PORT);
-        configuration_values["mqtt_username"] = getSetting("mqttUser", MQTT_USER);
-        configuration_values["mqtt_password"] = getSetting("mqttPassword", MQTT_PASS);
-        configuration_values["mqtt_client_id"] = getSetting("mqttClientID", getIdentifier());
-        
-        configuration_values["mqtt_keep_alive"] = getSetting("mqttKeep", MQTT_KEEPALIVE).toInt();
-        configuration_values["mqtt_retain"] = getSetting("mqttRetain", MQTT_RETAIN).toInt() == 1;
-        configuration_values["mqtt_qos"] = getSetting("mqttQos", MQTT_QOS).toInt();
-
-        #if ASYNC_TCP_SSL_ENABLED
-            configuration_values["mqtt_use_ssl"] = getSetting("mqttUseSsl", 0).toInt() == 1;
-            configuration_values["mqtt_fp"] = getSetting("mqttSslFp");
-        #endif
-        
-        // Configuration schema container
-        JsonArray& configuration_schema = configuration.createNestedArray("schema");
-
-        // Configuration field
-        JsonObject& keep_alive = configuration_schema.createNestedObject();
-
-        keep_alive["name"] = "mqtt_keep_alive";
-        keep_alive["type"] = "number";
-        keep_alive["min"] = 10;
-        keep_alive["max"] = 3600;
-        keep_alive["step"] = 10;
-        keep_alive["default"] = MQTT_KEEPALIVE;
-
-        JsonObject& retain = configuration_schema.createNestedObject();
-
-        retain["name"] = "mqtt_retain";
-        retain["type"] = "boolean";
-        retain["default"] = MQTT_RETAIN;
-
-        JsonObject& qos = configuration_schema.createNestedObject();
-
-        qos["name"] = "mqtt_qos";
-        qos["type"] = "select";
-        qos["default"] = MQTT_RETAIN;
-
-        JsonArray& qosValues = qos.createNestedArray("values");
-
-        JsonObject& qosValue0 = qosValues.createNestedObject();
-        qosValue0["value"] = 0;
-        qosValue0["name"] = "at_most_once";
-
-        JsonObject& qosValue1 = qosValues.createNestedObject();
-        qosValue1["value"] = 1;
-        qosValue1["name"] = "at_least_once";
-
-        JsonObject& qosValue2 = qosValues.createNestedObject();
-        qosValue2["value"] = 2;
-        qosValue2["name"] = "exactly_once";
-
-        #if ASYNC_TCP_SSL_ENABLED
-            JsonObject& ssl_enabled = configuration_schema.createNestedObject();
-
-            ssl_enabled["name"] = "mqtt_ssl_enabled";
-            ssl_enabled["type"] = "boolean";
-            ssl_enabled["default"] = false;
-
-            JsonObject& ssl_fp = configuration_schema.createNestedObject();
-
-            ssl_fp["name"] = "mqtt_ssl_fp";
-            ssl_fp["type"] = "text";
-            ssl_fp["default"] = "";
-        #endif
-    }
-
-// -----------------------------------------------------------------------------
-
-    // WS client sent configure module request
-    void _mqttWSOnConfigure(
-        const uint32_t clientId, 
-        JsonObject& module
-    ) {
-        if (module.containsKey("module") && module["module"] == "mqtt") {
-            if (module.containsKey("config")) {
-                // Extract configuration container
-                JsonObject& configuration = module["config"].as<JsonObject&>();
-
-                if (configuration.containsKey("values")) {
-                    bool do_reconnect = false;
-
-                    JsonObject& values = configuration["values"].as<JsonObject&>();
-
-                    if (values.containsKey("mqtt_keep_alive") && values["mqtt_keep_alive"].as<uint8_t>() != getSetting("mqttKeep").toInt())  {
-                        setSetting("mqttKeep", values["mqtt_keep_alive"].as<uint8_t>());
-                    }
-
-                    if (values.containsKey("mqtt_retain") && values["mqtt_retain"].as<bool>() != (getSetting("mqttRetain").toInt() == 1))  {
-                        setSetting("mqttRetain", values["mqtt_retain"].as<bool>() ? 1 : 0);
-                    }
-
-                    if (values.containsKey("mqtt_qos") && values["mqtt_qos"].as<uint8_t>() != getSetting("mqttQos").toInt())  {
-                        setSetting("mqttQos", values["mqtt_qos"].as<uint8_t>());
-                    }
-
-                    #if ASYNC_TCP_SSL_ENABLED
-                        if (values.containsKey("mqtt_ssl_enabled") && values["mqtt_ssl_enabled"].as<bool>() != (getSetting("mqttUseSsl").toInt() == 1))  {
-                            setSetting("mqttUseSsl", values["mqtt_ssl_enabled"].as<bool>() ? 1 : 0);
-                        }
-
-                        if (values.containsKey("mqtt_ssl_fp") && values["mqtt_ssl_fp"].as<char *>() != getSetting("mqttSslFp").c_str())  {
-                            setSetting("mqttSslFp", values["mqtt_ssl_fp"].as<char *>());
-                        }
-                    #else
-                        delSetting("mqttUseSsl");
-                        delSetting("mqttSslFp");
-                    #endif
-
-                    if (values.containsKey("mqtt_server") && values["mqtt_server"].as<char *>() != getSetting("mqttServer").c_str())  {
-                        setSetting("mqttServer", values["mqtt_server"].as<char *>());
-
-                        do_reconnect = true;
-                    }
-
-                    if (values.containsKey("mqtt_server_port") && values["mqtt_server_port"].as<uint8_t>() != getSetting("mqttPort").toInt())  {
-                        setSetting("mqttPort", values["mqtt_server_port"].as<uint8_t>());
-
-                        do_reconnect = true;
-                    }
-
-                    if (values.containsKey("mqtt_username") && values["mqtt_username"].as<char *>() != getSetting("mqttUser").c_str())  {
-                        setSetting("mqttUser", values["mqtt_username"].as<char *>());
-
-                        do_reconnect = true;
-                    }
-
-                    if (values.containsKey("mqtt_password") && values["mqtt_password"].as<char *>() != getSetting("mqttPassword").c_str())  {
-                        setSetting("mqttPassword", values["mqtt_password"].as<char *>());
-
-                        do_reconnect = true;
-                    }
-
-                    if (values.containsKey("mqtt_client_id") && values["mqtt_client_id"].as<char *>() != getSetting("mqttClientID").c_str())  {
-                        setSetting("mqttClientID", values["mqtt_client_id"].as<char *>());
-
-                        do_reconnect = true;
-                    }
-
-                    wsSend_P(clientId, PSTR("{\"message\": \"mqtt_updated\"}"));
-
-                    // Reload & cache settings
-                    firmwareReload();
-
-                    if (do_reconnect) {
-                        mqttDisconnect();
-                    }
-                }
-            }
-        }
-    }
-
-// -----------------------------------------------------------------------------
-
-    void _mqttWSOnUpdate(
-        JsonObject& root
-    ) {
-        JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
-        JsonObject& module = modules.createNestedObject();
-
-        module["module"] = "mqtt";
-
-        // Data container
-        JsonObject& data = module.createNestedObject("data");
-
-        data["status"] = mqttConnected() ? true : false;
-    }
-#endif
-
-// -----------------------------------------------------------------------------
 // MODULE API
 // -----------------------------------------------------------------------------
 
@@ -564,7 +614,7 @@ uint8_t mqttSend(
 ) {
     if (_mqtt.connected()) {
         #if MQTT_USE_ASYNC
-            uint8_t _packet_id = _mqtt.publish(topic, _mqtt_qos, retain, message);
+            uint8_t _packet_id = _mqtt.publish(topic, MQTT_QOS, retain, message);
             DEBUG_MSG(PSTR("[MQTT] Sending %s => %s (PID %d)\n"), topic, message, _packet_id);
 
             return _packet_id;
@@ -585,7 +635,7 @@ uint8_t mqttSend(
     const char * topic,
     const char * message
 ) {
-    return mqttSend(topic, message, _mqtt_retain);
+    return mqttSend(topic, message, true);
 }
 
 // -----------------------------------------------------------------------------
@@ -598,10 +648,10 @@ uint8_t mqttSubscribe(
         uint8_t packet_id;
 
         #if MQTT_USE_ASYNC
-            packet_id = _mqtt.subscribe(topic, _mqtt_qos);
+            packet_id = _mqtt.subscribe(topic, MQTT_QOS);
             DEBUG_MSG(PSTR("[MQTT] Subscribing %s (PID %d)\n"), topic, packet_id);
         #else
-            _mqtt.subscribe(topic, _mqtt_qos);
+            _mqtt.subscribe(topic, MQTT_QOS);
             DEBUG_MSG(PSTR("[MQTT] Subscribing %s\n"), topic);
 
             packet_id = 999;
@@ -640,20 +690,6 @@ uint8_t mqttUnsubscribe(
     }
 
     return 0;
-}
-
-// -----------------------------------------------------------------------------
-
-void mqttEnabled(
-    const bool status
-) {
-    _mqtt_enabled = status;
-}
-
-// -----------------------------------------------------------------------------
-
-bool mqttEnabled() {
-    return _mqtt_enabled;
 }
 
 // -----------------------------------------------------------------------------

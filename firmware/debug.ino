@@ -2,7 +2,7 @@
 
 DEBUG MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -61,7 +61,7 @@ void _debugSend(
 
     #if DEBUG_MQTT_SUPPORT
         if (mqttConnected() && (getFreeHeap() > 10000)) {
-
+            // TODO: implement MQTT debug report to broker
         }
     #endif
 

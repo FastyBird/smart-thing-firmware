@@ -2,7 +2,7 @@
 
 NOFUSS MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -16,6 +16,79 @@ bool _nofussEnabled = false;
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
+// -----------------------------------------------------------------------------
+
+#if FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+    /**
+     * Provide module configuration schema
+     */
+    void _buttonReportConfigurationSchema(
+        JsonArray& configuration
+    ) {
+        // Configuration field
+        JsonObject& enabled = configuration.createNestedObject();
+
+        enabled["name"] = "nofuss_enabled";
+        enabled["type"] = "boolean";
+        enabled["default"] = false;
+
+        JsonObject& server = configuration.createNestedObject();
+
+        server["name"] = "nofuss_server";
+        server["type"] = "text";
+        server["default"] = "";
+    }
+
+// -----------------------------------------------------------------------------
+
+    /**
+     * Report module configuration
+     */
+    void _nofussReportConfiguration(
+        JsonObject& configuration
+    ) {
+        configuration["nofuss_enabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
+        configuration["nofuss_server"] = getSetting("nofussServer", NOFUSS_SERVER);
+    }
+
+// -----------------------------------------------------------------------------
+
+    /**
+     * Update module configuration via WS or MQTT etc.
+     */
+    bool _nofussUpdateConfiguration(
+        JsonObject& configuration
+    ) {
+        DEBUG_MSG(PSTR("[NOFUSS] Updating module\n"));
+
+        bool is_updated = false;
+
+        if (
+            configuration.containsKey("nofuss_enabled")
+            && configuration["nofuss_enabled"].as<bool>() != (getSetting("nofussEnabled").toInt() == 1)
+        )  {
+            DEBUG_MSG(PSTR("[NOFUSS] Setting: \"nofuss_enabled\" to: %d\n"), (configuration["nofuss_enabled"].as<bool>() ? 1 : 0));
+
+            setSetting("nofussEnabled", configuration["nofuss_enabled"].as<bool>() ? 1 : 0);
+
+            is_updated = true;
+        }
+        
+        if (
+            configuration.containsKey("nofuss_server")
+            && configuration["nofuss_server"].as<char *>() != getSetting("nofussServer").c_str()
+        )  {
+            DEBUG_MSG(PSTR("[NOFUSS] Setting: \"nofuss_server\" to: %s\n"), configuration["nofuss_server"].as<char *>());
+
+            setSetting("nofussServer", configuration["nofuss_server"].as<char *>());
+
+            is_updated = true;
+        }
+
+        return is_updated;
+    }
+#endif // FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+
 // -----------------------------------------------------------------------------
 
 #if WEB_SUPPORT
@@ -34,23 +107,37 @@ bool _nofussEnabled = false;
         // Configuration values container
         JsonObject& configuration_values = configuration.createNestedObject("values");
 
-        configuration_values["enabled"] = getSetting("nofussEnabled", NOFUSS_ENABLED).toInt() == 1;
-        configuration_values["server"] = getSetting("nofussServer", NOFUSS_SERVER);
+        _nofussReportConfiguration(configuration_values);
 
         // Configuration schema container
         JsonArray& configuration_schema = configuration.createNestedArray("schema");
 
-        JsonObject& enabled = configuration_schema.createNestedObject();
+        _nofussReportConfigurationSchema(configuration_schema);
+    }
 
-        enabled["name"] = "enabled";
-        enabled["type"] = "boolean";
-        enabled["default"] = false;
+// -----------------------------------------------------------------------------
 
-        JsonObject& server = configuration_schema.createNestedObject();
+    // WS client requested configuration update
+    void _nofussWSOnConfigure(
+        const uint32_t clientId, 
+        JsonObject& module
+    ) {
+        if (module.containsKey("module") && module["module"] == "nofuss") {
+            if (module.containsKey("config")) {
+                // Extract configuration container
+                JsonObject& configuration = module["config"].as<JsonObject&>();
 
-        server["name"] = "server";
-        server["type"] = "text";
-        server["default"] = "";
+                if (
+                    configuration.containsKey("values")
+                    && _nofussUpdateConfiguration(configuration["values"])
+                ) {
+                    wsSend_P(clientId, PSTR("{\"message\": \"nofuss_updated\"}"));
+
+                    // Reload & cache settings
+                    firmwareReload();
+                }
+            }
+        }
     }
 #endif
 
@@ -61,6 +148,7 @@ void _nofussConfigure() {
 
     if (nofussServer.length() == 0) {
         setSetting("nofussEnabled", 0);
+
         _nofussEnabled = false;
 
     } else {
@@ -113,7 +201,11 @@ void nofussSetup() {
         }
 
         if (code == NOFUSS_NO_RESPONSE_ERROR) {
-        	DEBUG_MSG(PSTR("[NoFUSS] Wrong server response: %d %s\n"), NoFUSSClient.getErrorNumber(), (char *) NoFUSSClient.getErrorString().c_str());
+        	DEBUG_MSG(PSTR(
+                "[NoFUSS] Wrong server response: %d %s\n"),
+                NoFUSSClient.getErrorNumber(),
+                (char *) NoFUSSClient.getErrorString().c_str()
+            );
         }
 
         if (code == NOFUSS_PARSE_ERROR) {
@@ -125,8 +217,9 @@ void nofussSetup() {
     	    DEBUG_MSG(PSTR("         New version: %s\n"), (char *) NoFUSSClient.getNewVersion().c_str());
         	DEBUG_MSG(PSTR("         Firmware: %s\n"), (char *) NoFUSSClient.getNewFirmware().c_str());
         	DEBUG_MSG(PSTR("         File System: %s\n"), (char *) NoFUSSClient.getNewFileSystem().c_str());
+
             #if WEB_SUPPORT && WS_SUPPORT
-                wsSend_P(PSTR("{\"message\": 1}"));
+                wsSend_P(PSTR("{\"message\": \"updating_nofuss\"}"));
             #endif
 
             // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
@@ -151,14 +244,18 @@ void nofussSetup() {
 
         if (code == NOFUSS_RESET) {
         	DEBUG_MSG(PSTR("[NoFUSS] Resetting board\n"));
-            #if WEB_SUPPORT
-                wsSend_P(PSTR("{\"action\": \"reload\"}"));
+
+            #if WEB_SUPPORT && WS_SUPPORT
+                // Send notification to all clients
+                wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"upgrade\", \"module\": \"nofuss\"}"));
             #endif
-            niceDelay(100);
+
+            deferredReset(250, CUSTOM_UPGRADE_NOFUSS);
         }
 
         if (code == NOFUSS_END) {
             DEBUG_MSG(PSTR("[NoFUSS] End\n"));
+
             eepromRotate(true);
         }
 
@@ -166,6 +263,14 @@ void nofussSetup() {
 
     #if WEB_SUPPORT && WS_SUPPORT
         wsOnConnectRegister(_nofussWSOnConnect);
+        wsOnConfigureRegister(_nofussWSOnConfigure);
+    #endif
+
+    #if FASTYBIRD_SUPPORT
+        // Module schema report
+        fastybirdReportConfigurationSchemaRegister(_nofussReportConfigurationSchema);
+        fastybirdReportConfigurationRegister(_nofussReportConfiguration);
+        fastybirdOnConfigureRegister(_nofussUpdateConfiguration);
     #endif
 
     // Main callbacks

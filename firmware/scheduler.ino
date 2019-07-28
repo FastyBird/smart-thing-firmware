@@ -2,7 +2,7 @@
 
 SCHEDULER MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -204,7 +204,7 @@ bool _schIsThisWeekday(
     char pch;
     char * p = (char *) weekdays.c_str();
 
-    unsigned char position = 0;
+    uint8_t position = 0;
 
     while ((pch = p[position++])) {
         if ((pch - '0') == w) {
@@ -219,11 +219,11 @@ bool _schIsThisWeekday(
 
 int _schMinutesLeft(
     time_t t,
-    unsigned char schedule_hour,
-    unsigned char schedule_minute
+    uint8_t schedule_hour,
+    uint8_t schedule_minute
 ) {
-    unsigned char now_hour = hour(t);
-    unsigned char now_minute = minute(t);
+    uint8_t now_hour = hour(t);
+    uint8_t now_minute = minute(t);
     
     return (schedule_hour - now_hour) * 60 + schedule_minute - now_minute;
 }
@@ -389,8 +389,8 @@ void schLoop() {
     }
 
     // Check schedules every minute at hh:mm:00
-    static unsigned long last_minute = 60;
-    unsigned char current_minute = minute();
+    static uint32_t last_minute = 60;
+    uint8_t current_minute = minute();
 
     if (current_minute != last_minute) {
         last_minute = current_minute;

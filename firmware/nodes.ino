@@ -2,7 +2,7 @@
 
 NODES MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -793,7 +793,8 @@ void gatewaySetup() {
     _gateway_bus.begin();
 
     #if WEB_SUPPORT
-        webOnRequestRegister(_gatewayWebRequestCallback);
+        webOnRequestRegister("/gateway/config", HTTP_GET, _gatewayOnGetConfig);
+        webOnRequestRegister("/gateway/config", HTTP_POST, _gatewayOnPostConfig);
 
         #if WS_SUPPORT
             wsOnConnectRegister(_gatewayWSOnConnect);
@@ -809,7 +810,7 @@ void gatewaySetup() {
 
                 _gatewaySearchNewNodesStart();
             },
-            "nodes-search"
+            FASTYBIRD_THING_CONTROL_SEARCH_FOR_NODES
         );
 
         fastybirdOnControlRegister(
@@ -818,7 +819,7 @@ void gatewaySetup() {
 
                 // TODO: implement
             },
-            "node-disconnect"
+            FASTYBIRD_THING_CONTROL_DISCONNECT_NODE
         );
     #endif
 
@@ -830,13 +831,6 @@ void gatewaySetup() {
 // -----------------------------------------------------------------------------
 
 void gatewayLoop() {
-    // If system is flagged unstable we do not init nodes networks
-    #if STABILTY_CHECK_ENABLED
-        if (!stabiltyCheck()) {
-            return;
-        }
-    #endif
-
     // Little delay before gateway start
     if (millis() < NODES_GATEWAY_START_DELAY) {
         return;

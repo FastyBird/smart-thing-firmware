@@ -2,7 +2,7 @@
 
 SYSTEM MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -24,7 +24,7 @@ std::vector<system_on_heartbeat_callback_f> _system_on_heartbeat_callbacks;
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-uint8_t _systemBytes2sectors(
+uint8_t _systemBytes2Sectors(
     size_t size
 ) {
     return (uint8_t) (size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
@@ -65,7 +65,7 @@ void _systemPrintMemoryLayoutLine(
         return;
     }
 
-    uint8_t _sectors = _systemBytes2sectors(bytes);
+    uint8_t _sectors = _systemBytes2Sectors(bytes);
 
     DEBUG_MSG(PSTR("[SYSTEM] %-20s: %8lu bytes / %4d sectors (%4d to %4d)\n"), name, bytes, _sectors, index, index + _sectors - 1);
 
@@ -118,6 +118,20 @@ void _systemInfoOnHeartbeat() {
         #if ADC_MODE_VALUE == ADC_VCC
             root["vcc"] = ESP.getVcc();
         #endif
+
+        uint8_t reason = resetReason();
+
+        if (reason > 0) {
+            char buffer[32];
+            strcpy_P(buffer, custom_reset_string[reason - 1]);
+
+            root["last_reset_reason"] = buffer;
+            root["last_reset_info"] = "";
+
+        } else {
+            root["last_reset_reason"] = (char *) ESP.getResetReason().c_str();
+            root["last_reset_info"] = (char *) ESP.getResetInfo().c_str();
+        }
     }
 
 // -----------------------------------------------------------------------------
@@ -156,6 +170,7 @@ void _systemInfoOnHeartbeat() {
         firmware["build"] = getBuildTime();
         firmware["sketch_size"] = ESP.getSketchSize();
         firmware["free_space"] = ESP.getFreeSketchSpace();
+        firmware["max_ota_size"] = _systemOTASpace();
 
         // Thing
         JsonObject& thing = data.createNestedObject("thing");
@@ -199,17 +214,11 @@ void _systemInfoOnHeartbeat() {
 
         _systemStatus(status);
     }
-#endif
+#endif // WEB_SUPPORT && WS_SUPPORT
 
 // -----------------------------------------------------------------------------
 
 void _systemSetupSpecificHardware() {
-    // The ESPLive has an ADC MUX which needs to be configured.
-    #if defined(MANCAVEMADE_ESPLIVE)
-        pinMode(16, OUTPUT);
-        digitalWrite(16, HIGH); // Defualt CT input (pin B, solder jumper B)
-    #endif
-
     // These devices use the hardware UART
     // to communicate to secondary microcontrollers
     #if defined(ITEAD_SONOFF_RFBRIDGE) || defined(ITEAD_SONOFF_DUAL) || (RELAY_PROVIDER == RELAY_PROVIDER_STM)
@@ -261,7 +270,7 @@ void _systemInfo() {
         FSInfo fs_info;
         bool fs = SPIFFS.info(fs_info);
         if (fs) {
-            DEBUG_MSG(PSTR("[SYSTEM] SPIFFS total size   : %8u bytes / %4d sectors\n"), fs_info.totalBytes, _systemBytes2sectors(fs_info.totalBytes));
+            DEBUG_MSG(PSTR("[SYSTEM] SPIFFS total size   : %8u bytes / %4d sectors\n"), fs_info.totalBytes, _systemBytes2Sectors(fs_info.totalBytes));
             DEBUG_MSG(PSTR("[SYSTEM]        used size    : %8u bytes\n"), fs_info.usedBytes);
             DEBUG_MSG(PSTR("[SYSTEM]        block size   : %8u bytes\n"), fs_info.blockSize);
             DEBUG_MSG(PSTR("[SYSTEM]        page size    : %8u bytes\n"), fs_info.pageSize);
@@ -314,7 +323,7 @@ void _systemInfo() {
 
     #if SENSOR_SUPPORT
         DEBUG_MSG(PSTR("[SYSTEM] Sensors: %s\n"), getFirmwareSensors().c_str());
-    #endif // SENSOR_SUPPORT
+    #endif
 
     DEBUG_MSG(PSTR("\n"));
 
@@ -412,40 +421,6 @@ void systemSetup() {
     #if WEB_SUPPORT && WS_SUPPORT
         wsOnConnectRegister(_systemWSOnConnect);
         wsOnUpdateRegister(_systemWSOnUpdate);
-    #endif
-
-    #if BUTTON_SUPPORT && SYSTEM_RESET_BTN > 0
-        buttonOnEventRegister(
-            [](uint8_t event) {
-                if (event == SYSTEM_RESET_BTN_EVENT) {
-                    deferredReset(100, CUSTOM_RESET_HARDWARE);
-                }
-            },
-            (uint8_t) (SYSTEM_RESET_BTN - 1)
-        );
-    #endif
-
-    #if FASTYBIRD_SUPPORT
-        fastybirdOnControlRegister(
-            [](const char * payload) {
-                DEBUG_MSG(PSTR("[SYSTEM] Requested reset action\n"));
-
-                deferredReset(100, CUSTOM_RESET_BROKER);
-            },
-            "reset"
-        );
-
-        fastybirdOnControlRegister(
-            [](const char * payload) {
-                DEBUG_MSG(PSTR("[SYSTEM] Requested factory reset action\n"));
-                DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
-
-                resetSettings();
-
-                deferredReset(100, CUSTOM_RESET_FACTORY);
-            },
-            "factory-reset"
-        );
     #endif
 
     systemOnHeartbeatRegister(_systemInfoOnHeartbeat);

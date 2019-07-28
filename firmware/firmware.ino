@@ -2,7 +2,7 @@
 
 CORE MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -10,10 +10,13 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #include <Arduino.h>
 #include <Hash.h>
+#include <Ticker.h>
 #include <vector>
 
 std::vector<void (*)()> _firmware_loop_callbacks;
 std::vector<void (*)()> _firmware_reload_callbacks;
+
+Ticker _stability_ticker;
 
 // -----------------------------------------------------------------------------
 // MODULE API
@@ -59,6 +62,9 @@ void setup() {
         debugSetup();
     #endif
 
+    // Init RTCMEM
+    rtcmemSetup();
+
     // Init EEPROM
     eepromSetup();
 
@@ -81,12 +87,16 @@ void setup() {
         wifiSetup();
     #endif
 
+    otaSetup();
+
     // -------------------------------------------------------------------------
     // Check if system is stable
     // -------------------------------------------------------------------------
 
     #if STABILTY_CHECK_ENABLED
         if (!stabiltyCheck()) {
+            _stability_ticker.once_ms(500, reset);
+
             return;
         }
     #endif
@@ -122,6 +132,10 @@ void setup() {
         mqttSetup();
     #endif
 
+    #if VIRTUAL_BTN_SUPPORT
+        virtualButtonSetup();
+    #endif
+
     #if NTP_SUPPORT
         ntpSetup();
     #endif
@@ -136,6 +150,10 @@ void setup() {
 
     #if NOFUSS_SUPPORT
         nofussSetup();
+    #endif
+
+    #if SENSOR_SUPPORT
+        sensorSetup();
     #endif
 
     #if SCHEDULER_SUPPORT

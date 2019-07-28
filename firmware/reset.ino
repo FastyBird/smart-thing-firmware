@@ -2,7 +2,7 @@
 
 RESET MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -13,15 +13,57 @@ Ticker _defer_reset;
 
 uint8_t _reset_reason = 0;
 
+union reset_rtcmem_t {
+    struct {
+        uint8_t reset_reason;
+        uint16_t _reserved_;
+    } parts;
+    uint32_t value;
+};
+
+// -----------------------------------------------------------------------------
+// MODULE PRIVATE
+// -----------------------------------------------------------------------------
+
+uint8_t _resetReason() {
+    reset_rtcmem_t data;
+
+    data.value = Rtcmem->sys;
+
+    return data.parts.reset_reason;
+}
+
+// -----------------------------------------------------------------------------
+
+void _resetReason(
+    uint8_t reason
+) {
+    reset_rtcmem_t data;
+
+    data.value = Rtcmem->sys;
+    data.parts.reset_reason = reason;
+
+    Rtcmem->sys = data.value;
+}
+
 // -----------------------------------------------------------------------------
 // MODULE API
+// -----------------------------------------------------------------------------
+
+// system_get_rst_info() result is cached by the Core init for internal use
+uint32_t resetReasonSystem() {
+    return resetInfo.reason;
+}
+
 // -----------------------------------------------------------------------------
 
 uint8_t resetReason() {
     static uint8_t status = 255;
 
     if (status == 255) {
-        status = EEPROMr.read(EEPROM_CUSTOM_RESET);
+        if (rtcmemStatus()) {
+            status = _resetReason();
+        }
 
         if (status > 0) {
             resetReason(0);
@@ -42,9 +84,7 @@ void resetReason(
 ) {
     _reset_reason = reason;
 
-    EEPROMr.write(EEPROM_CUSTOM_RESET, reason);
-
-    eepromCommit();
+    _resetReason(reason);
 }
 
 // -----------------------------------------------------------------------------

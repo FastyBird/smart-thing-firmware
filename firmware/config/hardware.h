@@ -2,7 +2,7 @@
 
 SUPPORTED HARDWARE DEFINITIONS
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 */
 
@@ -44,8 +44,8 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // LEDs
-    #define LED1_PIN                    2
-    #define LED1_PIN_INVERSE            1
+    #define STATUS_LED_PIN              2
+    #define STATUS_LED_PIN_INVERSE      1
 
     // I2C interface
     #define I2C_SDA_PIN                 4  // D2
@@ -57,6 +57,8 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
     // FastyBird cloud with gateway support
     #define FASTYBIRD_GATEWAY_SUPPORT   1
+
+    #define NTP_SUPPORT                 1
 
 // -----------------------------------------------------------------------------
 // Itead Studio boards
@@ -81,8 +83,10 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     #define RELAY1_BTN                  1
 
     // LEDs
-    #define LED1_PIN                    13
-    #define LED1_PIN_INVERSE            1
+    #define STATUS_LED_PIN              13
+    #define STATUS_LED_PIN_INVERSE      1
+
+    #define NTP_SUPPORT                 1
 
 #elif defined(ITEAD_SONOFF_DUAL)
 
@@ -102,8 +106,10 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     #define BUTTON3_RELAY               1
 
     // LEDs
-    #define LED1_PIN                    13
-    #define LED1_PIN_INVERSE            1
+    #define STATUS_LED_PIN              13
+    #define STATUS_LED_PIN_INVERSE      1
+
+    #define NTP_SUPPORT                 1
 
 #elif defined(ITEAD_SONOFF_DUAL_R2)
 
@@ -112,12 +118,8 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     #define HARWARE_VERSION             "0.0.2"
 
     // Buttons
-    #define BUTTON1_PIN                 0       // Button 0 on header
-    #define BUTTON1_MODE                BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_PIN                 9       // Button 1 on header
-    #define BUTTON2_MODE                BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
-    #define BUTTON3_PIN                 10      // Physical button
-    #define BUTTON3_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PIN                 10
+    #define BUTTON1_MODE                BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
 
     // Relays
     #define RELAY_PROVIDER              RELAY_PROVIDER_RELAY
@@ -125,13 +127,17 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     #define RELAY1_PIN                  12
     #define RELAY1_TYPE                 RELAY_TYPE_NORMAL
     #define RELAY1_BTN                  1
+
     #define RELAY2_PIN                  5
     #define RELAY2_TYPE                 RELAY_TYPE_NORMAL
-    #define RELAY2_BTN                  2
+    #define RELAY2_BTN                  1
+    #define RELAY2_BTN_EVENT            BUTTON_EVENT_DBLCLICK
 
     // LEDs
-    #define LED1_PIN                    13
-    #define LED1_PIN_INVERSE            1
+    #define STATUS_LED_PIN              13
+    #define STATUS_LED_PIN_INVERSE      1
+
+    #define NTP_SUPPORT                 1
 
 #elif defined(ITEAD_SONOFF_SLAMPHER)
 
@@ -152,8 +158,10 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     #define RELAY1_BTN                  1
 
     // LEDs
-    #define LED1_PIN                    13
-    #define LED1_PIN_INVERSE            1
+    #define STATUS_LED_PIN              13
+    #define STATUS_LED_PIN_INVERSE      1
+
+    #define NTP_SUPPORT                 1
 
 #elif defined(ITEAD_SONOFF_S20)
 
@@ -174,8 +182,10 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     #define RELAY1_BTN                  1
 
     // LEDs
-    #define LED1_PIN                    13
-    #define LED1_PIN_INVERSE            1
+    #define STATUS_LED_PIN              13
+    #define STATUS_LED_PIN_INVERSE      1
+
+    #define NTP_SUPPORT                 1
 
 #elif defined(ITEAD_SONOFF_POW)
 
@@ -196,8 +206,10 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     #define RELAY1_BTN                  1
 
     // LEDs
-    #define LED1_PIN                    15
-    #define LED1_PIN_INVERSE            0
+    #define STATUS_LED_PIN              15
+    #define STATUS_LED_PIN_INVERSE      0
+
+    #define NTP_SUPPORT                 1
 
     // HLW8012
     #ifndef HLW8012_SUPPORT
@@ -227,11 +239,13 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     #define RELAY1_BTN                  1
 
     // LEDs
-    #define LED1_PIN                    13
-    #define LED1_PIN_INVERSE            1
+    #define STATUS_LED_PIN              13
+    #define STATUS_LED_PIN_INVERSE      1
 
     // Disable UART noise
     #define DEBUG_SERIAL_SUPPORT        0
+
+    #define NTP_SUPPORT                 1
 
     // CSE7766
     #ifndef CSE7766_SUPPORT
