@@ -187,6 +187,7 @@
 #define FASTYBIRD_CHANNEL_TYPE_LIGHT                        "light"
 #define FASTYBIRD_CHANNEL_TYPE_SWITCH                       "switch"
 #define FASTYBIRD_CHANNEL_TYPE_EVENT                        "event"
+#define FASTYBIRD_CHANNEL_TYPE_SENSOR                       "sensor"
 
 // =============================================================================
 // CHANNELS NAMES

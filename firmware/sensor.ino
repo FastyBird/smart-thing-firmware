@@ -539,7 +539,7 @@ bool _sensorHasMagnitude(
             humidity_correction["default"] = SENSOR_HUMIDITY_CORRECTION;
         }
 
-        if (enabled_pwr) {
+        if (enabled_emon) {
             JsonObject& power_voltage = configuration.createNestedObject();
 
             power_voltage["name"] = "power_voltage";
@@ -766,6 +766,77 @@ bool _sensorHasMagnitude(
             is_updated = true;
         }
 
+        if (
+            configuration.containsKey("power_units")
+            && (
+                configuration["power_units"].as<uint8_t>() == POWER_WATTS
+                || configuration["power_units"].as<uint8_t>() == POWER_KILOWATTS
+            )
+            && configuration["power_units"].as<uint8_t>() != getSetting("pwrUnits").toInt()
+        )  {
+            DEBUG_MSG(PSTR("[SENSOR] Setting: \"power_units\" to: %d\n"), configuration["power_units"].as<uint8_t>());
+
+            setSetting("pwrUnits", configuration["power_units"].as<uint8_t>());
+
+            is_updated = true;
+        }
+
+        if (
+            configuration.containsKey("energy_units")
+            && (
+                configuration["energy_units"].as<uint8_t>() == ENERGY_JOULES
+                || configuration["energy_units"].as<uint8_t>() == ENERGY_KWH
+            )
+            && configuration["energy_units"].as<uint8_t>() != getSetting("eneUnits").toInt()
+        )  {
+            DEBUG_MSG(PSTR("[SENSOR] Setting: \"energy_units\" to: %d\n"), configuration["energy_units"].as<uint8_t>());
+
+            setSetting("eneUnits", configuration["energy_units"].as<uint8_t>());
+
+            is_updated = true;
+        }
+
+        if (
+            configuration.containsKey("temperature_units")
+            && (
+                configuration["temperature_units"].as<uint8_t>() == TMP_CELSIUS
+                || configuration["temperature_units"].as<uint8_t>() == TMP_FAHRENHEIT
+            )
+            && configuration["temperature_units"].as<uint8_t>() != getSetting("tmpUnits").toInt()
+        )  {
+            DEBUG_MSG(PSTR("[SENSOR] Setting: \"temperature_units\" to: %d\n"), configuration["temperature_units"].as<uint8_t>());
+
+            setSetting("tmpUnits", configuration["temperature_units"].as<uint8_t>());
+
+            is_updated = true;
+        }
+
+        if (
+            configuration.containsKey("temperature_correction")
+            && configuration["temperature_correction"].as<float>() >= -100
+            && configuration["temperature_correction"].as<float>() <= 100
+            && configuration["temperature_correction"].as<float>() != getSetting("tmpCorrection").toFloat()
+        )  {
+            DEBUG_MSG(PSTR("[SENSOR] Setting: \"temperature_correction\" to: %d\n"), configuration["temperature_correction"].as<float>());
+
+            setSetting("tmpCorrection", configuration["temperature_correction"].as<float>());
+
+            is_updated = true;
+        }
+
+        if (
+            configuration.containsKey("humidity_correction")
+            && configuration["humidity_correction"].as<float>() >= -100
+            && configuration["humidity_correction"].as<float>() <= 100
+            && configuration["humidity_correction"].as<float>() != getSetting("humCorrection").toFloat()
+        )  {
+            DEBUG_MSG(PSTR("[SENSOR] Setting: \"humidity_correction\" to: %d\n"), configuration["humidity_correction"].as<float>());
+
+            setSetting("humCorrection", configuration["humidity_correction"].as<float>());
+
+            is_updated = true;
+        }
+
         return is_updated;
     }
 #endif // FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
@@ -794,6 +865,8 @@ bool _sensorHasMagnitude(
             channel["index"] = magnitude.global;
             channel["type"] = magnitude.type;
             channel["value"] = buffer;
+            channel["raw"] = value_show;
+            channel["decimals"] = magnitude.decimals;
             channel["units"] = magnitudeUnits(magnitude.type);
             channel["error"] = magnitude.sensor->error();
             channel["name"] = magnitudeName(magnitude.type);
@@ -819,7 +892,7 @@ bool _sensorHasMagnitude(
         JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
         JsonObject& module = modules.createNestedObject();
 
-        module["module"] = "sensors";
+        module["module"] = "sensor";
 
         // Data container
         JsonObject& data = module.createNestedObject("data");
@@ -844,7 +917,7 @@ bool _sensorHasMagnitude(
         JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
         JsonObject& module = modules.createNestedObject();
 
-        module["module"] = "sensors";
+        module["module"] = "sensor";
         module["visible"] = true;
 
         // Data container
@@ -962,7 +1035,7 @@ bool _sensorHasMagnitude(
         const uint32_t clientId, 
         JsonObject& module
     ) {
-        if (module.containsKey("module") && module["module"] == "sensors") {
+        if (module.containsKey("module") && module["module"] == "sensor") {
             if (module.containsKey("config")) {
                 // Extract configuration container
                 JsonObject& configuration = module["config"].as<JsonObject&>();
@@ -1023,8 +1096,8 @@ bool _sensorHasMagnitude(
         BaseSensor * sensor = _sensors[index];
 
         fastybird_channel_t channel = {
-            FASTYBIRD_CHANNEL_TYPE_SWITCH,
-            FASTYBIRD_CHANNEL_TYPE_SWITCH,
+            FASTYBIRD_CHANNEL_TYPE_SENSOR,
+            FASTYBIRD_CHANNEL_TYPE_SENSOR,
             sensorCount(),
             false,
             false,
