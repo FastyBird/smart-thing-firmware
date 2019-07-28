@@ -299,7 +299,7 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #endif
 
 #ifndef WEB_EMBEDDED
-#define WEB_EMBEDDED                    0                           // Build the firmware with the web interface embedded in
+#define WEB_EMBEDDED                    1                           // Build the firmware with the web interface embedded in
 #endif
 
 // This is not working at the moment!!
