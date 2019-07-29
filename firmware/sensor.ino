@@ -1096,8 +1096,8 @@ bool _sensorHasMagnitude(
         BaseSensor * sensor = _sensors[index];
 
         fastybird_channel_t channel = {
-            FASTYBIRD_CHANNEL_TYPE_SENSOR,
-            FASTYBIRD_CHANNEL_TYPE_SENSOR,
+            FASTYBIRD_CHANNEL_SENSOR,
+            FASTYBIRD_CHANNEL_SENSOR,
             sensorCount(),
             false,
             false,

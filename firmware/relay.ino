@@ -686,8 +686,8 @@ uint8_t _relayParsePayload(
 
     fastybird_channel_t _relayFastybirdGetChannelStructure() {
         fastybird_channel_t channel = {
-            FASTYBIRD_CHANNEL_TYPE_SWITCH,
-            FASTYBIRD_CHANNEL_TYPE_SWITCH,
+            FASTYBIRD_CHANNEL_SWITCH,
+            FASTYBIRD_CHANNEL_SWITCH,
             relayCount(),
             true,
             true,
@@ -712,14 +712,14 @@ uint8_t _relayParsePayload(
 
         #if SCHEDULER_SUPPORT
             channel.configureSchedulesCallback = ([](uint8_t id, JsonArray& configuration){
-                schConfigureChannelConfiguration(id, FASTYBIRD_CHANNEL_TYPE_SWITCH, configuration);
+                schConfigureChannelConfiguration(id, FASTYBIRD_CHANNEL_SWITCH, configuration);
 
                 String output;
                 DynamicJsonBuffer jsonBuffer;
 
                 JsonArray& schedules = jsonBuffer.createArray();
 
-                schReportChannelConfiguration(id, FASTYBIRD_CHANNEL_TYPE_SWITCH, schedules);
+                schReportChannelConfiguration(id, FASTYBIRD_CHANNEL_SWITCH, schedules);
 
                 schedules.printTo(output);
 
@@ -766,7 +766,7 @@ uint8_t _relayParsePayload(
             for (uint8_t i = 0; i < relayCount(); i++) {
                 JsonArray& schedules = jsonBuffer.createArray();
                 
-                schReportChannelConfiguration(i, FASTYBIRD_CHANNEL_TYPE_SWITCH, schedules);
+                schReportChannelConfiguration(i, FASTYBIRD_CHANNEL_SWITCH, schedules);
 
                 schedules.printTo(output);
 

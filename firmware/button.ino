@@ -182,8 +182,8 @@ uint8_t _buttonMapEvent(
 
     fastybird_channel_t _buttonFastybirdGetChannelStructure() {
         fastybird_channel_t channel = {
-            FASTYBIRD_CHANNEL_TYPE_BUTTON,
-            FASTYBIRD_CHANNEL_TYPE_BUTTON,
+            FASTYBIRD_CHANNEL_BUTTON,
+            FASTYBIRD_CHANNEL_BUTTON,
             _buttons.size(),
             false,
             false,

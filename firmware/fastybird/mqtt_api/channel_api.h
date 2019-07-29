@@ -92,7 +92,7 @@ bool _fastybirdPropagateChannelName(
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_NAME
         ).c_str(),
         name
@@ -124,7 +124,7 @@ bool _fastybirdPropagateChannelType(
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_TYPE
         ).c_str(),
         type
@@ -169,7 +169,7 @@ bool _fastybirdPropagateChannelProperties(
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_PROPERTIES
         ).c_str(),
         formatted_properties
@@ -187,7 +187,7 @@ bool _fastybirdPropagateChannelProperties(
                 if (channel.length > 1) {
                     topic = _fastybirdMqttApiCreateChannelTopicString(
                         thingId,
-                        _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+                        channel.type,
                         i,
                         FASTYBIRD_TOPIC_CHANNEL_PROPERTY_RECEIVE,
                         "property",
@@ -197,7 +197,7 @@ bool _fastybirdPropagateChannelProperties(
                 } else {
                     topic = _fastybirdMqttApiCreateChannelTopicString(
                         thingId,
-                        _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+                        channel.type,
                         FASTYBIRD_TOPIC_CHANNEL_PROPERTY_RECEIVE,
                         "property",
                         property.type
@@ -218,7 +218,7 @@ bool _fastybirdPropagateChannelProperties(
                 if (channel.length > 1) {
                     topic = _fastybirdMqttApiCreateChannelTopicString(
                         thingId,
-                        _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+                        channel.type,
                         i,
                         FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERY,
                         "property",
@@ -228,7 +228,7 @@ bool _fastybirdPropagateChannelProperties(
                 } else {
                     topic = _fastybirdMqttApiCreateChannelTopicString(
                         thingId,
-                        _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+                        channel.type,
                         FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERY,
                         "property",
                         property.type
@@ -278,7 +278,7 @@ bool _fastybirdPropagateChannelSize(
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_ARRAY
         ).c_str(),
         array_size
@@ -310,7 +310,7 @@ bool _fastybirdPropagateChannelPropertyName(
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_PROPERTY_NAME,
             "property",
             property.type
@@ -344,7 +344,7 @@ bool _fastybirdPropagateChannelPropertySettable(
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_PROPERTY_SETTABLE,
             "property",
             property.type
@@ -378,7 +378,7 @@ bool _fastybirdPropagateChannelPropertyQueryable(
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERYABLE,
             "property",
             property.type
@@ -412,7 +412,7 @@ bool _fastybirdPropagateChannelPropertyDataType(
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_PROPERTY_DATA_TYPE,
             "property",
             property.type
@@ -459,7 +459,7 @@ bool _fastybirdPropagateChannelPropertyFormat(
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_PROPERTY_FORMAT,
             "property",
             property.type
@@ -494,7 +494,7 @@ bool _fastybirdPropagateChannelPropertyMapping(
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_PROPERTY_MAPPING,
             "property",
             property,
@@ -563,7 +563,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_CONTROL
         ).c_str(),
         payload
@@ -578,7 +578,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
             if (channel.length > 1) {
                 topic = _fastybirdMqttApiCreateChannelTopicString(
                     thingId,
-                    _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+                    channel.type,
                     i,
                     FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
                     "control",
@@ -588,7 +588,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
             } else {
                 topic = _fastybirdMqttApiCreateChannelTopicString(
                     thingId,
-                    _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+                    channel.type,
                     FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
                     "control",
                     FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
@@ -631,7 +631,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
                 if (channel.length > 1) {
                     topic = _fastybirdMqttApiCreateChannelTopicString(
                         thingId,
-                        _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+                        channel.type,
                         i,
                         FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
                         "control",
@@ -641,7 +641,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
                 } else {
                     topic = _fastybirdMqttApiCreateChannelTopicString(
                         thingId,
-                        _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+                        channel.type,
                         FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
                         "control",
                         FASTYBIRD_CHANNEL_CONTROL_SCHEDULE
@@ -705,7 +705,7 @@ bool _fastybirdPropagateChannelConfigurationSchema(
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_CONTROL_SCHEMA,
             "control",
             FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
@@ -740,7 +740,7 @@ bool _fastybirdPropagateChannelConfiguration(
     if (channel.length > 1) {
         topic = _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             channelId,
             FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
             "control",
@@ -750,7 +750,7 @@ bool _fastybirdPropagateChannelConfiguration(
     } else {
         topic = _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
             "control",
             FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
@@ -792,7 +792,7 @@ bool _fastybirdPropagateChannelSchedulerConfiguration(
     if (channel.length > 1) {
         topic = _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             channelId,
             FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
             "control",
@@ -802,7 +802,7 @@ bool _fastybirdPropagateChannelSchedulerConfiguration(
     } else {
         topic = _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
             "control",
             FASTYBIRD_CHANNEL_CONTROL_SCHEDULE
@@ -845,7 +845,7 @@ bool _fastybirdPropagateChannelValue(
     if (channel.length > 1) {
         topic = _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             channelId,
             FASTYBIRD_TOPIC_CHANNEL_PROPERTY,
             "property",
@@ -855,7 +855,7 @@ bool _fastybirdPropagateChannelValue(
     } else {
         topic = _fastybirdMqttApiCreateChannelTopicString(
             thingId,
-            _fastybirdMqttApiConvertChannelName(channel.type).c_str(),
+            channel.type,
             FASTYBIRD_TOPIC_CHANNEL_PROPERTY,
             "property",
             property.type

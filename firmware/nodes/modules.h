@@ -470,8 +470,8 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
         if (dataRegister == GATEWAY_REGISTER_DI) {
             register_channel = {
-                FASTYBIRD_CHANNEL_TYPE_BINARY_SENSOR,
-                FASTYBIRD_CHANNEL_TYPE_BINARY_SENSOR,
+                FASTYBIRD_CHANNEL_BINARY_SENSOR,
+                FASTYBIRD_CHANNEL_BINARY_SENSOR,
                 _gateway_nodes[id].registers_size[dataRegister],
                 false,
                 false,
@@ -480,8 +480,8 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
         } else if (dataRegister == GATEWAY_REGISTER_DO) {
             register_channel = {
-                FASTYBIRD_CHANNEL_TYPE_BINARY_ACTOR,
-                FASTYBIRD_CHANNEL_TYPE_BINARY_ACTOR,
+                FASTYBIRD_CHANNEL_BINARY_ACTOR,
+                FASTYBIRD_CHANNEL_BINARY_ACTOR,
                 _gateway_nodes[id].registers_size[dataRegister],
                 false,
                 false,
@@ -490,8 +490,8 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
         } else if (dataRegister == GATEWAY_REGISTER_AI) {
             register_channel = {
-                FASTYBIRD_CHANNEL_TYPE_ANALOG_SENSOR,
-                FASTYBIRD_CHANNEL_TYPE_ANALOG_SENSOR,
+                FASTYBIRD_CHANNEL_ANALOG_SENSOR,
+                FASTYBIRD_CHANNEL_ANALOG_SENSOR,
                 _gateway_nodes[id].registers_size[dataRegister],
                 false,
                 false,
@@ -500,8 +500,8 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
         } else if (dataRegister == GATEWAY_REGISTER_AO) {
             register_channel = {
-                FASTYBIRD_CHANNEL_TYPE_ANALOG_ACTOR,
-                FASTYBIRD_CHANNEL_TYPE_ANALOG_ACTOR,
+                FASTYBIRD_CHANNEL_ANALOG_ACTOR,
+                FASTYBIRD_CHANNEL_ANALOG_ACTOR,
                 _gateway_nodes[id].registers_size[dataRegister],
                 false,
                 false,
@@ -510,8 +510,8 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
         } else if (dataRegister == GATEWAY_REGISTER_EV) {
             register_channel = {
-                FASTYBIRD_CHANNEL_TYPE_EVENT,
-                FASTYBIRD_CHANNEL_TYPE_EVENT,
+                FASTYBIRD_CHANNEL_EVENT,
+                FASTYBIRD_CHANNEL_EVENT,
                 _gateway_nodes[id].registers_size[dataRegister],
                 false,
                 false,

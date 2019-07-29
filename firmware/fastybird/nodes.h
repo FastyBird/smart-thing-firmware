@@ -334,7 +334,7 @@ void _fastybirdInitializeNode(
 
         case FASTYBIRD_PUB_HEARTBEAT:
             for (uint8_t j = 0; j < _fastybird_gateway_nodes[nodeId].channels.size(); j++) {
-                if (strcmp(_fastybird_gateway_nodes[nodeId].channels[j].type, FASTYBIRD_CHANNEL_TYPE_BINARY_SENSOR) == 0) {
+                if (strcmp(_fastybird_gateway_nodes[nodeId].channels[j].type, FASTYBIRD_CHANNEL_BINARY_SENSOR) == 0) {
                     for (uint8_t cnt = 0; cnt < _fastybird_gateway_nodes[nodeId].channels[j].length; cnt++) {
                         _fastybirdReportNodeChannelValue(
                             _fastybird_gateway_nodes[nodeId].id,
@@ -344,7 +344,7 @@ void _fastybirdInitializeNode(
                         );
                     }
 
-                } else if (strcmp(_fastybird_gateway_nodes[nodeId].channels[j].type, FASTYBIRD_CHANNEL_TYPE_BINARY_ACTOR) == 0) {
+                } else if (strcmp(_fastybird_gateway_nodes[nodeId].channels[j].type, FASTYBIRD_CHANNEL_BINARY_ACTOR) == 0) {
                     for (uint8_t cnt = 0; cnt < _fastybird_gateway_nodes[nodeId].channels[j].length; cnt++) {
                         _fastybirdReportNodeChannelValue(
                             _fastybird_gateway_nodes[nodeId].id,

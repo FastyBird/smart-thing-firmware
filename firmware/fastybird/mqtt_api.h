@@ -57,42 +57,6 @@ bool fastybirdMqttApiIsSameTopic(
 
 // -----------------------------------------------------------------------------
 
-String _fastybirdMqttApiConvertChannelName(
-    const char * type
-) {
-    if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_ANALOG_SENSOR) == 0) {
-        return FASTYBIRD_CHANNEL_ANALOG_INPUT;
-
-    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_ANALOG_ACTOR) == 0) {
-        return FASTYBIRD_CHANNEL_ANALOG_OUTPUT;
-
-    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_BINARY_SENSOR) == 0) {
-        return FASTYBIRD_CHANNEL_DIGITAL_INPUT;
-
-    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_BINARY_ACTOR) == 0) {
-        return FASTYBIRD_CHANNEL_DIGITAL_OUTPUT;
-
-    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_BUTTON) == 0) {
-        return FASTYBIRD_CHANNEL_BUTTON;
-
-    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_ENERGY) == 0) {
-        return FASTYBIRD_CHANNEL_ENERGY;
-
-    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_LED) == 0) {
-        return FASTYBIRD_CHANNEL_LED;
-
-    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_LIGHT) == 0) {
-        return FASTYBIRD_CHANNEL_LIGHT;
-
-    } else if (strcmp(type, FASTYBIRD_CHANNEL_TYPE_SWITCH) == 0) {
-        return FASTYBIRD_CHANNEL_SWITCH;
-    }
-
-    return String(type);
-}
-
-// -----------------------------------------------------------------------------
-
 void _fastybirdMQTTOnConnect() {
     // Unsubscribe from all thing topics
     mqttUnsubscribe((fastybirdMqttApiBuildTopicPrefix((fastybirdThingSN()).c_str()) + "#").c_str());

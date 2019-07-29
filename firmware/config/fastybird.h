@@ -13,11 +13,6 @@
 #define FASTYBIRD_SWITCH_PAYLOAD_OFF                        "off"
 #define FASTYBIRD_SWITCH_PAYLOAD_TOGGLE                     "toggle"
 
-#define FASTYBIRD_LED_PAYLOAD_ON                            "on"
-#define FASTYBIRD_LED_PAYLOAD_OFF                           "off"
-#define FASTYBIRD_LED_PAYLOAD_TOGGLE                        "toggle"
-#define FASTYBIRD_LED_PAYLOAD_RESTORE                       "restore"
-
 #define FASTYBIRD_BTN_PAYLOAD_PRESS                         "press"
 #define FASTYBIRD_BTN_PAYLOAD_CLICK                         "click"
 #define FASTYBIRD_BTN_PAYLOAD_DBL_CLICK                     "dbl_click"
@@ -163,7 +158,7 @@
 #define FASTYBIRD_THING_CONTROL_REBOOT                      "reboot"
 #define FASTYBIRD_THING_CONTROL_FACTORY_RESET               "factory-reset"
 #define FASTYBIRD_THING_CONTROL_RECONNECT                   "reconnect"
-#define FASTYBIRD_THING_CONTROL_SEARCH_FOR_NODES            "nodes-search"
+#define FASTYBIRD_THING_CONTROL_SEARCH_FOR_NODES            "search-nodes"
 #define FASTYBIRD_THING_CONTROL_DISCONNECT_NODE             "node-disconnect"
 
 // =============================================================================
@@ -174,38 +169,17 @@
 #define FASTYBIRD_CHANNEL_CONTROL_SCHEDULE                  "schedule"
 
 // =============================================================================
-// CHANNELS TYPES
-// =============================================================================
-
-#define FASTYBIRD_CHANNEL_TYPE_ANALOG_SENSOR                "analog_sensor"
-#define FASTYBIRD_CHANNEL_TYPE_ANALOG_ACTOR                 "analog_actor"
-#define FASTYBIRD_CHANNEL_TYPE_BINARY_SENSOR                "binary_sensor"
-#define FASTYBIRD_CHANNEL_TYPE_BINARY_ACTOR                 "binary_actor"
-#define FASTYBIRD_CHANNEL_TYPE_BUTTON                       "button"
-#define FASTYBIRD_CHANNEL_TYPE_ENERGY                       "energy"
-#define FASTYBIRD_CHANNEL_TYPE_LED                          "led"
-#define FASTYBIRD_CHANNEL_TYPE_LIGHT                        "light"
-#define FASTYBIRD_CHANNEL_TYPE_SWITCH                       "switch"
-#define FASTYBIRD_CHANNEL_TYPE_EVENT                        "event"
-#define FASTYBIRD_CHANNEL_TYPE_SENSOR                       "sensor"
-
-// =============================================================================
 // CHANNELS NAMES
 // =============================================================================
 
-#define FASTYBIRD_CHANNEL_BUTTON                            "btn"
-#define FASTYBIRD_CHANNEL_LED                               "led"
-#define FASTYBIRD_CHANNEL_COUNTER                           "counter"
-#define FASTYBIRD_CHANNEL_SWITCH                            "switch"
-#define FASTYBIRD_CHANNEL_RF_LEARN                          "rf-learn"
-#define FASTYBIRD_CHANNEL_CLAP                              "clap"
-#define FASTYBIRD_CHANNEL_ANALOG_INPUT                      "analog-in"
-#define FASTYBIRD_CHANNEL_ANALOG_OUTPUT                     "analog-out"
-#define FASTYBIRD_CHANNEL_DIGITAL_INPUT                     "digital-in"
-#define FASTYBIRD_CHANNEL_DIGITAL_OUTPUT                    "digital-out"
-#define FASTYBIRD_CHANNEL_EVENT                             "event"
-#define FASTYBIRD_CHANNEL_DISTANCE                          "distance"
-#define FASTYBIRD_CHANNEL_LIGHT                             "light"
+#define FASTYBIRD_CHANNEL_ANALOG_SENSOR                     "analog-sensor"
+#define FASTYBIRD_CHANNEL_ANALOG_ACTOR                      "analog-actor"
+#define FASTYBIRD_CHANNEL_BINARY_SENSOR                     "digital-sensor"
+#define FASTYBIRD_CHANNEL_BINARY_ACTOR                      "digital-actor"
+#define FASTYBIRD_CHANNEL_BUTTON                            "button"
 #define FASTYBIRD_CHANNEL_ENERGY                            "energy"
-#define FASTYBIRD_CHANNEL_MOVE                              "security-movement"
-#define FASTYBIRD_CHANNEL_ENVIRONMENT                       "env"
+#define FASTYBIRD_CHANNEL_LED                               "led"
+#define FASTYBIRD_CHANNEL_LIGHT                             "light"
+#define FASTYBIRD_CHANNEL_SWITCH                            "switch"
+#define FASTYBIRD_CHANNEL_EVENT                             "event"
+#define FASTYBIRD_CHANNEL_SENSOR                            "sensor"
