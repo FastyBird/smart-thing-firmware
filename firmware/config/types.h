@@ -51,9 +51,9 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define BUTTON_EVENT_RELEASED                   2
 #define BUTTON_EVENT_CLICK                      2
 #define BUTTON_EVENT_DBLCLICK                   3
-#define BUTTON_EVENT_LNGCLICK                   4
-#define BUTTON_EVENT_LNGLNGCLICK                5
-#define BUTTON_EVENT_TRIPLECLICK                6
+#define BUTTON_EVENT_TRIPLECLICK                4
+#define BUTTON_EVENT_LNGCLICK                   5
+#define BUTTON_EVENT_LNGLNGCLICK                6
 
 // Needed for ESP8285 boards under Windows using PlatformIO (?)
 #ifndef BUTTON_PUSHBUTTON

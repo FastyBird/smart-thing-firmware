@@ -636,8 +636,8 @@ uint8_t _relayParsePayload(
         fastybird_channel_property_t property = {
             FASTYBIRD_PROPERTY_STATE,
             FASTYBIRD_PROPERTY_STATE,
-            false,
-            false,
+            true,
+            true,
             FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
         };
 

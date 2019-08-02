@@ -137,41 +137,33 @@ uint8_t _buttonMapEvent(
         property.format.push_back(String(BUTTON_EVENT_LNGCLICK).c_str());
         property.format.push_back(String(BUTTON_EVENT_LNGLNGCLICK).c_str());
 
-        char payload[2];
-
-        itoa(BUTTON_EVENT_PRESSED, payload, 10);
         property.mappings.push_back({
-            payload,
+            "1",
             FASTYBIRD_BTN_PAYLOAD_PRESS
         });
 
-        itoa(BUTTON_EVENT_CLICK, payload, 10);
         property.mappings.push_back({
-            payload,
+            "2",
             FASTYBIRD_BTN_PAYLOAD_CLICK
         });
 
-        itoa(BUTTON_EVENT_DBLCLICK, payload, 10);
         property.mappings.push_back({
-            payload,
+            "3",
             FASTYBIRD_BTN_PAYLOAD_DBL_CLICK
         });
 
-        itoa(BUTTON_EVENT_TRIPLECLICK, payload, 10);
         property.mappings.push_back({
-            payload,
+            "4",
             FASTYBIRD_BTN_PAYLOAD_TRIPLE_CLICK
         });
 
-        itoa(BUTTON_EVENT_LNGCLICK, payload, 10);
         property.mappings.push_back({
-            payload,
+            "5",
             FASTYBIRD_BTN_PAYLOAD_LNG_CLICK
         });
 
-        itoa(BUTTON_EVENT_LNGLNGCLICK, payload, 10);
         property.mappings.push_back({
-            payload,
+            "6",
             FASTYBIRD_BTN_PAYLOAD_LNG_LNG_CLICK
         });
 
