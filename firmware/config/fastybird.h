@@ -103,6 +103,7 @@
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_SETTABLE           "{channel}/{property}/$settable"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERYABLE          "{channel}/{property}/$queryable"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_DATA_TYPE          "{channel}/{property}/$data-type"
+#define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_UNITS              "{channel}/{property}/$units"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_FORMAT             "{channel}/{property}/$format"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_MAPPING            "{channel}/{property}/$mapping/{mapping}"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_UNIT               "{channel}/{property}/$units"
@@ -138,17 +139,25 @@
 #define FASTYBIRD_PUB_CHANNEL_TYPE                          1
 #define FASTYBIRD_PUB_CHANNEL_PROPERTIES                    2
 #define FASTYBIRD_PUB_CHANNEL_ARRAY                         3
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_NAME                 4
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_SETABLE              5
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_QUERYABLE            6
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_DATA_TYPE            7
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_FORMAT               8
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_MAPPING              9
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_UNIT                 10
-#define FASTYBIRD_PUB_CHANNEL_CONTROL_STRUCTURE             11
-#define FASTYBIRD_PUB_CHANNEL_CONFIGURATION_SCHEMA          12
-#define FASTYBIRD_PUB_CHANNEL_SCHEDULE                      13
-#define FASTYBIRD_PUB_CHANNEL_DONE                          14
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY                      4
+#define FASTYBIRD_PUB_CHANNEL_CONTROL_STRUCTURE             5
+#define FASTYBIRD_PUB_CHANNEL_CONFIGURATION_SCHEMA          6
+#define FASTYBIRD_PUB_CHANNEL_SCHEDULE                      7
+#define FASTYBIRD_PUB_CHANNEL_DONE                          8
+
+// =============================================================================
+// CHANNEL PROPERTY INITIALIZE SEQUENTIONS
+// =============================================================================
+
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_NAME                 0
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_SETABLE              1
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_QUERYABLE            2
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_DATA_TYPE            3
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_UNITS                4
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_FORMAT               5
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_MAPPING              6
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_UNIT                 7
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_DONE                 8
 
 // =============================================================================
 // THING CONTROLS
@@ -182,4 +191,4 @@
 #define FASTYBIRD_CHANNEL_LIGHT                             "light"
 #define FASTYBIRD_CHANNEL_SWITCH                            "switch"
 #define FASTYBIRD_CHANNEL_EVENT                             "event"
-#define FASTYBIRD_CHANNEL_SENSOR                            "sensor-%d"
+#define FASTYBIRD_CHANNEL_SENSOR                            "sensor"

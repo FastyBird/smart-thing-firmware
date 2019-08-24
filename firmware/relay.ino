@@ -639,12 +639,16 @@ uint8_t _relayParsePayload(
             true,
             true,
             FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
-            NULL,
+            "",
         };
 
-        property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_ON);
-        property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_OFF);
-        property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_TOGGLE);
+        char format[30];
+
+        strcpy(format, FASTYBIRD_SWITCH_PAYLOAD_ON);
+        strcat(format, ",");
+        strcat(format, FASTYBIRD_SWITCH_PAYLOAD_OFF);
+        strcat(format, ",");
+        strcat(format, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE);
 
         property.mappings.push_back({
             FASTYBIRD_SWITCH_PAYLOAD_ON,

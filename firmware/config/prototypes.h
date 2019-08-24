@@ -208,30 +208,32 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
     typedef std::function<void(unsigned int, JsonArray&)> fastybird_channels_confiure_schedules_f;
 
     typedef struct {
-        const char * from;
-        const char * to;
+        char * from;
+        char * to;
     } fastybird_channel_property_mapping_t;
 
     typedef struct {
-        const char * type;
-        const char * name;
+        String name;
+        String type;
 
         bool settable;
         bool queryable;
 
-        const char * dataType;
-        const char * units;
+        String dataType;
+        String units;
 
-        std::vector<String> format;
+        String format;
         std::vector<fastybird_channel_property_mapping_t> mappings;
+
+        bool initialized;
 
         fastybird_channels_process_payload_f payloadCallback;
         fastybird_channels_process_query_f queryCallback;
     } fastybird_channel_property_t;
 
     typedef struct {
-        const char * name;
-        const char * type;
+        String name;
+        String type;
         unsigned int length;
 
         bool isConfigurable;

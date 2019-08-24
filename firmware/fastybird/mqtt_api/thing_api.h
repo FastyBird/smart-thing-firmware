@@ -346,7 +346,7 @@ bool _fastybirdPropagateThingChannels(
         start_index = i;
 
         if (channels[i].length > 0) {
-            strcpy(payload, channels[i].type);
+            strcpy(payload, channels[i].type.c_str());
 
             if (channels[i].length > 1) {
                 strcat(payload, "[]");
@@ -359,7 +359,7 @@ bool _fastybirdPropagateThingChannels(
     for (uint8_t i = (start_index + 1); i < channels.size(); i++) {
         if (channels[i].length > 0) {
             strcat(payload, ",");
-            strcat(payload, channels[i].type);
+            strcat(payload, channels[i].type.c_str());
 
             if (channels[i].length > 1) {
                 strcat(payload, "[]");

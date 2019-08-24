@@ -128,15 +128,24 @@ uint8_t _buttonMapEvent(
             false,
             false,
             FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
-            NULL,
+            "",
         };
 
-        property.format.push_back(String(BUTTON_EVENT_PRESSED).c_str());
-        property.format.push_back(String(BUTTON_EVENT_CLICK).c_str());
-        property.format.push_back(String(BUTTON_EVENT_DBLCLICK).c_str());
-        property.format.push_back(String(BUTTON_EVENT_TRIPLECLICK).c_str());
-        property.format.push_back(String(BUTTON_EVENT_LNGCLICK).c_str());
-        property.format.push_back(String(BUTTON_EVENT_LNGLNGCLICK).c_str());
+        char format[30];
+
+        strcpy(format, String(BUTTON_EVENT_PRESSED).c_str());
+        strcat(format, ",");
+        strcat(format, String(BUTTON_EVENT_CLICK).c_str());
+        strcat(format, ",");
+        strcat(format, String(BUTTON_EVENT_DBLCLICK).c_str());
+        strcat(format, ",");
+        strcat(format, String(BUTTON_EVENT_TRIPLECLICK).c_str());
+        strcat(format, ",");
+        strcat(format, String(BUTTON_EVENT_LNGCLICK).c_str());
+        strcat(format, ",");
+        strcat(format, String(BUTTON_EVENT_LNGLNGCLICK).c_str());
+
+        property.format = String(format);
 
         property.mappings.push_back({
             "1",

@@ -29,6 +29,7 @@ typedef struct {
     double reported;            // Last reported value
     double min_change;          // Minimum value change to report
     double max_change;          // Maximum value change to report
+    uint8_t sensorIndex;
 } sensor_magnitude_t;
 
 std::vector<BaseSensor *> _sensors;
@@ -850,13 +851,32 @@ bool _sensorHasMagnitude(
         BaseSensor * sensor = _sensors[sensorIndex];
 
         fastybird_channel_property_t property = {
-            sensorMagnitudeName(sensor->type(sensorMagnitudeIndex)).c_str(),
-            sensorMagnitudeName(sensor->type(sensorMagnitudeIndex)).c_str(),
+            sensorMagnitudeName(sensor->type(sensorMagnitudeIndex)),
+            sensorMagnitudeName(sensor->type(sensorMagnitudeIndex)),
             false,
-            true,
+            false,
             FASTYBIRD_PROPERTY_DATA_TYPE_FLOAT,
-            sensorMagnitudeUnits(sensor->type(sensorMagnitudeIndex)).c_str(),
+            sensorMagnitudeUnits(sensor->type(sensorMagnitudeIndex)),
         };
+
+        property.queryCallback = ([sensorIndex, sensorMagnitudeIndex](uint8_t id, const char * payload) {
+            sensor_magnitude_t magnitude = _magnitudes[sensorMagnitudeIndex];
+
+            double value = magnitude.filter->result();
+            value = _sensorMagnitudeProcess(magnitude.type, magnitude.decimals, value);
+            
+            uint8_t decimals = magnitude.decimals;
+
+            char buffer[10];
+
+            dtostrf(value, 1 - sizeof(buffer), decimals, buffer);
+
+            fastybirdReportChannelValue(
+                _sensor_fastybird_channel_index[sensorIndex],
+                sensorMagnitudeIndex,
+                buffer
+            );
+        });
 
         return property;
     }
@@ -868,22 +888,27 @@ bool _sensorHasMagnitude(
     ) {
         BaseSensor * sensor = _sensors[index];
 
-        char channel_name[20];
+        char channel_base_name[20];
+        strcpy(channel_base_name, FASTYBIRD_CHANNEL_SENSOR);
+        strcat(channel_base_name, "-%d");
 
-        sprintf(channel_name, FASTYBIRD_CHANNEL_SENSOR, (index + 1));
+        char channel_name[strlen(channel_base_name) + 3];
+        sprintf(channel_name, channel_base_name, (index + 1));
         
         fastybird_channel_t channel = {
-            "Sensor",
-            String(channel_name).c_str(),
+            String(channel_name),
+            FASTYBIRD_CHANNEL_SENSOR,
             1,              // Each registered sensor is separate channel
             false,
             false,
             false
         };
-
+       
         // Process all sensor magnitudes
         for (uint8_t i = 0; i < sensor->count(); i++) {
-            channel.properties.push_back(_sensorFastybirdGetChannelStatePropertyStructure(index, i));
+            fastybird_channel_property_t property = _sensorFastybirdGetChannelStatePropertyStructure(index, i);
+
+            channel.properties.push_back(property);
         }
 
         return channel;
@@ -1083,6 +1108,7 @@ void _sensorInit() {
             new_magnitude.reported = 0;
             new_magnitude.min_change = 0;
             new_magnitude.max_change = 0;
+            new_magnitude.sensorIndex = k;
 
             // TODO: find a proper way to extend this to min/max of any magnitude
             if (type == MAGNITUDE_ENERGY) {
@@ -1298,11 +1324,11 @@ void _sensorReport(
 
     char buffer[10];
 
-    dtostrf(value, 1-sizeof(buffer), decimals, buffer);
+    dtostrf(value, 1 - sizeof(buffer), decimals, buffer);
 
     #if FASTYBIRD_SUPPORT
         fastybirdReportChannelValue(
-            _sensor_fastybird_channel_index[1],
+            _sensor_fastybird_channel_index[magnitude.sensorIndex],
             index,
             buffer
         );
