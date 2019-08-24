@@ -639,6 +639,7 @@ uint8_t _relayParsePayload(
             true,
             true,
             FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
+            NULL,
         };
 
         property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_ON);
@@ -674,6 +675,7 @@ uint8_t _relayParsePayload(
         property.queryCallback = ([](uint8_t id, const char * payload) {
             fastybirdReportChannelValue(
                 _relay_fastybird_channel_index,
+                0,
                 id,
                 relayStatus(id) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
             );
@@ -972,6 +974,7 @@ void _relayProcess(
         #if FASTYBIRD_SUPPORT
             fastybirdReportChannelValue(
                 _relay_fastybird_channel_index,
+                0,
                 id,
                 target ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
             );

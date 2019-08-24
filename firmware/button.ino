@@ -128,6 +128,7 @@ uint8_t _buttonMapEvent(
             false,
             false,
             FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
+            NULL,
         };
 
         property.format.push_back(String(BUTTON_EVENT_PRESSED).c_str());
@@ -262,6 +263,7 @@ void _buttonEvent(
 
         fastybirdReportChannelValue(
             _button_fastybird_channel_index,
+            0,
             id,
             payload
         );

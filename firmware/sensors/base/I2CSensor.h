@@ -1,7 +1,10 @@
-// -----------------------------------------------------------------------------
-// Abstract I2C sensor class (other sensor classes extend this class)
-// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
-// -----------------------------------------------------------------------------
+/*
+
+I2C SENSORS BASE
+
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+
+*/
 
 #if SENSOR_SUPPORT && ( I2C_SUPPORT || EMON_ANALOG_SUPPORT )
 
@@ -31,9 +34,15 @@ class I2CSensor : public BaseSensor {
 
     public:
 
-        void setAddress(uint8_t address) {
-            if (_address == address) return;
+        void setAddress(
+            uint8_t address
+        ) {
+            if (_address == address) {
+                return;
+            }
+
             _address = address;
+
             _dirty = true;
         }
 
@@ -42,14 +51,20 @@ class I2CSensor : public BaseSensor {
         }
 
         // Descriptive name of the slot # index
-        String slot(uint8_t index) {
+        String slot(
+            uint8_t index
+        ) {
             return description();
-        };
+        }
 
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(uint8_t index) {
+        String address(
+            uint8_t index
+        ) {
             char buffer[5];
+            
             snprintf(buffer, sizeof(buffer), "0x%02X", _address);
+            
             return String(buffer);
         }
 
@@ -57,7 +72,6 @@ class I2CSensor : public BaseSensor {
 
         // Specific for I2C sensors
         uint8_t _begin_i2c(uint8_t address, size_t size, uint8_t * addresses) {
-
             // If we have already locked this address for this sensor quit
             if ((address > 0) && (address == _previous_address)) {
                 return _previous_address;
@@ -84,12 +98,10 @@ class I2CSensor : public BaseSensor {
             }
 
             return _previous_address;
-
         }
 
         uint8_t _previous_address = 0;
         uint8_t _address = 0;
-
-};
+}
 
 #endif // SENSOR_SUPPORT && I2C_SUPPORT

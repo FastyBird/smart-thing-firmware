@@ -526,13 +526,17 @@ bool fastybirdReportChannelScheduler(
 
 bool fastybirdReportChannelValue(
     const uint8_t index,
+    const uint8_t property,
     const uint8_t channelId,
     const char * payload
 ) {
-    if (index >= 0 && index < _fastybird_channels.size()) {
+    if (
+        index >= 0 && index < _fastybird_channels.size()
+        && property >= 0 && property < _fastybird_channels[index].properties.size()
+    ) {
         return _fastybirdPropagateChannelValue(
             _fastybird_channels[index],
-            _fastybird_channels[index].properties[0],
+            _fastybird_channels[index].properties[property],
             channelId,
             payload
         );
@@ -545,9 +549,10 @@ bool fastybirdReportChannelValue(
 
 bool fastybirdReportChannelValue(
     const uint8_t index,
+    const uint8_t property,
     const char * payload
 ) {
-    return fastybirdReportChannelValue(index, 0, payload);
+    return fastybirdReportChannelValue(index, property, 0, payload);
 }
 
 // -----------------------------------------------------------------------------

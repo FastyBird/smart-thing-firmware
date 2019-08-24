@@ -9,13 +9,14 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #if SENSOR_SUPPORT
 
 #include <vector>
+#include <float.h>
+
 #include "filters/LastFilter.h"
 #include "filters/MaxFilter.h"
 #include "filters/MedianFilter.h"
 #include "filters/MovingAverageFilter.h"
-#include "sensors/BaseSensor.h"
 
-#include <float.h>
+#include "sensors/base/BaseSensor.h"
 
 typedef struct {
     BaseSensor * sensor;        // Sensor object
@@ -34,7 +35,8 @@ std::vector<BaseSensor *> _sensors;
 std::vector<sensor_magnitude_t> _magnitudes;
 bool _sensors_ready = false;
 
-uint8_t _magnitudes_count[MAGNITUDE_MAX];
+uint8_t _sensor_types_count[SENSOR_TYPES_MAX];
+uint8_t _sensor_magnitudes_count[MAGNITUDE_MAX];
 uint32_t _sensor_read_interval = 1000 * SENSOR_READ_INTERVAL;
 uint8_t _sensor_report_every = SENSOR_REPORT_EVERY;
 uint8_t _sensor_save_every = SENSOR_SAVE_EVERY;
@@ -46,21 +48,19 @@ double _sensor_temperature_correction = SENSOR_TEMPERATURE_CORRECTION;
 double _sensor_humidity_correction = SENSOR_HUMIDITY_CORRECTION;
 double _sensor_lux_correction = SENSOR_LUX_CORRECTION;
 
-#if PZEM004T_SUPPORT
-    PZEM004TSensor *pzem004t_sensor;
-#endif
-
 String _sensor_energy_reset_ts = String();
 
 #if FASTYBIRD_SUPPORT
-    uint8_t _sensor_fastybird_channel_index = 0xFF;
+    uint8_t _sensor_fastybird_channel_index[SENSOR_TYPES_MAX];
 #endif
+
+#define FILLARRAY(a, n) a[0] = n, memcpy(((char *) a) + sizeof(a[0]), a, sizeof(a) - sizeof(a[0]));
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-uint8_t _magnitudeDecimals(
+uint8_t _sensorMagnitudeDecimals(
     uint8_t type
 ) {
     // Hardcoded decimals (these should be linked to the unit, instead of the magnitude)
@@ -99,7 +99,7 @@ uint8_t _magnitudeDecimals(
 
 // -----------------------------------------------------------------------------
 
-double _magnitudeProcess(
+double _sensorMagnitudeProcess(
     uint8_t type,
     uint8_t decimals,
     double value
@@ -149,7 +149,7 @@ double _magnitudeProcess(
 bool _sensorHasMagnitude(
     uint8_t type
 ) {
-    for (uint8_t i = 0; i < magnitudeCount(); i++) {
+    for (uint8_t i = 0; i < sensorMagnitudeCount(); i++) {
         sensor_magnitude_t magnitude = _magnitudes[i];
 
         if (magnitude.type == type) {
@@ -163,69 +163,28 @@ bool _sensorHasMagnitude(
 // -----------------------------------------------------------------------------
 
 #if FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
-    void _sensorResetMICSCalibration() {
-        for (uint8_t i = 0; i < _sensors.size(); i++) {
-            #if MICS2710_SUPPORT
-                if (_sensors[i]->getID() == SENSOR_MICS2710_ID) {
-                    MICS2710Sensor * sensor = (MICS2710Sensor *) _sensors[i];
-
-                    sensor->calibrate();
-
-                    setSetting("snsR0", sensor->getR0());
-                }
-            #endif // MICS2710_SUPPORT
-
-            #if MICS5525_SUPPORT
-                if (_sensors[i]->getID() == SENSOR_MICS5525_ID) {
-                    MICS5525Sensor * sensor = (MICS5525Sensor *) _sensors[i];
-
-                    sensor->calibrate();
-
-                    setSetting("snsR0", sensor->getR0());
-                }
-            #endif // MICS5525_SUPPORT
-        }
-
-        // Reload & cache settings
-        firmwareReload();
-    }
-
-// -----------------------------------------------------------------------------
-
     void _sensorResetPowerCalibration() {
         for (uint8_t i = 0; i < _sensors.size(); i++) {
-            #if EMON_ANALOG_SUPPORT
-                if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
-                    EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
-
-                    sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-
-                    delSetting("pwrRatioC");
-                }
-            #endif // EMON_ANALOG_SUPPORT
-
             #if HLW8012_SUPPORT
                 if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
                     HLW8012Sensor * sensor = (HLW8012Sensor *) _sensors[i];
 
                     sensor->resetRatios();
-
-                    delSetting("pwrRatioC");
-                    delSetting("pwrRatioV");
-                    delSetting("pwrRatioP");
                 }
             #endif // HLW8012_SUPPORT
 
             #if CSE7766_SUPPORT
                 if (_sensors[i]->getID() == SENSOR_CSE7766_ID) {
-                    sensor->resetRatios();
+                    CSE7766Sensor * sensor = (CSE7766Sensor *) _sensors[i];
 
-                    delSetting("pwrRatioC");
-                    delSetting("pwrRatioV");
-                    delSetting("pwrRatioP");
+                    sensor->resetRatios();
                 }
             #endif // CSE7766_SUPPORT
         }
+
+        delSetting("pwrRatioC");
+        delSetting("pwrRatioV");
+        delSetting("pwrRatioP");
 
         // Reload & cache settings
         firmwareReload();
@@ -235,51 +194,11 @@ bool _sensorHasMagnitude(
 
     void _sensorResetEnergyCalibration() {
         for (uint8_t i = 0; i < _sensors.size(); i++) {
-            #if EMON_ANALOG_SUPPORT
-                if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
-                    EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
-
-                    sensor->resetEnergy();
-
-                    delSetting("eneTotal");
-
-                    _sensorResetTS();
-                }
-            #endif // EMON_ANALOG_SUPPORT
-
-            #if EMON_ADC121_SUPPORT
-                if (_sensors[i]->getID() == SENSOR_EMON_ADC121_ID) {
-                    EmonADC121Sensor * sensor = (EmonADC121Sensor *) _sensors[i];
-
-                    sensor->resetEnergy();
-
-                    delSetting("eneTotal");
-
-                    _sensorResetTS();
-                }
-            #endif // EMON_ADC121_SUPPORT
-
-            #if EMON_ADS1X15_SUPPORT
-                if (_sensors[i]->getID() == SENSOR_EMON_ADS1X15_ID) {
-                    EmonADS1X15Sensor * sensor = (EmonADS1X15Sensor *) _sensors[i];
-
-                    sensor->resetEnergy();
-
-                    delSetting("eneTotal");
-
-                    _sensorResetTS();
-                }
-            #endif // EMON_ADS1X15_SUPPORT
-
             #if HLW8012_SUPPORT
                 if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
                     HLW8012Sensor * sensor = (HLW8012Sensor *) _sensors[i];
 
                     sensor->resetEnergy();
-
-                    delSetting("eneTotal");
-
-                    _sensorResetTS();
                 }
             #endif // HLW8012_SUPPORT
 
@@ -288,41 +207,13 @@ bool _sensorHasMagnitude(
                     CSE7766Sensor * sensor = (CSE7766Sensor *) _sensors[i];
 
                     sensor->resetEnergy();
-
-                    delSetting("eneTotal");
-
-                    _sensorResetTS();
                 }
             #endif // CSE7766_SUPPORT
-
-            #if PULSEMETER_SUPPORT
-                if (_sensors[i]->getID() == SENSOR_PULSEMETER_ID) {
-                    PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
-
-                    sensor->resetEnergy();
-
-                    delSetting("eneTotal");
-
-                    _sensorResetTS();
-                }
-            #endif // PULSEMETER_SUPPORT
-
-            #if PZEM004T_SUPPORT
-                if (_sensors[i]->getID() == SENSOR_PZEM004T_ID) {
-                    PZEM004TSensor * sensor = (PZEM004TSensor *) _sensors[i];
-
-                    uint8_t dev_count = sensor->getAddressesCount();
-
-                    for (uint8_t dev = 0; dev < dev_count; dev++) {
-                        sensor->resetEnergy(dev, 0);
-
-                        delSetting("pzemEneTotal", dev);
-                    }
-
-                    _sensorResetTS();
-                }
-            #endif // PZEM004T_SUPPORT
         }
+
+        delSetting("eneTotal");
+
+        _sensorResetTS();
 
         // Reload & cache settings
         firmwareReload();
@@ -346,13 +237,6 @@ bool _sensorHasMagnitude(
         for (uint8_t i = 0; i < _sensors.size(); i++) {
             BaseSensor * sensor = _sensors[i];
 
-            #if EMON_ANALOG_SUPPORT
-                if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
-                    enabled_emon = true;
-                    enabled_pwr = true;
-                }
-            #endif
-
             #if HLW8012_SUPPORT
                 if (sensor->getID() == SENSOR_HLW8012_ID) {
                     enabled_hlw = true;
@@ -364,31 +248,6 @@ bool _sensorHasMagnitude(
                 if (sensor->getID() == SENSOR_CSE7766_ID) {
                     enabled_cse = true;
                     enabled_pwr = true;
-                }
-            #endif
-
-            #if V9261F_SUPPORT
-                if (sensor->getID() == SENSOR_V9261F_ID) {
-                    enabled_pwr = true;
-                }
-            #endif
-
-            #if ECH1560_SUPPORT
-                if (sensor->getID() == SENSOR_ECH1560_ID) {
-                    enabled_pwr = true;
-                }
-            #endif
-
-            #if PZEM004T_SUPPORT
-                if (sensor->getID() == SENSOR_PZEM004T_ID) {
-                    enabled_pzem = true;
-                    enabled_pwr = true;
-                }
-            #endif
-
-            #if PULSEMETER_SUPPORT
-                if (sensor->getID() == SENSOR_PULSEMETER_ID) {
-                    enabled_pm = true;
                 }
             #endif
         }
@@ -613,13 +472,6 @@ bool _sensorHasMagnitude(
         for (uint8_t i = 0; i < _sensors.size(); i++) {
             BaseSensor * sensor = _sensors[i];
 
-            #if EMON_ANALOG_SUPPORT
-                if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
-                    enabled_emon = true;
-                    enabled_pwr = true;
-                }
-            #endif
-
             #if HLW8012_SUPPORT
                 if (sensor->getID() == SENSOR_HLW8012_ID) {
                     enabled_hlw = true;
@@ -631,31 +483,6 @@ bool _sensorHasMagnitude(
                 if (sensor->getID() == SENSOR_CSE7766_ID) {
                     enabled_cse = true;
                     enabled_pwr = true;
-                }
-            #endif
-
-            #if V9261F_SUPPORT
-                if (sensor->getID() == SENSOR_V9261F_ID) {
-                    enabled_pwr = true;
-                }
-            #endif
-
-            #if ECH1560_SUPPORT
-                if (sensor->getID() == SENSOR_ECH1560_ID) {
-                    enabled_pwr = true;
-                }
-            #endif
-
-            #if PZEM004T_SUPPORT
-                if (sensor->getID() == SENSOR_PZEM004T_ID) {
-                    enabled_pzem = true;
-                    enabled_pwr = true;
-                }
-            #endif
-
-            #if PULSEMETER_SUPPORT
-                if (sensor->getID() == SENSOR_PULSEMETER_ID) {
-                    enabled_pm = true;
                 }
             #endif
         }
@@ -684,22 +511,6 @@ bool _sensorHasMagnitude(
 
         if (enabled_pm) {
             configuration["energy_ratio"] = (char*) NULL;
-        }
-
-        for (uint8_t i = 0; i < _sensors.size(); i++) {
-            BaseSensor * sensor = _sensors[i];
-
-            #if EMON_ANALOG_SUPPORT
-                if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
-                    configuration["power_voltage"] = ((EmonAnalogSensor *) sensor)->getVoltage();
-                }
-            #endif
-
-            #if PULSEMETER_SUPPORT
-                if (sensor->getID() == SENSOR_PULSEMETER_ID) {
-                    configuration["energy_ratio"] = ((PulseMeterSensor *) sensor)->getEnergyRatio();
-                }
-            #endif
         }
 
         if (enabled_hlw || enabled_cse) {
@@ -849,7 +660,7 @@ bool _sensorHasMagnitude(
     ) {
         char buffer[10];
 
-        for (uint8_t i = 0; i < magnitudeCount(); i++) {
+        for (uint8_t i = 0; i < sensorMagnitudeCount(); i++) {
             sensor_magnitude_t magnitude = _magnitudes[i];
 
             if (magnitude.type == MAGNITUDE_EVENT) {
@@ -858,7 +669,7 @@ bool _sensorHasMagnitude(
 
             JsonObject& channel = channels.createNestedObject();
 
-            double value_show = _magnitudeProcess(magnitude.type, magnitude.decimals, magnitude.last);
+            double value_show = _sensorMagnitudeProcess(magnitude.type, magnitude.decimals, magnitude.last);
 
             dtostrf(value_show, 1 - sizeof(buffer), magnitude.decimals, buffer);
 
@@ -867,9 +678,9 @@ bool _sensorHasMagnitude(
             channel["value"] = buffer;
             channel["raw"] = value_show;
             channel["decimals"] = magnitude.decimals;
-            channel["units"] = magnitudeUnits(magnitude.type);
+            channel["units"] = sensorMagnitudeUnits(magnitude.type);
             channel["error"] = magnitude.sensor->error();
-            channel["name"] = magnitudeName(magnitude.type);
+            channel["name"] = sensorMagnitudeName(magnitude.type);
 
             if (magnitude.type == MAGNITUDE_ENERGY) {
                 if (_sensor_energy_reset_ts.length() == 0) {
@@ -959,13 +770,6 @@ bool _sensorHasMagnitude(
         for (uint8_t i = 0; i < _sensors.size(); i++) {
             BaseSensor * sensor = _sensors[i];
 
-            #if EMON_ANALOG_SUPPORT
-                if (sensor->getID() == SENSOR_EMON_ANALOG_ID) {
-                    configuration_sensors["emon"] = true;
-                    configuration_sensors["pwr"] = true;
-                }
-            #endif
-
             #if HLW8012_SUPPORT
                 if (sensor->getID() == SENSOR_HLW8012_ID) {
                     configuration_sensors["hlw"] = 1;
@@ -979,34 +783,9 @@ bool _sensorHasMagnitude(
                     configuration_sensors["pwr"] = true;
                 }
             #endif
-
-            #if V9261F_SUPPORT
-                if (sensor->getID() == SENSOR_V9261F_ID) {
-                    configuration_sensors["pwr"] = true;
-                }
-            #endif
-
-            #if ECH1560_SUPPORT
-                if (sensor->getID() == SENSOR_ECH1560_ID) {
-                    configuration_sensors["pwr"] = true;
-                }
-            #endif
-
-            #if PZEM004T_SUPPORT
-                if (sensor->getID() == SENSOR_PZEM004T_ID) {
-                    configuration_sensors["pzem"] = true;
-                    configuration_sensors["pwr"] = true;
-                }
-            #endif
-
-            #if PULSEMETER_SUPPORT
-                if (sensor->getID() == SENSOR_PULSEMETER_ID) {
-                    configuration_sensors["pm"] = true;
-                }
-            #endif
         }
 
-        for (uint8_t i = 0; i < magnitudeCount(); i++) {
+        for (uint8_t i = 0; i < sensorMagnitudeCount(); i++) {
             sensor_magnitude_t magnitude = _magnitudes[i];
 
             if (magnitude.type == MAGNITUDE_TEMPERATURE) {
@@ -1016,15 +795,6 @@ bool _sensorHasMagnitude(
             if (magnitude.type == MAGNITUDE_HUMIDITY) {
                 configuration_sensors["humidity"] = true;
             }
-
-            #if MICS2710_SUPPORT || MICS5525_SUPPORT
-                if (
-                    magnitude.type == MAGNITUDE_CO
-                    || magnitude.type == MAGNITUDE_NO2
-                ) {
-                    configuration_sensors["mics"] = true;
-                }
-            #endif
         }
     }
 
@@ -1061,10 +831,7 @@ bool _sensorHasMagnitude(
         const char * action,
         JsonObject& data
     ) {
-        if (strcmp(action, "reset_mics_calibration") == 0) {
-            _sensorResetMICSCalibration();
-
-        } else if(strcmp(action, "reset_power_calibration") == 0) {
+        if(strcmp(action, "reset_power_calibration") == 0) {
             _sensorResetPowerCalibration();
 
         } else if(strcmp(action, "reset_energy_calibration") == 0) {
@@ -1076,13 +843,19 @@ bool _sensorHasMagnitude(
 // -----------------------------------------------------------------------------
 
 #if FASTYBIRD_SUPPORT
-    fastybird_channel_property_t _sensorFastybirdGetChannelStatePropertyStructure() {
+    fastybird_channel_property_t _sensorFastybirdGetChannelStatePropertyStructure(
+        uint8_t sensorIndex,
+        uint8_t sensorMagnitudeIndex
+    ) {
+        BaseSensor * sensor = _sensors[sensorIndex];
+
         fastybird_channel_property_t property = {
-            FASTYBIRD_PROPERTY_STATE,
-            FASTYBIRD_PROPERTY_STATE,
+            sensorMagnitudeName(sensor->type(sensorMagnitudeIndex)).c_str(),
+            sensorMagnitudeName(sensor->type(sensorMagnitudeIndex)).c_str(),
             false,
-            false,
-            FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
+            true,
+            FASTYBIRD_PROPERTY_DATA_TYPE_FLOAT,
+            sensorMagnitudeUnits(sensor->type(sensorMagnitudeIndex)).c_str(),
         };
 
         return property;
@@ -1095,16 +868,23 @@ bool _sensorHasMagnitude(
     ) {
         BaseSensor * sensor = _sensors[index];
 
+        char channel_name[20];
+
+        sprintf(channel_name, FASTYBIRD_CHANNEL_SENSOR, (index + 1));
+        
         fastybird_channel_t channel = {
-            FASTYBIRD_CHANNEL_SENSOR,
-            FASTYBIRD_CHANNEL_SENSOR,
-            sensorCount(),
+            "Sensor",
+            String(channel_name).c_str(),
+            1,              // Each registered sensor is separate channel
             false,
             false,
             false
         };
 
-        channel.properties.push_back(_sensorFastybirdGetChannelStatePropertyStructure());
+        // Process all sensor magnitudes
+        for (uint8_t i = 0; i < sensor->count(); i++) {
+            channel.properties.push_back(_sensorFastybirdGetChannelStatePropertyStructure(index, i));
+        }
 
         return channel;
     }
@@ -1214,222 +994,6 @@ void _sensorLoad() {
 
      */
 
-    #if AM2320_SUPPORT
-    {
-        AM2320Sensor * sensor = new AM2320Sensor();
-
-        sensor->setAddress(AM2320_ADDRESS);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if ANALOG_SUPPORT
-    {
-        AnalogSensor * sensor = new AnalogSensor();
-
-        sensor->setSamples(ANALOG_SAMPLES);
-        sensor->setDelay(ANALOG_DELAY);
-        //CICM For analog scaling
-        sensor->setFactor(ANALOG_FACTOR);
-        sensor->setOffset(ANALOG_OFFSET);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if BH1750_SUPPORT
-    {
-        BH1750Sensor * sensor = new BH1750Sensor();
-
-        sensor->setAddress(BH1750_ADDRESS);
-        sensor->setMode(BH1750_MODE);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if BMP180_SUPPORT
-    {
-        BMP180Sensor * sensor = new BMP180Sensor();
-
-        sensor->setAddress(BMP180_ADDRESS);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if BMX280_SUPPORT
-    {
-        // Support up to two sensors with full auto-discovery.
-        const uint8_t number = constrain(getSetting("bmx280Number", BMX280_NUMBER).toInt(), 1, 2);
-
-        // For second sensor, if BMX280_ADDRESS is 0x00 then auto-discover
-        // otherwise choose the other unnamed sensor address
-        const uint8_t first = getSetting("bmx280Address", BMX280_ADDRESS).toInt();
-        const uint8_t second = (first == 0x00) ? 0x00 : (0x76 + 0x77 - first);
-
-        const uint8_t address_map[2] = { first, second };
-
-        for (uint8_t n = 0; n < number; ++n) {
-            BMX280Sensor * sensor = new BMX280Sensor();
-
-            sensor->setAddress(address_map[n]);
-
-            _sensors.push_back(sensor);
-        }
-    }
-    #endif
-
-    #if CSE7766_SUPPORT
-    {
-        CSE7766Sensor * sensor = new CSE7766Sensor();
-
-        sensor->setRX(CSE7766_PIN);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if DALLAS_SUPPORT
-    {
-        DallasSensor * sensor = new DallasSensor();
-
-        sensor->setGPIO(DALLAS_PIN);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if DHT_SUPPORT
-    {
-        DHTSensor * sensor = new DHTSensor();
-
-        sensor->setGPIO(DHT_PIN);
-        sensor->setType(DHT_TYPE);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if DIGITAL_SUPPORT
-    {
-        DigitalSensor * sensor = new DigitalSensor();
-
-        sensor->setGPIO(DIGITAL_PIN);
-        sensor->setMode(DIGITAL_PIN_MODE);
-        sensor->setDefault(DIGITAL_DEFAULT_STATE);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if ECH1560_SUPPORT
-    {
-        ECH1560Sensor * sensor = new ECH1560Sensor();
-
-        sensor->setCLK(ECH1560_CLK_PIN);
-        sensor->setMISO(ECH1560_MISO_PIN);
-        sensor->setInverted(ECH1560_INVERTED);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if EMON_ADC121_SUPPORT
-    {
-        EmonADC121Sensor * sensor = new EmonADC121Sensor();
-
-        sensor->setAddress(EMON_ADC121_I2C_ADDRESS);
-        sensor->setVoltage(EMON_MAINS_VOLTAGE);
-        sensor->setReference(EMON_REFERENCE_VOLTAGE);
-        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if EMON_ADS1X15_SUPPORT
-    {
-        EmonADS1X15Sensor * sensor = new EmonADS1X15Sensor();
-
-        sensor->setAddress(EMON_ADS1X15_I2C_ADDRESS);
-        sensor->setType(EMON_ADS1X15_TYPE);
-        sensor->setMask(EMON_ADS1X15_MASK);
-        sensor->setGain(EMON_ADS1X15_GAIN);
-        sensor->setVoltage(EMON_MAINS_VOLTAGE);
-        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-        sensor->setCurrentRatio(1, EMON_CURRENT_RATIO);
-        sensor->setCurrentRatio(2, EMON_CURRENT_RATIO);
-        sensor->setCurrentRatio(3, EMON_CURRENT_RATIO);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if EMON_ANALOG_SUPPORT
-    {
-        EmonAnalogSensor * sensor = new EmonAnalogSensor();
-
-        sensor->setVoltage(EMON_MAINS_VOLTAGE);
-        sensor->setReference(EMON_REFERENCE_VOLTAGE);
-        sensor->setCurrentRatio(0, EMON_CURRENT_RATIO);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if EVENTS_SUPPORT
-    {
-        EventSensor * sensor = new EventSensor();
-
-        sensor->setGPIO(EVENTS_PIN);
-        sensor->setTrigger(EVENTS_TRIGGER);
-        sensor->setPinMode(EVENTS_PIN_MODE);
-        sensor->setDebounceTime(EVENTS_DEBOUNCE);
-        sensor->setInterruptMode(EVENTS_INTERRUPT_MODE);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if GEIGER_SUPPORT
-    {
-        GeigerSensor * sensor = new GeigerSensor();        // Create instance of thr Geiger module.
-
-        sensor->setGPIO(GEIGER_PIN);                       // Interrupt pin of the attached geiger counter board.
-        sensor->setMode(GEIGER_PIN_MODE);                  // This pin is an input.
-        sensor->setDebounceTime(GEIGER_DEBOUNCE);          // Debounce time 25ms, because https://github.com/Trickx/espurna/wiki/Geiger-counter
-        sensor->setInterruptMode(GEIGER_INTERRUPT_MODE);   // Interrupt triggering: edge detection rising.
-        sensor->setCPM2SievertFactor(GEIGER_CPM2SIEVERT);  // Conversion factor from counts per minute to µSv/h
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if GUVAS12SD_SUPPORT
-    {
-        GUVAS12SDSensor * sensor = new GUVAS12SDSensor();
-
-        sensor->setGPIO(GUVAS12SD_PIN);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if SONAR_SUPPORT
-    {
-        SonarSensor * sensor = new SonarSensor();
-
-        sensor->setEcho(SONAR_ECHO);
-        sensor->setIterations(SONAR_ITERATIONS);
-        sensor->setMaxDistance(SONAR_MAX_DISTANCE);
-        sensor->setTrigger(SONAR_TRIGGER);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
     #if HLW8012_SUPPORT
     {
         HLW8012Sensor * sensor = new HLW8012Sensor();
@@ -1443,244 +1007,11 @@ void _sensorLoad() {
     }
     #endif
 
-    #if LDR_SUPPORT
+    #if CSE7766_SUPPORT
     {
-        LDRSensor * sensor = new LDRSensor();
+        CSE7766Sensor * sensor = new CSE7766Sensor();
 
-        sensor->setSamples(LDR_SAMPLES);
-        sensor->setDelay(LDR_DELAY);
-        sensor->setType(LDR_TYPE);
-        sensor->setPhotocellPositionOnGround(LDR_ON_GROUND);
-        sensor->setResistor(LDR_RESISTOR);
-        sensor->setPhotocellParameters(LDR_MULTIPLICATION, LDR_POWER);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if MHZ19_SUPPORT
-    {
-        MHZ19Sensor * sensor = new MHZ19Sensor();
-
-        sensor->setRX(MHZ19_RX_PIN);
-        sensor->setTX(MHZ19_TX_PIN);
-
-        if (getSetting("mhz19CalibrateAuto", 0).toInt() == 1) {
-            sensor->setCalibrateAuto(true);
-        }
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if MICS2710_SUPPORT
-    {
-        MICS2710Sensor * sensor = new MICS2710Sensor();
-
-        sensor->setAnalogGPIO(MICS2710_NOX_PIN);
-        sensor->setPreHeatGPIO(MICS2710_PRE_PIN);
-        sensor->setRL(MICS2710_RL);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if MICS5525_SUPPORT
-    {
-        MICS5525Sensor * sensor = new MICS5525Sensor();
-
-        sensor->setAnalogGPIO(MICS5525_RED_PIN);
-        sensor->setRL(MICS5525_RL);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if NTC_SUPPORT
-    {
-        NTCSensor * sensor = new NTCSensor();
-
-        sensor->setSamples(NTC_SAMPLES);
-        sensor->setDelay(NTC_DELAY);
-        sensor->setUpstreamResistor(NTC_R_UP);
-        sensor->setDownstreamResistor(NTC_R_DOWN);
-        sensor->setBeta(NTC_BETA);
-        sensor->setR0(NTC_R0);
-        sensor->setT0(NTC_T0);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if PMSX003_SUPPORT
-    {
-        PMSX003Sensor * sensor = new PMSX003Sensor();
-
-        #if PMS_USE_SOFT
-            sensor->setRX(PMS_RX_PIN);
-            sensor->setTX(PMS_TX_PIN);
-        #else
-            sensor->setSerial(& PMS_HW_PORT);
-        #endif
-
-        sensor->setType(PMS_TYPE);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if PULSEMETER_SUPPORT
-    {
-        PulseMeterSensor * sensor = new PulseMeterSensor();
-
-        sensor->setGPIO(PULSEMETER_PIN);
-        sensor->setEnergyRatio(PULSEMETER_ENERGY_RATIO);
-        sensor->setDebounceTime(PULSEMETER_DEBOUNCE);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if PZEM004T_SUPPORT
-    {
-        String addresses = getSetting("pzemAddr", PZEM004T_ADDRESSES);
-
-        if (!addresses.length()) {
-            DEBUG_MSG(PSTR("[SENSOR] PZEM004T Error: no addresses are configured\n"));
-            return;
-        }
-
-        PZEM004TSensor * sensor = pzem004t_sensor = new PZEM004TSensor();
-
-        sensor->setAddresses(addresses.c_str());
-
-        if (getSetting("pzemSoft", PZEM004T_USE_SOFT).toInt() == 1) {
-            sensor->setRX(getSetting("pzemRX", PZEM004T_RX_PIN).toInt());
-            sensor->setTX(getSetting("pzemTX", PZEM004T_TX_PIN).toInt());
-
-        } else {
-            sensor->setSerial(& PZEM004T_HW_PORT);
-        }
-
-        // Read saved energy offset
-        uint8_t dev_count = sensor->getAddressesCount();
-
-        for (uint8_t dev = 0; dev < dev_count; dev++) {
-            float value = getSetting("pzemEneTotal", dev, 0).toFloat();
-
-            if (value > 0) {
-                sensor->resetEnergy(dev, value);
-            }
-        }
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if SENSEAIR_SUPPORT
-    {
-        SenseAirSensor * sensor = new SenseAirSensor();
-
-        sensor->setRX(SENSEAIR_RX_PIN);
-        sensor->setTX(SENSEAIR_TX_PIN);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if SDS011_SUPPORT
-    {
-        SDS011Sensor * sensor = new SDS011Sensor();
-
-        sensor->setRX(SDS011_RX_PIN);
-        sensor->setTX(SDS011_TX_PIN);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if SHT3X_I2C_SUPPORT
-    {
-        SHT3XI2CSensor * sensor = new SHT3XI2CSensor();
-
-        sensor->setAddress(SHT3X_I2C_ADDRESS);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if SI7021_SUPPORT
-    {
-        SI7021Sensor * sensor = new SI7021Sensor();
-
-        sensor->setAddress(SI7021_ADDRESS);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if TMP3X_SUPPORT
-    {
-        TMP3XSensor * sensor = new TMP3XSensor();
-
-        sensor->setType(TMP3X_TYPE);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if V9261F_SUPPORT
-    {
-        V9261FSensor * sensor = new V9261FSensor();
-
-        sensor->setRX(V9261F_PIN);
-        sensor->setInverted(V9261F_PIN_INVERSE);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if MAX6675_SUPPORT
-    {
-        MAX6675Sensor * sensor = new MAX6675Sensor();
-
-        sensor->setCS(MAX6675_CS_PIN);
-        sensor->setSO(MAX6675_SO_PIN);
-        sensor->setSCK(MAX6675_SCK_PIN);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if VEML6075_SUPPORT
-    {
-        VEML6075Sensor * sensor = new VEML6075Sensor();
-
-        sensor->setIntegrationTime(VEML6075_INTEGRATION_TIME);
-        sensor->setDynamicMode(VEML6075_DYNAMIC_MODE);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if VL53L1X_SUPPORT
-    {
-        VL53L1XSensor * sensor = new VL53L1XSensor();
-
-        sensor->setInterMeasurementPeriod(VL53L1X_INTER_MEASUREMENT_PERIOD);
-        sensor->setDistanceMode(VL53L1X_DISTANCE_MODE);
-        sensor->setMeasurementTimingBudget(VL53L1X_MEASUREMENT_TIMING_BUDGET);
-
-        _sensors.push_back(sensor);
-    }
-    #endif
-
-    #if EZOPH_SUPPORT
-    {
-        EZOPHSensor * sensor = new EZOPHSensor();
-
-        sensor->setRX(EZOPH_RX_PIN);
-        sensor->setTX(EZOPH_TX_PIN);
+        sensor->setRX(CSE7766_PIN);
 
         _sensors.push_back(sensor);
     }
@@ -1738,7 +1069,7 @@ void _sensorInit() {
 	        signed char decimals = _sensors[i]->decimals(type);
 
 	        if (decimals < 0) {
-                decimals = _magnitudeDecimals(type);
+                decimals = _sensorMagnitudeDecimals(type);
             }
 
             sensor_magnitude_t new_magnitude;
@@ -1747,7 +1078,7 @@ void _sensorInit() {
             new_magnitude.local = k;
             new_magnitude.type = type;
 	        new_magnitude.decimals = (uint8_t) decimals;
-            new_magnitude.global = _magnitudes_count[type];
+            new_magnitude.global = _sensor_magnitudes_count[type];
             new_magnitude.last = 0;
             new_magnitude.reported = 0;
             new_magnitude.min_change = 0;
@@ -1784,10 +1115,13 @@ void _sensorInit() {
 
             _magnitudes.push_back(new_magnitude);
 
-            DEBUG_MSG(PSTR("[SENSOR]  -> %s:%d\n"), magnitudeName(new_magnitude.type).c_str(), _magnitudes_count[type]);
+            DEBUG_MSG(PSTR("[SENSOR]  -> %s:%d\n"), sensorMagnitudeName(new_magnitude.type).c_str(), _sensor_magnitudes_count[type]);
 
             // Magnitudes counter
-            _magnitudes_count[type] = _magnitudes_count[type] + 1;
+            _sensor_magnitudes_count[type] = _sensor_magnitudes_count[type] + 1;
+
+            // Sensors counter
+            _sensor_types_count[_sensors[i]->type()] = _sensor_types_count[_sensors[i]->type()] + 1;
         } // for (uint8_t k = 0; k < _sensors[i]->count(); k++)
 
         // Hook callback
@@ -1796,37 +1130,6 @@ void _sensorInit() {
         });
 
         // Custom initializations
-
-        #if MICS2710_SUPPORT
-            if (_sensors[i]->getID() == SENSOR_MICS2710_ID) {
-                MICS2710Sensor * sensor = (MICS2710Sensor *) _sensors[i];
-
-                sensor->setR0(getSetting("snsR0", MICS2710_R0).toInt());
-            }
-        #endif // MICS2710_SUPPORT
-
-        #if MICS5525_SUPPORT
-            if (_sensors[i]->getID() == SENSOR_MICS5525_ID) {
-                MICS5525Sensor * sensor = (MICS5525Sensor *) _sensors[i];
-
-                sensor->setR0(getSetting("snsR0", MICS5525_R0).toInt());
-            }
-        #endif // MICS5525_SUPPORT
-
-        #if EMON_ANALOG_SUPPORT
-            if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
-                EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
-
-                sensor->setCurrentRatio(0, getSetting("pwrRatioC", EMON_CURRENT_RATIO).toFloat());
-                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
-
-                double value = _sensorEnergyTotal();
-
-                if (value > 0) {
-                    sensor->resetEnergy(0, value);
-                }
-            }
-        #endif // EMON_ANALOG_SUPPORT
 
         #if HLW8012_SUPPORT
             if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
@@ -1891,14 +1194,6 @@ void _sensorInit() {
                 }
             }
         #endif // CSE7766_SUPPORT
-
-        #if PULSEMETER_SUPPORT
-            if (_sensors[i]->getID() == SENSOR_PULSEMETER_ID) {
-                PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
-
-                sensor->setEnergyRatio(getSetting("pwrRatioE", PULSEMETER_ENERGY_RATIO).toInt());
-            }
-        #endif // PULSEMETER_SUPPORT
     }
 }
 
@@ -1920,22 +1215,6 @@ void _sensorConfigure() {
 
     // Specific sensor settings
     for (uint8_t i = 0; i < _sensors.size(); i++) {
-        #if EMON_ANALOG_SUPPORT
-            if (_sensors[i]->getID() == SENSOR_EMON_ANALOG_ID) {
-                double value;
-
-                EmonAnalogSensor * sensor = (EmonAnalogSensor *) _sensors[i];
-
-                if ((value = getSetting("pwrExpectedP", 0).toInt())) {
-                    sensor->expectedPower(0, value);
-
-                    setSetting("pwrRatioC", sensor->getCurrentRatio(0));
-                }
-
-                sensor->setVoltage(getSetting("pwrVoltage", EMON_MAINS_VOLTAGE).toInt());
-            }
-        #endif // EMON_ANALOG_SUPPORT
-
         #if HLW8012_SUPPORT
             if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
                 double value;
@@ -1987,14 +1266,6 @@ void _sensorConfigure() {
                 }
             }
         #endif // CSE7766_SUPPORT
-
-        #if PULSEMETER_SUPPORT
-            if (_sensors[i]->getID() == SENSOR_PULSEMETER_ID) {
-                PulseMeterSensor * sensor = (PulseMeterSensor *) _sensors[i];
-
-                sensor->setEnergyRatio(getSetting("pwrRatioE", PULSEMETER_ENERGY_RATIO).toInt());
-            }
-        #endif // PULSEMETER_SUPPORT
     }
 
     // Update filter sizes
@@ -2029,7 +1300,13 @@ void _sensorReport(
 
     dtostrf(value, 1-sizeof(buffer), decimals, buffer);
 
-    // TODO: implement FB sending
+    #if FASTYBIRD_SUPPORT
+        fastybirdReportChannelValue(
+            _sensor_fastybird_channel_index[1],
+            index,
+            buffer
+        );
+    #endif
 }
 
 // -----------------------------------------------------------------------------
@@ -2042,13 +1319,13 @@ uint8_t sensorCount() {
 
 // -----------------------------------------------------------------------------
 
-uint8_t magnitudeCount() {
+uint8_t sensorMagnitudeCount() {
     return _magnitudes.size();
 }
 
 // -----------------------------------------------------------------------------
 
-String magnitudeName(
+String sensorMagnitudeName(
     uint8_t type
 ) {
     char buffer[16] = {0};
@@ -2062,7 +1339,7 @@ String magnitudeName(
 
 // -----------------------------------------------------------------------------
 
-uint8_t magnitudeType(
+uint8_t sensorMagnitudeType(
     uint8_t index
 ) {
     if (index < _magnitudes.size()) {
@@ -2074,7 +1351,7 @@ uint8_t magnitudeType(
 
 // -----------------------------------------------------------------------------
 
-double magnitudeValue(
+double sensorMagnitudeValue(
     uint8_t index
 ) {
     if (index < _magnitudes.size()) {
@@ -2086,7 +1363,7 @@ double magnitudeValue(
 
 // -----------------------------------------------------------------------------
 
-uint8_t magnitudeIndex(
+uint8_t sensorMagnitudeIndex(
     uint8_t index
 ) {
     if (index < _magnitudes.size()) {
@@ -2098,7 +1375,7 @@ uint8_t magnitudeIndex(
 
 // -----------------------------------------------------------------------------
 
-String magnitudeUnits(
+String sensorMagnitudeUnits(
     uint8_t type
 ) {
     char buffer[8] = {0};
@@ -2161,6 +1438,8 @@ void sensorSetup() {
     #endif
 
     #if FASTYBIRD_SUPPORT
+        FILLARRAY(_sensor_fastybird_channel_index, 0xFF);
+
         // Module schema report
         fastybirdReportConfigurationSchemaRegister(_sensorReportConfigurationSchema);
         fastybirdReportConfigurationRegister(_sensorReportConfiguration);
@@ -2169,12 +1448,12 @@ void sensorSetup() {
         // Channels registration
         if (sensorCount() > 0) {
             for (uint8_t i = 0; i < sensorCount(); i++) {
-                _sensor_fastybird_channel_index = fastybirdRegisterChannel(_sensorFastybirdGetChannelStructure(i));
+                _sensor_fastybird_channel_index[i] = fastybirdRegisterChannel(_sensorFastybirdGetChannelStructure(i));
             }
         }
     #endif
 
-    DEBUG_MSG(PSTR("[SENSOR] Number of sensors: %d and magnitudes: %d\n"), sensorCount(), magnitudeCount());
+    DEBUG_MSG(PSTR("[SENSOR] Number of sensors: %d and magnitudes: %d\n"), sensorCount(), sensorMagnitudeCount());
 }
 
 // -----------------------------------------------------------------------------
@@ -2265,7 +1544,7 @@ void sensorLoop() {
                 // Procesing (units and decimals)
                 // -------------------------------------------------------------
 
-                value_show = _magnitudeProcess(magnitude.type, magnitude.decimals, value_raw);
+                value_show = _sensorMagnitudeProcess(magnitude.type, magnitude.decimals, value_raw);
 
                 // -------------------------------------------------------------
                 // Debug
@@ -2279,9 +1558,9 @@ void sensorLoop() {
 
                     DEBUG_MSG(PSTR("[SENSOR] %s - %s: %s%s\n"),
                         magnitude.sensor->slot(magnitude.local).c_str(),
-                        magnitudeName(magnitude.type).c_str(),
+                        sensorMagnitudeName(magnitude.type).c_str(),
                         buffer,
-                        magnitudeName(magnitude.type).c_str()
+                        sensorMagnitudeName(magnitude.type).c_str()
                     );
                 }
                 #endif // SENSOR_DEBUG
@@ -2303,7 +1582,7 @@ void sensorLoop() {
 
                 if (report) {
                     value_filtered = magnitude.filter->result();
-                    value_filtered = _magnitudeProcess(magnitude.type, magnitude.decimals, value_filtered);
+                    value_filtered = _sensorMagnitudeProcess(magnitude.type, magnitude.decimals, value_filtered);
 
                     magnitude.filter->reset();
 

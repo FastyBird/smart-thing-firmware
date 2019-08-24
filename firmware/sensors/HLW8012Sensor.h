@@ -1,6 +1,6 @@
 /*
 
-HLW8012 SENSOR
+HLW8012 SENSOR - Energy meter sensor
 
 Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
@@ -13,7 +13,7 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #include <Arduino.h>
 #include <HLW8012.h>
 
-#include "BaseSensor.h"
+#include "base/BaseSensor.h"
 
 class HLW8012Sensor : public BaseSensor {
 
@@ -61,7 +61,7 @@ class HLW8012Sensor : public BaseSensor {
             double value = 0
         ) {
             _energy_offset = value;
-            
+
             _hlw8012->resetEnergy();
         }
 
@@ -205,7 +205,7 @@ class HLW8012Sensor : public BaseSensor {
             uint8_t index
         ) {
             return description();
-        };
+        }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(
@@ -216,6 +216,11 @@ class HLW8012Sensor : public BaseSensor {
             snprintf(buffer, sizeof(buffer), "%u:%u:%u", _sel, _cf, _cf1);
 
             return String(buffer);
+        }
+
+        // Name of the sensor
+        uint8_t type() {
+            return SENSOR_TYPE_ENERGY;
         }
 
         // Type for slot # index
@@ -249,12 +254,10 @@ class HLW8012Sensor : public BaseSensor {
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        #if HLW8012_USE_INTERRUPTS
-        #if HLW8012_WAIT_FOR_WIFI
+        #if HLW8012_USE_INTERRUPTS && HLW8012_WAIT_FOR_WIFI
         void pre() {
             _enableInterrupts(wifiConnected());
         }
-        #endif
         #endif
 
         // Toggle between current and voltage monitoring

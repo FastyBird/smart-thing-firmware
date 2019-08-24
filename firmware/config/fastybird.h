@@ -182,4 +182,4 @@
 #define FASTYBIRD_CHANNEL_LIGHT                             "light"
 #define FASTYBIRD_CHANNEL_SWITCH                            "switch"
 #define FASTYBIRD_CHANNEL_EVENT                             "event"
-#define FASTYBIRD_CHANNEL_SENSOR                            "sensor"
+#define FASTYBIRD_CHANNEL_SENSOR                            "sensor-%d"

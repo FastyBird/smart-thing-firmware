@@ -1,7 +1,10 @@
-// -----------------------------------------------------------------------------
-// Abstract sensor class (other sensor classes extend this class)
-// Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
-// -----------------------------------------------------------------------------
+/*
+
+SENSORS BASE
+
+Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+
+*/
 
 #if SENSOR_SUPPORT
 
@@ -53,6 +56,9 @@ class BaseSensor {
 
         // Descriptive name of the slot # index
         virtual String slot(uint8_t index) = 0;
+
+        // Type for sensor
+        virtual uint8_t type() = 0;
 
         // Type for slot # index
         virtual uint8_t type(uint8_t index) = 0;

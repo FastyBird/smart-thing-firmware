@@ -220,6 +220,7 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
         bool queryable;
 
         const char * dataType;
+        const char * units;
 
         std::vector<String> format;
         std::vector<fastybird_channel_property_mapping_t> mappings;

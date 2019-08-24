@@ -262,52 +262,29 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define TMP_KELVIN                  2
 
 // =============================================================================
+// Sensors
+// These should remain over time, do not modify them, only add new ones at the end
+// =============================================================================
+
+#define SENSOR_TYPE_ENERGY          0
+#define SENSOR_TYPE_ENVIRONMENT     1
+#define SENSOR_TYPE_ANALOG          2
+
+#define SENSOR_TYPES_MAX            3
+
+// =============================================================================
 // Sensor ID
 // These should remain over time, do not modify them, only add new ones at the end
 // =============================================================================
 
-#define SENSOR_DHTXX_ID             1
-#define SENSOR_DALLAS_ID            2
-#define SENSOR_EMON_ANALOG_ID       3
-#define SENSOR_EMON_ADC121_ID       4
-#define SENSOR_EMON_ADS1X15_ID      5
-#define SENSOR_HLW8012_ID           6
-#define SENSOR_V9261F_ID            7
-#define SENSOR_ECH1560_ID           8
-#define SENSOR_ANALOG_ID            9
-#define SENSOR_DIGITAL_ID           10
-#define SENSOR_EVENTS_ID            11
-#define SENSOR_PMSX003_ID           12
-#define SENSOR_BMX280_ID            13
-#define SENSOR_MHZ19_ID             14
-#define SENSOR_SI7021_ID            15
-#define SENSOR_SHT3X_I2C_ID         16
-#define SENSOR_BH1750_ID            17
-#define SENSOR_PZEM004T_ID          18
-#define SENSOR_AM2320_ID            19
-#define SENSOR_GUVAS12SD_ID         20
-#define SENSOR_CSE7766_ID           21
-#define SENSOR_TMP3X_ID             22
-#define SENSOR_SONAR_ID             23
-#define SENSOR_SENSEAIR_ID          24
-#define SENSOR_GEIGER_ID            25
-#define SENSOR_NTC_ID               26
-#define SENSOR_SDS011_ID            27
-#define SENSOR_MICS2710_ID          28
-#define SENSOR_MICS5525_ID          29
-#define SENSOR_PULSEMETER_ID        30
-#define SENSOR_VEML6075_ID          31
-#define SENSOR_VL53L1X_ID           32
-#define SENSOR_EZOPH_ID             33
-#define SENSOR_BMP180_ID            34
-#define SENSOR_MAX6675_ID           35
-#define SENSOR_LDR_ID               36
-#define SENSOR_SONOFF_SC            37
-#define SENSOR_SONOFF_SC_PRO        38
+#define SENSOR_HLW8012_ID           1
+#define SENSOR_CSE7766_ID           2
+#define SENSOR_SONOFF_SC_ID         3
+#define SENSOR_SONOFF_SC_PRO_ID     4
 
 // =============================================================================
 // Magnitudes
-// These should remain over time, do not modify their values, only add new ones at the end
+// These should remain over time, do not modify them, only add new ones at the end
 // =============================================================================
 
 #define MAGNITUDE_NONE              0
