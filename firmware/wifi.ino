@@ -420,7 +420,7 @@ void _wifiInject() {
 
         if (
             configuration.containsKey("wifi_scan")
-            && configuration["wifi_scan"].as<bool>() != (getSetting("wifiScan").toInt() == 1)
+            && configuration["wifi_scan"].as<bool>() != ((getSetting("wifiScan").toInt() == 1))
         )  {
             DEBUG_MSG(PSTR("[WIFI] Setting: \"wifi_scan\" to: %d\n"), configuration["wifi_scan"].as<bool>() ? 1 : 0);
 
