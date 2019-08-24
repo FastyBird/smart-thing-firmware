@@ -76,7 +76,7 @@ bool _nofussEnabled = false;
         
         if (
             configuration.containsKey("nofuss_server")
-            && configuration["nofuss_server"].as<char *>() != getSetting("nofussServer").c_str()
+            && strcmp(configuration["nofuss_server"].as<char *>(), getSetting("nofussServer").c_str()) != 0
         )  {
             DEBUG_MSG(PSTR("[NOFUSS] Setting: \"nofuss_server\" to: %s\n"), configuration["nofuss_server"].as<char *>());
 

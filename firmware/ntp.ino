@@ -93,7 +93,7 @@ uint32_t _ntp_start = 0;
 
         if (
             configuration.containsKey("ntp_server")
-            && configuration["ntp_server"].as<char *>() != getSetting("ntpServer").c_str()
+            && strcmp(configuration["ntp_server"].as<char *>(), getSetting("ntpServer").c_str()) != 0
         )  {
             DEBUG_MSG(PSTR("[NTP] Setting: \"ntp_server\" to: %s\n"), configuration["ntp_server"].as<char *>());
 

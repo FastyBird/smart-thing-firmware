@@ -352,7 +352,7 @@ void _mqttConfigure() {
 
         if (
             configuration.containsKey("mqtt_server")
-            && configuration["mqtt_server"].as<char *>() != getSetting("mqttServer").c_str()
+            && strcmp(configuration["mqtt_server"].as<char *>(), getSetting("mqttServer").c_str()) != 0
         )  {
             DEBUG_MSG(PSTR("[MQTT] Setting: \"mqtt_server\" to: %s\n"), configuration["mqtt_server"].as<char *>());
 
@@ -374,7 +374,7 @@ void _mqttConfigure() {
 
         if (
             configuration.containsKey("mqtt_username")
-            && configuration["mqtt_username"].as<char *>() != getSetting("mqttUser").c_str()
+            && strcmp(configuration["mqtt_username"].as<char *>(), getSetting("mqttUser").c_str()) != 0
         )  {
             DEBUG_MSG(PSTR("[MQTT] Setting: \"mqtt_username\" to: %s\n"), configuration["mqtt_username"].as<char *>());
 
@@ -385,7 +385,7 @@ void _mqttConfigure() {
 
         if (
             configuration.containsKey("mqtt_password")
-            && configuration["mqtt_password"].as<char *>() != getSetting("mqttPassword").c_str()
+            && strcmp(configuration["mqtt_password"].as<char *>(), getSetting("mqttPassword").c_str()) != 0
         )  {
             DEBUG_MSG(PSTR("[MQTT] Setting: \"mqtt_password\" to: %s\n"), configuration["mqtt_password"].as<char *>());
 
@@ -396,7 +396,7 @@ void _mqttConfigure() {
 
         if (
             configuration.containsKey("mqtt_client_id")
-            && configuration["mqtt_client_id"].as<char *>() != getSetting("mqttClientID").c_str()
+            && strcmp(configuration["mqtt_client_id"].as<char *>(), getSetting("mqttClientID").c_str()) != 0
         )  {
             DEBUG_MSG(PSTR("[MQTT] Setting: \"mqtt_client_id\" to: %s\n"), configuration["mqtt_client_id"].as<char *>());
 
@@ -419,7 +419,7 @@ void _mqttConfigure() {
 
             if (
                 configuration.containsKey("mqtt_ssl_fp")
-                && configuration["mqtt_ssl_fp"].as<char *>() != getSetting("mqttSslFp").c_str()
+                && strcmp(configuration["mqtt_ssl_fp"].as<char *>(), getSetting("mqttSslFp").c_str()) != 0
             )  {
                 setSetting("mqttSslFp", configuration["mqtt_ssl_fp"].as<char *>());
 
