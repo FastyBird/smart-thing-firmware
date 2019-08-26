@@ -102,6 +102,7 @@ void niceDelay(uint32_t ms);
 #if WEB_SUPPORT
     #include <ESPAsyncWebServer.h>
     
+    AsyncWebServer * webServer();
     typedef std::function<void(AsyncWebServer * server)> web_events_callback_f;
     void webEventsRegister(web_events_callback_f callback);
 #else

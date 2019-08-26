@@ -209,7 +209,8 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
     #define STATUS_LED_PIN              15
     #define STATUS_LED_PIN_INVERSE      0
 
-    #define NTP_SUPPORT                 1
+  	// Sensors
+    #define SENSOR_POWER_CHECK_STATUS   1
 
     // HLW8012
     #ifndef HLW8012_SUPPORT
@@ -219,6 +220,8 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
     #define HLW8012_SEL_PIN             5
     #define HLW8012_CF1_PIN             13
     #define HLW8012_CF_PIN              14
+
+    #define NTP_SUPPORT                 1
 
 #elif defined(ITEAD_SONOFF_POW_R2)
 
@@ -242,10 +245,8 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
     #define STATUS_LED_PIN              13
     #define STATUS_LED_PIN_INVERSE      1
 
-    // Disable UART noise
-    #define DEBUG_SERIAL_SUPPORT        0
-
-    #define NTP_SUPPORT                 1
+  	// Sensors
+    #define SENSOR_POWER_CHECK_STATUS   1
 
     // CSE7766
     #ifndef CSE7766_SUPPORT
@@ -253,5 +254,38 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
     #endif
 
     #define CSE7766_PIN                 1
+
+    // Disable UART noise
+    #define DEBUG_SERIAL_SUPPORT        0
+
+    #define NTP_SUPPORT                 1
+
+#elif defined(ITEAD_SONOFF_SC)
+
+    // Info
+    #define MANUFACTURER                "ITEAD"
+    #define THING                       "SONOFF_SC"
+    #define HARWARE_VERSION             "0.0.1"
+
+    // Buttons
+    #define BUTTON1_PIN				    0
+    #define BUTTON1_MODE			    BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+
+    #define SERIAL_BAUDRATE             19200
+
+    // LEDs
+    #define STATUS_LED_PIN  		    13
+    #define STATUS_LED_PIN_INVERSE	    1
+
+  	// SONOFF_SC
+    #ifndef ITEAD_SONOFF_SC_SUPPORT
+        #define ITEAD_SONOFF_SC_SUPPORT 1
+    #endif
+
+    // Disable UART noise
+    #define DEBUG_SERIAL_SUPPORT        0
+    #define DEBUG_SUPPORT               0
+
+    #define NTP_SUPPORT                 1
 
 #endif

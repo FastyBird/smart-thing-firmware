@@ -360,6 +360,10 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define WEB_API_NETWORK_CONFIGURATION   "/control/network/configure"        //
 #endif
 
+#ifndef WEB_API_GATEWAY_CONFIGURATION
+#define WEB_API_GATEWAY_CONFIGURATION   "/control/gateway/configure"        //
+#endif
+
 #ifndef WEB_API_WS_DATA
 #define WEB_API_WS_DATA                 "/ws/data"                          //
 #endif

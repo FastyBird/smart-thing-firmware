@@ -319,5 +319,8 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define MAGNITUDE_CO                29
 #define MAGNITUDE_RESISTANCE        30
 #define MAGNITUDE_PH                31
+#define MAGNITUDE_AIR_QUALITY_LEVEL 32
+#define MAGNITUDE_LIGHT_LEVEL       33
+#define MAGNITUDE_NOISE_LEVEL       34
 
-#define MAGNITUDE_MAX               32
+#define MAGNITUDE_MAX               35

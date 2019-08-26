@@ -15,7 +15,7 @@
 #define SENSOR_REPORT_STEP_EVERY            1               // Step
 
 #ifndef SENSOR_POWER_CHECK_STATUS
-#define SENSOR_POWER_CHECK_STATUS           1               // If set to 1 the reported power/current/energy will be 0 if the relay[0] is OFF
+#define SENSOR_POWER_CHECK_STATUS           0               // If set to 1 the reported power/current/energy will be 0 if the relay[0] is OFF
 #endif
 
 #ifndef SENSOR_TEMPERATURE_CORRECTION

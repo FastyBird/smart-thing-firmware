@@ -248,7 +248,8 @@ PROGMEM const uint8_t magnitude_decimals[] = {
     3, 0,
     4, 4, // Geiger Counter decimals
     0,
-    0, 0, 0, 3    // NO2, CO, Ohms, pH
+    0, 0, 0, 3,    // NO2, CO, Ohms, pH
+    0, 0, 0
 };
 
 PROGMEM const char magnitude_unknown_name[] = "unknown";
@@ -283,6 +284,9 @@ PROGMEM const char magnitude_no2_name[] = "no2";
 PROGMEM const char magnitude_co_name[] = "co";
 PROGMEM const char magnitude_resistance_name[] = "resistance";
 PROGMEM const char magnitude_ph_name[] = "ph";
+PROGMEM const char magnitude_sonoff_sc_air_quality_name[] = "air_quality";
+PROGMEM const char magnitude_sonoff_sc_light_level_name[] = "light_level";
+PROGMEM const char magnitude_sonoff_sc_noise_level_name[] = "noise_level";
 
 PROGMEM const char* const magnitude_names[] = {
     magnitude_unknown_name, magnitude_temperature_name, magnitude_humidity_name,
@@ -296,7 +300,8 @@ PROGMEM const char* const magnitude_names[] = {
     magnitude_distance_name, magnitude_hcho_name,
     magnitude_geiger_cpm_name, magnitude_geiger_sv_name,
     magnitude_count_name,
-    magnitude_no2_name, magnitude_co_name, magnitude_resistance_name, magnitude_ph_name
+    magnitude_no2_name, magnitude_co_name, magnitude_resistance_name, magnitude_ph_name,
+    magnitude_sonoff_sc_air_quality_name, magnitude_sonoff_sc_light_level_name, magnitude_sonoff_sc_noise_level_name
 };
 
 PROGMEM const char magnitude_empty[] = "";
@@ -333,7 +338,8 @@ PROGMEM const char* const magnitude_units[] = {
     magnitude_empty,                                            //
     magnitude_ppm, magnitude_ppm,                               // NO2 & CO2
     magnitude_resistance,
-    magnitude_empty                                             // pH
+    magnitude_empty,                                             // pH
+    magnitude_empty, magnitude_empty, magnitude_empty
 };
 
 #endif // SENSOR_SUPPORT

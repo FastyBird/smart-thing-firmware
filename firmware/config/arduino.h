@@ -17,6 +17,7 @@
 //#define ITEAD_SONOFF_S20
 //#define ITEAD_SONOFF_POW
 //#define ITEAD_SONOFF_POW_R2
+//#define ITEAD_SONOFF_SC
 
 //--------------------------------------------------------------------------------
 // Features (values below are non-default values)

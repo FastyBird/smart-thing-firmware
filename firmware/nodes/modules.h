@@ -379,8 +379,13 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
                 register_property.queryable = false;
                 register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_ENUM;
 
-                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_ON);
-                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_OFF);
+                char di_format[30];
+
+                strcpy(di_format, String(FASTYBIRD_SWITCH_PAYLOAD_ON).c_str());
+                strcat(di_format, ",");
+                strcat(di_format, String(FASTYBIRD_SWITCH_PAYLOAD_OFF).c_str());
+
+                register_property.format = String(di_format);
 
                 register_property.mappings.push_back({
                     FASTYBIRD_SWITCH_PAYLOAD_ON,
@@ -398,9 +403,15 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
                 register_property.queryable = false;
                 register_property.dataType = FASTYBIRD_PROPERTY_DATA_TYPE_ENUM;
 
-                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_ON);
-                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_OFF);
-                register_property.format.push_back(FASTYBIRD_SWITCH_PAYLOAD_TOGGLE);
+                char do_format[30];
+
+                strcpy(do_format, String(FASTYBIRD_SWITCH_PAYLOAD_ON).c_str());
+                strcat(do_format, ",");
+                strcat(do_format, String(FASTYBIRD_SWITCH_PAYLOAD_OFF).c_str());
+                strcat(do_format, ",");
+                strcat(do_format, String(FASTYBIRD_SWITCH_PAYLOAD_TOGGLE).c_str());
+
+                register_property.format = String(do_format);
 
                 register_property.mappings.push_back({
                     FASTYBIRD_SWITCH_PAYLOAD_ON,

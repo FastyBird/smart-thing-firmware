@@ -650,6 +650,8 @@ uint8_t _relayParsePayload(
         strcat(format, ",");
         strcat(format, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE);
 
+        property.format = String(format);
+
         property.mappings.push_back({
             FASTYBIRD_SWITCH_PAYLOAD_ON,
             FASTYBIRD_SWITCH_PAYLOAD_ON

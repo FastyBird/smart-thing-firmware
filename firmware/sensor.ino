@@ -854,7 +854,7 @@ bool _sensorHasMagnitude(
             sensorMagnitudeName(sensor->type(sensorMagnitudeIndex)),
             sensorMagnitudeName(sensor->type(sensorMagnitudeIndex)),
             false,
-            false,
+            true,
             FASTYBIRD_PROPERTY_DATA_TYPE_FLOAT,
             sensorMagnitudeUnits(sensor->type(sensorMagnitudeIndex)),
         };
@@ -1041,6 +1041,14 @@ void _sensorLoad() {
         _sensors.push_back(sensor);
     }
     #endif
+
+    #if ITEAD_SONOFF_SC_SUPPORT
+    {
+        SonoffScSensor * sensor = new SonoffScSensor();
+
+        _sensors.push_back(sensor);
+    }
+    #endif
 }
 
 // -----------------------------------------------------------------------------
@@ -1108,7 +1116,7 @@ void _sensorInit() {
             new_magnitude.reported = 0;
             new_magnitude.min_change = 0;
             new_magnitude.max_change = 0;
-            new_magnitude.sensorIndex = k;
+            new_magnitude.sensorIndex = i;
 
             // TODO: find a proper way to extend this to min/max of any magnitude
             if (type == MAGNITUDE_ENERGY) {
@@ -1586,7 +1594,7 @@ void sensorLoop() {
                         magnitude.sensor->slot(magnitude.local).c_str(),
                         sensorMagnitudeName(magnitude.type).c_str(),
                         buffer,
-                        sensorMagnitudeName(magnitude.type).c_str()
+                        sensorMagnitudeUnits(magnitude.type).c_str()
                     );
                 }
                 #endif // SENSOR_DEBUG

@@ -793,8 +793,8 @@ void gatewaySetup() {
     _gateway_bus.begin();
 
     #if WEB_SUPPORT
-        webOnRequestRegister("/gateway/config", HTTP_GET, _gatewayOnGetConfig);
-        webOnRequestRegister("/gateway/config", HTTP_POST, _gatewayOnPostConfig);
+        webServer()->on(WEB_API_GATEWAY_CONFIGURATION, HTTP_GET, _gatewayOnGetConfig);
+        webServer()->on(WEB_API_GATEWAY_CONFIGURATION, HTTP_POST, _gatewayOnPostConfig);
 
         #if WS_SUPPORT
             wsOnConnectRegister(_gatewayWSOnConnect);

@@ -488,6 +488,7 @@ void webSetup() {
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Authorization");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     DefaultHeaders::Instance().addHeader("Access-Control-Expose-Headers", "X-Suggested-Filename");
+
     // Run server
     #if NETWORK_ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
         _web_server->onSslFileRequest(_onCertificate, NULL);
