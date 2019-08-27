@@ -704,8 +704,10 @@ void wifiSetup() {
     #endif
 
     #if WEB_SUPPORT
-        webServer()->on(WEB_API_NETWORK_RECONNECT, HTTP_PUT, _wifiOnReconnect);
-        webServer()->on(WEB_API_NETWORK_CONFIGURATION, HTTP_POST, _wifiOnConfigure);
+        webEventsRegister([](AsyncWebServer * server) {
+            webServer()->on(WEB_API_NETWORK_RECONNECT, HTTP_PUT, _wifiOnReconnect);
+            webServer()->on(WEB_API_NETWORK_CONFIGURATION, HTTP_POST, _wifiOnConfigure);
+        });
 
         #if WS_SUPPORT
             wsOnConnectRegister(_wifiWSOnClientConnect);

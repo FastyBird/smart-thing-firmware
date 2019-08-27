@@ -484,8 +484,10 @@ void settingsSetup() {
     );
 
     #if WEB_SUPPORT
-        webServer()->on(WEB_API_FIRMWARE_CONFIGURATION, HTTP_GET, _settingsOnGetConfig);
-        webServer()->on(WEB_API_FIRMWARE_CONFIGURATION, HTTP_POST, _settingsOnPostConfig, _settingsOnPostConfigData);
+        webEventsRegister([](AsyncWebServer * server) {
+            webServer()->on(WEB_API_FIRMWARE_CONFIGURATION, HTTP_GET, _settingsOnGetConfig);
+            webServer()->on(WEB_API_FIRMWARE_CONFIGURATION, HTTP_POST, _settingsOnPostConfig, _settingsOnPostConfigData);
+        });
 
         #if WS_SUPPORT
             wsOnActionRegister(_settingsWSOnAction);

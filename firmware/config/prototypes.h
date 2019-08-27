@@ -99,10 +99,15 @@ void niceDelay(uint32_t ms);
 // -----------------------------------------------------------------------------
 // WEB MODULE
 // -----------------------------------------------------------------------------
+class AsyncClient;
+class AsyncWebServer;
+
 #if WEB_SUPPORT
     #include <ESPAsyncWebServer.h>
     
     AsyncWebServer * webServer();
+    typedef std::function<void(AsyncWebServer * server)> web_events_callback_f;
+    void webEventsRegister(web_events_callback_f callback);
 #else
     #define AsyncWebServerRequest void
     #define ArRequestHandlerFunction void

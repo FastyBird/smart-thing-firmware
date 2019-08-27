@@ -29,6 +29,8 @@ AsyncWebServer * _web_server;
 
 char _web_last_modified[50];
 
+std::vector<web_events_callback_f> _web_events_callbacks;
+
 // -----------------------------------------------------------------------------
 
 void _onReset(
@@ -427,6 +429,14 @@ bool webAuthenticate(
 }
 
 // -----------------------------------------------------------------------------
+
+void webEventsRegister(
+    web_events_callback_f callback
+) {
+    _web_events_callbacks.push_back(callback);
+}
+
+// -----------------------------------------------------------------------------
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
@@ -455,6 +465,11 @@ void webSetup() {
     _web_server->on(WEB_API_DISCOVER, HTTP_GET, _onDiscover);
 
     _web_server->on(WEB_API_SIGN_IN, HTTP_POST, _onSignIn);
+
+    // Callbacks
+    for (uint8_t i = 0; i < _web_events_callbacks.size(); i++) {
+        (_web_events_callbacks[i])(_web_server);
+    }
 
     // Serve static files
     #if SPIFFS_SUPPORT
