@@ -162,6 +162,10 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define DEBUG_MQTT_SUPPORT              0                           // Enable mqtt debug log
 #endif
 
+#ifndef DEBUG_NODES_SUPPORT
+#define DEBUG_NODES_SUPPORT             0                           // Enable nodes debug log
+#endif
+
 #ifndef SERIAL_BAUDRATE
 #define SERIAL_BAUDRATE                 115200                      // Default baudrate
 #endif

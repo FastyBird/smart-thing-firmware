@@ -28,6 +28,7 @@
 //#define DEBUG_SERIAL_SUPPORT          0
 //#define DEBUG_WEB_SUPPORT             0
 //#define DEBUG_MQTT_SUPPORT            0
+//#define DEBUG_NODES_SUPPORT           0
 //#define ENCODER_SUPPORT               1
 //#define FASTYBIRD_SUPPORT             1
 //#define I2C_SUPPORT                   1

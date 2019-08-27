@@ -410,23 +410,23 @@ bool _gatewaySendPacket(
 
     if (result != PJON_ACK) {
         if (result == PJON_BUSY ) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Sending packet: %s for node: %d failed, bus is busy\n"), _gatewayPacketName(payload[0]).c_str(), address);
+            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Sending packet: %s for node: %d failed, bus is busy\n"), _gatewayPacketName(payload[0]).c_str(), address);
 
         } else if (result == PJON_FAIL) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Sending packet: %s for node: %d failed\n"), _gatewayPacketName(payload[0]).c_str(), address);
+            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Sending packet: %s for node: %d failed\n"), _gatewayPacketName(payload[0]).c_str(), address);
 
         } else {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Sending packet: %s for node: %d failed, unknonw error\n"), _gatewayPacketName(payload[0]).c_str(), address);
+            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Sending packet: %s for node: %d failed, unknonw error\n"), _gatewayPacketName(payload[0]).c_str(), address);
         }
 
         return false;
     }
 
     if (address == PJON_BROADCAST) {
-        DEBUG_MSG(PSTR("[GATEWAY] Successfully sent broadcast packet: %s\n"), _gatewayPacketName(payload[0]).c_str());
+        DEBUG_GW_MSG(PSTR("[GATEWAY] Successfully sent broadcast packet: %s\n"), _gatewayPacketName(payload[0]).c_str());
 
     } else {
-        DEBUG_MSG(PSTR("[GATEWAY] Successfully sent packet: %s for node: %d\n"), _gatewayPacketName(payload[0]).c_str(), address);
+        DEBUG_GW_MSG(PSTR("[GATEWAY] Successfully sent packet: %s for node: %d\n"), _gatewayPacketName(payload[0]).c_str(), address);
     }
 
     return true;
@@ -612,7 +612,7 @@ void _gatewayReceiveHandler(
     // Get packet identifier from payload
     uint8_t packet_id = (uint8_t) payload[0];
 
-    DEBUG_MSG(PSTR("[GATEWAY] Received packet: %s for node with address: %d\n"), _gatewayPacketName(packet_id).c_str(), sender_address);
+    DEBUG_GW_MSG(PSTR("[GATEWAY] Received packet: %s for node with address: %d\n"), _gatewayPacketName(packet_id).c_str(), sender_address);
 
     // Node is trying to acquire address
     if (_gatewayIsPacketInGroup(packet_id, gateway_packets_searching, GATEWAY_PACKET_SEARCH_MAX)) {
@@ -625,14 +625,14 @@ void _gatewayReceiveHandler(
     // Node send reply to request
     } else {
         if (sender_address == PJON_NOT_ASSIGNED) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Received packet is without sender address\n"));
+            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Received packet is without sender address\n"));
 
             return;
         }
 
         // Check if gateway is waiting for reply from node (initiliazation sequence)
         if (_gateway_nodes[(sender_address - 1)].packet.waiting_for == GATEWAY_PACKET_NONE) {
-            //DEBUG_MSG(
+            //DEBUG_GW_MSG(
             //    PSTR("[GATEWAY][ERR] Received packet for node with address: %d but gateway is not waiting for packet from this node\n"),
             //    sender_address
             //);
@@ -642,7 +642,7 @@ void _gatewayReceiveHandler(
 
         // Check if gateway is waiting for reply from node (initiliazation sequence)
         if (_gateway_nodes[(sender_address - 1)].packet.waiting_for != packet_id) {
-            //DEBUG_MSG(
+            //DEBUG_GW_MSG(
             //    PSTR("[GATEWAY][ERR] Received packet: %s for node with address: %d but gateway is waiting for: %s\n"),
             //    _gatewayPacketName(packet_id).c_str(),
             //    sender_address,
@@ -752,16 +752,16 @@ void _gatewayErrorHandler(
     if (code == PJON_CONNECTION_LOST) {
         _gateway_nodes[_gateway_bus.packets[data].content[0] -1].addressing.lost = millis();
 
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Connection lost with node\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Connection lost with node\n"));
 
     } else if (code == PJON_PACKETS_BUFFER_FULL) {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Buffer is full\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Buffer is full\n"));
 
     } else if (code == PJON_CONTENT_TOO_LONG) {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Content is long\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Content is long\n"));
 
     } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Unknown error\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Unknown error\n"));
     }
 }
 
@@ -797,9 +797,9 @@ void gatewaySetup() {
         webServer()->on(WEB_API_GATEWAY_CONFIGURATION, HTTP_POST, _gatewayOnPostConfig);
 
         #if WS_SUPPORT
-            wsOnConnectRegister(_gatewayWSOnConnect);
-            wsOnConfigureRegister(_gatewayWSOnConfigure);
-            wsOnActionRegister(_gatewayWSOnAction);
+            //wsOnConnectRegister(_gatewayWSOnConnect);
+            //wsOnConfigureRegister(_gatewayWSOnConfigure);
+            //wsOnActionRegister(_gatewayWSOnAction);
         #endif
     #endif
 

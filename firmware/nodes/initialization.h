@@ -221,7 +221,7 @@ void _gatewayExtractAndStoreDescription(
         content[i] = (char) payload[i + 2];
     }
 
-    DEBUG_MSG(
+    DEBUG_GW_MSG(
         PSTR("[GATEWAY] Received node description: %s for address: %d\n"),
         (char *) content,
         (id + 1)
@@ -366,7 +366,7 @@ void _gatewayExtractAndStoreRegistersDefinitions(
         });
     }
  
-    DEBUG_MSG(
+    DEBUG_GW_MSG(
         PSTR("[GATEWAY] Received node registers structure (DI: %d, DO: %d, AI: %d, AO: %d, EV: %d) for node with address: %d\n"),
         _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI],
         _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO],
@@ -412,7 +412,7 @@ void _gatewayExtractAndStoreRegisterStructure(
     uint8_t bytes_length = (uint8_t) payload[3];
 
     if ((bytes_length + 4) > payloadLength) {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Packet structure is invalid. Bytes length is higher than packet length\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Packet structure is invalid. Bytes length is higher than packet length\n"));
 
         return;
     }

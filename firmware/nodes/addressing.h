@@ -39,12 +39,12 @@ void _gatewaySearchNodeRequestHandler(
     // Node has to have allready assigned bus address
     if (address != PJON_NOT_ASSIGNED) {
         if (address != (uint16_t) senderAddress) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with addressing mismatch\n"));
+            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with addressing mismatch\n"));
             return;
         }
 
         if (address >= NODES_GATEWAY_MAX_NODES) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with address out of available range\n"));
+            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with address out of available range\n"));
             return;
         }
 
@@ -52,7 +52,7 @@ void _gatewaySearchNodeRequestHandler(
             strcmp(_gateway_nodes[address - 1].serial_number, node_sn) != 0
             && strcmp(_gateway_nodes[address - 1].serial_number, GATEWAY_DESCRIPTION_NOT_SET) != 0
         ) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with serial number mismatch\n"));
+            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with serial number mismatch\n"));
             return;
         }
 
@@ -74,10 +74,10 @@ void _gatewaySearchNodeRequestHandler(
 
             _gateway_nodes[address - 1].packet.waiting_for = GATEWAY_PACKET_NONE;
 
-            DEBUG_MSG(PSTR("[GATEWAY] Addressing for node: %s was successfully restored. Previously assigned address is: %d\n"), (char *) node_sn, (uint8_t) address);
+            DEBUG_GW_MSG(PSTR("[GATEWAY] Addressing for node: %s was successfully restored. Previously assigned address is: %d\n"), (char *) node_sn, (uint8_t) address);
 
         } else {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node address missmatch, node with SN: %s has colision on address %d with node with SN: %s\n"), (char *) node_sn, (uint8_t) address, (char *) _gateway_nodes[address - 1].serial_number);
+            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node address missmatch, node with SN: %s has colision on address %d with node with SN: %s\n"), (char *) node_sn, (uint8_t) address, (char *) _gateway_nodes[address - 1].serial_number);
         }
     }
 }

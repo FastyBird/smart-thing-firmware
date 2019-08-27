@@ -50,6 +50,9 @@ const char firmware_modules[] PROGMEM =
     #if DEBUG_MQTT_SUPPORT
         "DEBUG_MQTT "
     #endif
+    #if DEBUG_NODES_SUPPORT
+        "DEBUG_NODES "
+    #endif
     #if ENCODER_SUPPORT
         "ENCODER "
     #endif

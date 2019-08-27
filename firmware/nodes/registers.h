@@ -279,7 +279,7 @@ void _gatewayWriteReceivedAnalogValue(
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
 
-                DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
+                DEBUG_GW_MSG(PSTR("[GATEWAY] Value was written into register\n"));
             }
             break;
 
@@ -299,7 +299,7 @@ void _gatewayWriteReceivedAnalogValue(
 
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
-                DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
+                DEBUG_GW_MSG(PSTR("[GATEWAY] Value was written into register\n"));
             }
             break;
 
@@ -319,7 +319,7 @@ void _gatewayWriteReceivedAnalogValue(
 
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
-                DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
+                DEBUG_GW_MSG(PSTR("[GATEWAY] Value was written into register\n"));
             }
             break;
 
@@ -339,7 +339,7 @@ void _gatewayWriteReceivedAnalogValue(
 
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
-                DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
+                DEBUG_GW_MSG(PSTR("[GATEWAY] Value was written into register\n"));
             }
             break;
 
@@ -359,7 +359,7 @@ void _gatewayWriteReceivedAnalogValue(
 
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
-                DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
+                DEBUG_GW_MSG(PSTR("[GATEWAY] Value was written into register\n"));
             }
             break;
 
@@ -379,7 +379,7 @@ void _gatewayWriteReceivedAnalogValue(
 
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
-                DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
+                DEBUG_GW_MSG(PSTR("[GATEWAY] Value was written into register\n"));
             }
             break;
 
@@ -399,12 +399,12 @@ void _gatewayWriteReceivedAnalogValue(
 
                 _gatewayRegisterValueUpdated(id, dataRegister, address);
 
-                DEBUG_MSG(PSTR("[GATEWAY] Value was written into register\n"));
+                DEBUG_GW_MSG(PSTR("[GATEWAY] Value was written into register\n"));
             }
             break;
 
         default:
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Provided unknown data type for writing into register\n"));
+            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Provided unknown data type for writing into register\n"));
             break;
     }
 }
@@ -783,7 +783,7 @@ void _gatewayReadMultipleDigitalRegisterHandler(
 
     uint8_t bytes_length = (uint8_t) payload[3];
 
-    DEBUG_MSG(
+    DEBUG_GW_MSG(
         PSTR("[GATEWAY] Received reading response from node: %d to register: %d at address: %d with byte length: %d\n"),
         id,
         dataRegister,
@@ -819,7 +819,7 @@ void _gatewayReadMultipleDigitalRegisterHandler(
 
                     _gatewayRegisterValueUpdated(id, dataRegister, write_address);
 
-                    DEBUG_MSG(PSTR("[GATEWAY] Value was written into digital register at address: %d\n"), write_address);
+                    DEBUG_GW_MSG(PSTR("[GATEWAY] Value was written into digital register at address: %d\n"), write_address);
                 }
 
                 write_address++;
@@ -833,7 +833,7 @@ void _gatewayReadMultipleDigitalRegisterHandler(
         }
 
     } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined digital register address\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined digital register address\n"));
     }
 
     _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
@@ -851,7 +851,7 @@ void _gatewayReadMultipleAnalogRegisterHandler(
 
     uint8_t bytes_length = (uint8_t) payload[3];
 
-    DEBUG_MSG(
+    DEBUG_GW_MSG(
         PSTR("[GATEWAY] Received reading response from node: %d to register: %d at address: %d with byte length: %d\n"),
         id,
         dataRegister,
@@ -889,7 +889,7 @@ void _gatewayReadMultipleAnalogRegisterHandler(
         }
 
     } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined analog register address\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined analog register address\n"));
     }
 
     _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
@@ -907,7 +907,7 @@ void _gatewayReadMultipleEventRegisterHandler(
 
     uint8_t bytes_length = (uint8_t) payload[3];
 
-    DEBUG_MSG(
+    DEBUG_GW_MSG(
         PSTR("[GATEWAY] Received reading response from node: %d to register: %d at address: %d with byte length: %d\n"),
         id,
         dataRegister,
@@ -938,7 +938,7 @@ void _gatewayReadMultipleEventRegisterHandler(
 
                 _gatewayRegisterValueUpdated(id, dataRegister, write_address);
 
-                DEBUG_MSG(PSTR("[GATEWAY] Value was written into event register at address: %d\n"), write_address);
+                DEBUG_GW_MSG(PSTR("[GATEWAY] Value was written into event register at address: %d\n"), write_address);
             }
 
             write_byte++;
@@ -946,7 +946,7 @@ void _gatewayReadMultipleEventRegisterHandler(
         }
 
     } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined digital register address\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined digital register address\n"));
     }
 
     _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
@@ -966,7 +966,7 @@ void _gatewayWriteSingleDigitalOutputHandler(
 
     // Check if value is TRUE|FALSE or 1|0
     if (write_value != 0xFF00 && write_value != 0x0000) {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Digital register accept only bool value\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Digital register accept only bool value\n"));
         return;
     }
 
@@ -981,11 +981,11 @@ void _gatewayWriteSingleDigitalOutputHandler(
 
             _gatewayRegisterValueUpdated(id, GATEWAY_REGISTER_DO, register_address);
 
-            DEBUG_MSG(PSTR("[GATEWAY] Value was written into DO register\n"));
+            DEBUG_GW_MSG(PSTR("[GATEWAY] Value was written into DO register\n"));
         }
 
     } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined DO register address\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined DO register address\n"));
     }
 
     _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
@@ -1012,7 +1012,7 @@ void _gatewayWriteMultipleDigitalOutputsHandler(
         // Nothing to do here. Multiple DO register were successfully written
 
     } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined DO registers range\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined DO registers range\n"));
     }
 
     _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
@@ -1041,7 +1041,7 @@ void _gatewayWriteSingleAnalogOutputHandler(
         _gatewayWriteReceivedAnalogValue(id, GATEWAY_REGISTER_AO, register_address, write_value);
 
     } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined AO register address\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined AO register address\n"));
     }
 
     _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
@@ -1067,7 +1067,7 @@ void _gatewayWriteMultipleAnalogOutputsHandler(
         // Nothing to do here. Multiple AO register were successfully written
 
     } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined AO registers range\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node is trying to write to undefined AO registers range\n"));
     }
 
     _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
@@ -1105,7 +1105,7 @@ void _gatewayDigitalRegisterProcess(
                 continue;
             }
 
-            DEBUG_MSG(PSTR("[GATEWAY] #%d:DO:%d set to %s\n"), id, address, target ? "ON" : "OFF");
+            DEBUG_GW_MSG(PSTR("[GATEWAY] #%d:DO:%d set to %s\n"), id, address, target ? "ON" : "OFF");
 
             // Call the provider to perform the action
             _gatewayRequestWritingSingleDigitalRegister(id, address, target);
@@ -1130,7 +1130,7 @@ bool gatewayDigitalRegisterStatus(
 
     if (_gatewayReadDigitalRegisterValue(id, GATEWAY_REGISTER_DO, address) == value) {
         if (_gatewayReadDigitalRegisterTargetValue(id, address) != value) {
-            DEBUG_MSG(PSTR("[GATEWAY] #%d:DO:%d scheduled change cancelled\n"), id, address);
+            DEBUG_GW_MSG(PSTR("[GATEWAY] #%d:DO:%d scheduled change cancelled\n"), id, address);
 
             _gateway_nodes[id].digital_outputs[address].target_value = value;
 
@@ -1163,7 +1163,7 @@ bool gatewayDigitalRegisterStatus(
 
         _gateway_nodes[id].digital_outputs[address].target_value = value;
 
-        DEBUG_MSG(PSTR("[GATEWAY] #%d:DO:%d scheduled %s in %u ms\n"),
+        DEBUG_GW_MSG(PSTR("[GATEWAY] #%d:DO:%d scheduled %s in %u ms\n"),
                 id, address, value ? "ON" : "OFF",
                 (_gateway_nodes[id].digital_outputs[address].change_time - current_time));
 

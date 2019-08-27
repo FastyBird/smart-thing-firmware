@@ -20,7 +20,7 @@ bool _gatewayIsNodeSerialNumberUnique(
             strcmp(_gateway_nodes[i].serial_number, serialNumber) == 0
             && _gateway_nodes[i].searching.state == false
         ) {
-            DEBUG_MSG(PSTR("[GATEWAY][WARN] Nodes serial number: %s is not unique\n"), serialNumber);
+            DEBUG_GW_MSG(PSTR("[GATEWAY][WARN] Nodes serial number: %s is not unique\n"), serialNumber);
 
             return false;
         }
@@ -62,7 +62,7 @@ uint16_t _gatewayReserveNodeAddress(
         }
     }
 
-    DEBUG_MSG(PSTR("[GATEWAY][WARN] Nodes registry is full. No other nodes could be added.\n"));
+    DEBUG_GW_MSG(PSTR("[GATEWAY][WARN] Nodes registry is full. No other nodes could be added.\n"));
 
     return NODES_GATEWAY_NODES_BUFFER_FULL;
 }
@@ -207,12 +207,12 @@ void _gatewaySearchNewNodeRequestHandler(
 
     // Node SN is allready used in registry
     if (address == NODES_GATEWAY_FAIL) {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node: %s is allready in registry\n"), (char *) node_sn);
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node: %s is allready in registry\n"), (char *) node_sn);
 
         return;
     }
 
-    DEBUG_MSG(PSTR("[GATEWAY] New node: %s was successfully added to registry with address: %d\n"), (char *) node_sn, (uint8_t) address);
+    DEBUG_GW_MSG(PSTR("[GATEWAY] New node: %s was successfully added to registry with address: %d\n"), (char *) node_sn, (uint8_t) address);
 
     strncpy(_gateway_nodes[address - 1].serial_number, node_sn, (uint8_t) payload[2]);
     _gateway_nodes[address - 1].packet.max_length = max_packet_length;
@@ -291,17 +291,17 @@ void _gatewaySearchConfirmNodeRequestHandler(
     // Node has allready assigned bus address
     if (address != PJON_NOT_ASSIGNED) {
         if (address != senderAddress) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with addressing mismatch\n"));
+            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with addressing mismatch\n"));
             return;
         }
 
         if (address >= NODES_GATEWAY_MAX_NODES) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with address out of available range\n"));
+            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with address out of available range\n"));
             return;
         }
 
         if (strcmp(_gateway_nodes[address - 1].serial_number, node_sn) != 0) {
-            DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with serial number mismatch\n"));
+            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node confirmed node search request, but with serial number mismatch\n"));
             return;
         }
 
@@ -318,10 +318,10 @@ void _gatewaySearchConfirmNodeRequestHandler(
 
         _gateway_nodes[address - 1].packet.waiting_for = GATEWAY_PACKET_NONE;
 
-        DEBUG_MSG(PSTR("[GATEWAY] Addressing for new node: %s was successfully finished. Assigned address is: %d\n"), (char *) node_sn, address);
+        DEBUG_GW_MSG(PSTR("[GATEWAY] Addressing for new node: %s was successfully finished. Assigned address is: %d\n"), (char *) node_sn, address);
 
     } else {
-        DEBUG_MSG(PSTR("[GATEWAY][ERR] Node confirmed address acceptation but without setting node address\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node confirmed address acceptation but without setting node address\n"));
     }
 }
 
