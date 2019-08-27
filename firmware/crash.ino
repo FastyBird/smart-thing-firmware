@@ -213,9 +213,7 @@ extern "C" void custom_crash_callback(
 
 void crashSetup() {
     #if WEB_SUPPORT
-        webEventsRegister([](AsyncWebServer * server) {
-            server->on(WEB_API_REPORT_CRASH, HTTP_GET, _crashOnGetReport);
-            server->on(WEB_API_REPORT_CRASH, HTTP_DELETE, _crashOnDeleteReport);
-        });
+        webServer()->on(WEB_API_REPORT_CRASH, HTTP_GET, _crashOnGetReport);
+        webServer()->on(WEB_API_REPORT_CRASH, HTTP_DELETE, _crashOnDeleteReport);
     #endif
 }

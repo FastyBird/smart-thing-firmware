@@ -301,15 +301,6 @@ bool _settingsRestoreJson(
 
 // -----------------------------------------------------------------------------
 
-    void _settingsWebEvents(
-        AsyncWebServer * server
-    ) {
-        server->on(WEB_API_FIRMWARE_CONFIGURATION, HTTP_GET, _settingsOnGetConfig);
-        server->on(WEB_API_FIRMWARE_CONFIGURATION, HTTP_POST, _settingsOnPostConfig, _settingsOnPostConfigData);
-    }
-
-// -----------------------------------------------------------------------------
-
     #if WS_SUPPORT
         // WS client called action
         void _settingsWSOnAction(
@@ -493,7 +484,8 @@ void settingsSetup() {
     );
 
     #if WEB_SUPPORT
-        webEventsRegister(_settingsWebEvents);
+        webServer()->on(WEB_API_FIRMWARE_CONFIGURATION, HTTP_GET, _settingsOnGetConfig);
+        webServer()->on(WEB_API_FIRMWARE_CONFIGURATION, HTTP_POST, _settingsOnPostConfig, _settingsOnPostConfigData);
 
         #if WS_SUPPORT
             wsOnActionRegister(_settingsWSOnAction);

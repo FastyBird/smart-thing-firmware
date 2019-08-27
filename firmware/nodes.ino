@@ -797,7 +797,7 @@ void gatewaySetup() {
         webServer()->on(WEB_API_GATEWAY_CONFIGURATION, HTTP_POST, _gatewayOnPostConfig);
 
         #if WS_SUPPORT
-            //wsOnConnectRegister(_gatewayWSOnConnect);
+            wsOnConnectRegister(_gatewayWSOnConnect);
             //wsOnConfigureRegister(_gatewayWSOnConfigure);
             //wsOnActionRegister(_gatewayWSOnAction);
         #endif
