@@ -70,14 +70,9 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 // Node searching
 #define GATEWAY_PACKET_SEARCH_NEW_NODES         0x01
 #define GATEWAY_PACKET_NODE_ADDRESS_CONFIRM     0x02
+#define GATEWAY_PACKET_ADDRESS_DISCARD          0x03
 
-#define GATEWAY_PACKET_SEARCH_MAX               2
-
-// Node addressing
-#define GATEWAY_PACKET_SEARCH_NODES             0x03
-#define GATEWAY_PACKET_ADDRESS_DISCARD          0x04
-
-#define GATEWAY_PACKET_ADDRESS_MAX              2
+#define GATEWAY_PACKET_SEARCH_MAX               3
 
 // Node initialization
 #define GATEWAY_PACKET_HW_MODEL                 0x11
@@ -86,43 +81,38 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define GATEWAY_PACKET_FW_MODEL                 0x14
 #define GATEWAY_PACKET_FW_MANUFACTURER          0x15
 #define GATEWAY_PACKET_FW_VERSION               0x16
+#define GATEWAY_PACKET_REGISTERS_SIZE           0x17
+#define GATEWAY_PACKET_AI_REGISTERS_STRUCTURE   0x18
+#define GATEWAY_PACKET_AO_REGISTERS_STRUCTURE   0x19
 
-#define GATEWAY_PACKET_NODE_INIT_MAX            6
-
-// Node registers initialization
-#define GATEWAY_PACKET_REGISTERS_SIZE           0x21
-#define GATEWAY_PACKET_AI_REGISTERS_STRUCTURE   0x22
-#define GATEWAY_PACKET_AO_REGISTERS_STRUCTURE   0x23
-
-#define GATEWAY_PACKET_REGISTERS_INIT_MAX       3
+#define GATEWAY_PACKET_NODE_INIT_MAX            9
 
 // Registers reading
-#define GATEWAY_PACKET_READ_SINGLE_DI           0x31   // Master requested DI one regiter reading
-#define GATEWAY_PACKET_READ_MULTI_DI            0x32   // Master requested DI multiple regiters reading
-#define GATEWAY_PACKET_READ_SINGLE_DO           0x33   // Master requested DO one regiter reading
-#define GATEWAY_PACKET_READ_MULTI_DO            0x34   // Master requested DO multiple regiters reading
-#define GATEWAY_PACKET_READ_SINGLE_AI           0x35   // Master requested AI one regiter reading
-#define GATEWAY_PACKET_READ_MULTI_AI            0x36   // Master requested AI multiple regiters reading
-#define GATEWAY_PACKET_READ_SINGLE_AO           0x37   // Master requested AO one regiter reading
-#define GATEWAY_PACKET_READ_MULTI_AO            0x38   // Master requested AO multiple regiters reading
-#define GATEWAY_PACKET_READ_SINGLE_EV           0x39   // Master requested EV one regiter reading
-#define GATEWAY_PACKET_READ_MULTI_EV            0x3A   // Master requested EV multiple regiters reading
+#define GATEWAY_PACKET_READ_SINGLE_DI           0x21   // Master requested DI one regiter reading
+#define GATEWAY_PACKET_READ_MULTI_DI            0x22   // Master requested DI multiple regiters reading
+#define GATEWAY_PACKET_READ_SINGLE_DO           0x23   // Master requested DO one regiter reading
+#define GATEWAY_PACKET_READ_MULTI_DO            0x24   // Master requested DO multiple regiters reading
+#define GATEWAY_PACKET_READ_SINGLE_AI           0x25   // Master requested AI one regiter reading
+#define GATEWAY_PACKET_READ_MULTI_AI            0x26   // Master requested AI multiple regiters reading
+#define GATEWAY_PACKET_READ_SINGLE_AO           0x27   // Master requested AO one regiter reading
+#define GATEWAY_PACKET_READ_MULTI_AO            0x28   // Master requested AO multiple regiters reading
+#define GATEWAY_PACKET_READ_SINGLE_EV           0x29   // Master requested EV one regiter reading
+#define GATEWAY_PACKET_READ_MULTI_EV            0x2A   // Master requested EV multiple regiters reading
 
-#define GATEWAY_PACKET_REGISTERS_REDING_MAX     10
+#define GATEWAY_PACKET_REGISTERS_READING_MAX    10
 
 // Registers writing
-#define GATEWAY_PACKET_WRITE_ONE_DO             0x41
-#define GATEWAY_PACKET_WRITE_ONE_AO             0x42
-#define GATEWAY_PACKET_WRITE_MULTI_DO           0x43
-#define GATEWAY_PACKET_WRITE_MULTI_AO           0x44
+#define GATEWAY_PACKET_WRITE_ONE_DO             0x31
+#define GATEWAY_PACKET_WRITE_ONE_AO             0x32
+#define GATEWAY_PACKET_WRITE_MULTI_DO           0x33
+#define GATEWAY_PACKET_WRITE_MULTI_AO           0x34
 
 #define GATEWAY_PACKET_REGISTERS_WRITING_MAX    4
 
 // Node misc communication
 #define GATEWAY_PACKET_NONE                     0xFF
-#define GATEWAY_PACKET_GATEWAY_PING             0x51   // Master is testing node if is alive
 
-#define GATEWAY_PACKET_MISC_MAX                 2
+#define GATEWAY_PACKET_MISC_MAX                 1
 
 // -----------------------------------------------------------------------------
 
@@ -145,6 +135,7 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 // GATEWAY REGISTERS TYPES
 // =============================================================================
 
+#define GATEWAY_REGISTER_NONE                   255
 #define GATEWAY_REGISTER_DI                     0
 #define GATEWAY_REGISTER_DO                     1
 #define GATEWAY_REGISTER_AI                     2

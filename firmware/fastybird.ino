@@ -122,14 +122,6 @@ bool _fastybirdInitializeChannelProperty(
                 return false;
             }
 
-            _fastybird_channel_property_advertisement_progress = FASTYBIRD_PUB_CHANNEL_PROPERTY_MAPPING;
-            break;
-
-        case FASTYBIRD_PUB_CHANNEL_PROPERTY_MAPPING:
-            if (!_fastybirdPropagateChannelPropertyMappings(channelStructure, propertyStructure)) {
-                return false;
-            }
-
             _fastybird_channel_property_advertisement_progress = FASTYBIRD_PUB_CHANNEL_PROPERTY_DONE;
             break;
 

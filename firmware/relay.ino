@@ -652,21 +652,6 @@ uint8_t _relayParsePayload(
 
         property.format = String(format);
 
-        property.mappings.push_back({
-            FASTYBIRD_SWITCH_PAYLOAD_ON,
-            FASTYBIRD_SWITCH_PAYLOAD_ON
-        });
-
-        property.mappings.push_back({
-            FASTYBIRD_SWITCH_PAYLOAD_OFF,
-            FASTYBIRD_SWITCH_PAYLOAD_OFF
-        });
-
-        property.mappings.push_back({
-            FASTYBIRD_SWITCH_PAYLOAD_TOGGLE,
-            FASTYBIRD_SWITCH_PAYLOAD_TOGGLE
-        });
-
         property.payloadCallback = ([](uint8_t id, const char * payload) {
             // Toggle relay status
             if (strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE) == 0) {

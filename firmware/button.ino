@@ -131,51 +131,21 @@ uint8_t _buttonMapEvent(
             "",
         };
 
-        char format[30];
+        char format[100];
 
-        strcpy(format, String(BUTTON_EVENT_PRESSED).c_str());
+        strcpy(format, FASTYBIRD_BTN_PAYLOAD_PRESS);
         strcat(format, ",");
-        strcat(format, String(BUTTON_EVENT_CLICK).c_str());
+        strcat(format, FASTYBIRD_BTN_PAYLOAD_CLICK);
         strcat(format, ",");
-        strcat(format, String(BUTTON_EVENT_DBLCLICK).c_str());
+        strcat(format, FASTYBIRD_BTN_PAYLOAD_DBL_CLICK);
         strcat(format, ",");
-        strcat(format, String(BUTTON_EVENT_TRIPLECLICK).c_str());
+        strcat(format, FASTYBIRD_BTN_PAYLOAD_TRIPLE_CLICK);
         strcat(format, ",");
-        strcat(format, String(BUTTON_EVENT_LNGCLICK).c_str());
+        strcat(format, FASTYBIRD_BTN_PAYLOAD_LNG_CLICK);
         strcat(format, ",");
-        strcat(format, String(BUTTON_EVENT_LNGLNGCLICK).c_str());
+        strcat(format, FASTYBIRD_BTN_PAYLOAD_LNG_LNG_CLICK);
 
         property.format = String(format);
-
-        property.mappings.push_back({
-            "1",
-            FASTYBIRD_BTN_PAYLOAD_PRESS
-        });
-
-        property.mappings.push_back({
-            "2",
-            FASTYBIRD_BTN_PAYLOAD_CLICK
-        });
-
-        property.mappings.push_back({
-            "3",
-            FASTYBIRD_BTN_PAYLOAD_DBL_CLICK
-        });
-
-        property.mappings.push_back({
-            "4",
-            FASTYBIRD_BTN_PAYLOAD_TRIPLE_CLICK
-        });
-
-        property.mappings.push_back({
-            "5",
-            FASTYBIRD_BTN_PAYLOAD_LNG_CLICK
-        });
-
-        property.mappings.push_back({
-            "6",
-            FASTYBIRD_BTN_PAYLOAD_LNG_LNG_CLICK
-        });
 
         return property;
     }
@@ -267,15 +237,64 @@ void _buttonEvent(
     }
 
     #if FASTYBIRD_SUPPORT
-        char payload[2];
-        itoa(event, payload, 10);
+        switch (event) {
+            case BUTTON_EVENT_PRESSED:
+                fastybirdReportChannelValue(
+                    _button_fastybird_channel_index,
+                    0,
+                    id,
+                    FASTYBIRD_BTN_PAYLOAD_PRESS
+                );
+                break;
 
-        fastybirdReportChannelValue(
-            _button_fastybird_channel_index,
-            0,
-            id,
-            payload
-        );
+            case BUTTON_EVENT_CLICK:
+                fastybirdReportChannelValue(
+                    _button_fastybird_channel_index,
+                    0,
+                    id,
+                    FASTYBIRD_BTN_PAYLOAD_CLICK
+                );
+                break;
+
+            case BUTTON_EVENT_DBLCLICK:
+                fastybirdReportChannelValue(
+                    _button_fastybird_channel_index,
+                    0,
+                    id,
+                    FASTYBIRD_BTN_PAYLOAD_DBL_CLICK
+                );
+                break;
+
+            case BUTTON_EVENT_TRIPLECLICK:
+                fastybirdReportChannelValue(
+                    _button_fastybird_channel_index,
+                    0,
+                    id,
+                    FASTYBIRD_BTN_PAYLOAD_TRIPLE_CLICK
+                );
+                break;
+
+            case BUTTON_EVENT_LNGCLICK:
+                fastybirdReportChannelValue(
+                    _button_fastybird_channel_index,
+                    0,
+                    id,
+                    FASTYBIRD_BTN_PAYLOAD_LNG_CLICK
+                );
+                break;
+
+            case BUTTON_EVENT_LNGLNGCLICK:
+                fastybirdReportChannelValue(
+                    _button_fastybird_channel_index,
+                    0,
+                    id,
+                    FASTYBIRD_BTN_PAYLOAD_LNG_LNG_CLICK
+                );
+                break;
+
+            default:
+                break;
+        }
     #endif
 }
 

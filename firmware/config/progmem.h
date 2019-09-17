@@ -111,16 +111,10 @@ const char firmware_modules[] PROGMEM =
 
 const char gateway_packet_srarch_new_nodes[] PROGMEM            = "GATEWAY_PACKET_SEARCH_NEW_NODES";
 const char gateway_packet_node_address_confirm[] PROGMEM        = "GATEWAY_PACKET_NODE_ADDRESS_CONFIRM";
-
-PROGMEM const char * const gateway_packets_searching_string[] = {
-    gateway_packet_srarch_new_nodes, gateway_packet_node_address_confirm
-};
-
-const char gateway_packet_search_nodes[] PROGMEM                = "GATEWAY_PACKET_SEARCH_NODES";
 const char gateway_packet_address_discard[] PROGMEM             = "GATEWAY_PACKET_ADDRESS_DISCARD";
 
-PROGMEM const char * const gateway_packets_addresing_string[] = {
-    gateway_packet_search_nodes, gateway_packet_address_discard
+PROGMEM const char * const gateway_packets_searching_string[] = {
+    gateway_packet_srarch_new_nodes, gateway_packet_node_address_confirm, gateway_packet_address_discard
 };
 
 const char gateway_packet_hw_model[] PROGMEM                    = "GATEWAY_PACKET_HW_MODEL";
@@ -129,17 +123,13 @@ const char gateway_packet_hw_version[] PROGMEM                  = "GATEWAY_PACKE
 const char gateway_packet_fw_model[] PROGMEM                    = "GATEWAY_PACKET_FW_MODEL";
 const char gateway_packet_fw_manufacturer[] PROGMEM             = "GATEWAY_PACKET_FW_MANUFACTURER";
 const char gateway_packet_fw_version[] PROGMEM                  = "GATEWAY_PACKET_FW_VERSION";
-
-PROGMEM const char * const gateway_packets_node_initialization_string[] = {
-    gateway_packet_hw_model, gateway_packet_hw_manufacturer, gateway_packet_hw_version,
-    gateway_packet_fw_model, gateway_packet_fw_manufacturer, gateway_packet_fw_version
-};
-
 const char gateway_packet_registers_size[] PROGMEM              = "GATEWAY_PACKET_REGISTERS_SIZE";
 const char gateway_packet_ai_registers_structure[] PROGMEM      = "GATEWAY_PACKET_AI_REGISTERS_STRUCTURE";
 const char gateway_packet_ao_registers_structure[] PROGMEM      = "GATEWAY_PACKET_AO_REGISTERS_STRUCTURE";
 
-PROGMEM const char * const gateway_packets_registers_initialization_string[] = {
+PROGMEM const char * const gateway_packets_node_initialization_string[] = {
+    gateway_packet_hw_model, gateway_packet_hw_manufacturer, gateway_packet_hw_version,
+    gateway_packet_fw_model, gateway_packet_fw_manufacturer, gateway_packet_fw_version,
     gateway_packet_registers_size,
     gateway_packet_ai_registers_structure, gateway_packet_ao_registers_structure
 };
@@ -174,28 +164,20 @@ PROGMEM const char * const gateway_packets_registers_writing_string[] = {
 };
 
 const char gateway_packet_none[] PROGMEM                        = "GATEWAY_PACKET_NONE";
-const char gateway_packet_ping[] PROGMEM                        = "GATEWAY_PACKET_GATEWAY_PING";
 
 PROGMEM const char * const gateway_packets_misc_string[] = {
-    gateway_packet_none, gateway_packet_ping
+    gateway_packet_none
 };
 
 //--------------------------------------------------------------------------------
 
 const int gateway_packets_searching[] PROGMEM = {
-    GATEWAY_PACKET_SEARCH_NEW_NODES, GATEWAY_PACKET_NODE_ADDRESS_CONFIRM
-};
-
-const int gateway_packets_addresing[] PROGMEM = {
-    GATEWAY_PACKET_SEARCH_NODES, GATEWAY_PACKET_ADDRESS_DISCARD
+    GATEWAY_PACKET_SEARCH_NEW_NODES, GATEWAY_PACKET_NODE_ADDRESS_CONFIRM, GATEWAY_PACKET_ADDRESS_DISCARD
 };
 
 const int gateway_packets_node_initialization[] PROGMEM = {
     GATEWAY_PACKET_HW_MODEL, GATEWAY_PACKET_HW_MANUFACTURER, GATEWAY_PACKET_HW_VERSION,
-    GATEWAY_PACKET_FW_MODEL, GATEWAY_PACKET_FW_MANUFACTURER, GATEWAY_PACKET_FW_VERSION
-};
-
-const int gateway_packets_registers_initialization[] PROGMEM = {
+    GATEWAY_PACKET_FW_MODEL, GATEWAY_PACKET_FW_MANUFACTURER, GATEWAY_PACKET_FW_VERSION,
     GATEWAY_PACKET_REGISTERS_SIZE,
     GATEWAY_PACKET_AI_REGISTERS_STRUCTURE, GATEWAY_PACKET_AO_REGISTERS_STRUCTURE
 };
@@ -214,7 +196,7 @@ const int gateway_packets_registers_writing[] PROGMEM = {
 };
 
 const int gateway_packets_misc[] PROGMEM = {
-    GATEWAY_PACKET_NONE, GATEWAY_PACKET_GATEWAY_PING
+    GATEWAY_PACKET_NONE
 };
 
 #endif

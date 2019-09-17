@@ -605,48 +605,12 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define NODES_GATEWAY_INIT_DELAY                    15000           // Delay in ms after reaching maximum initialization attempts
 #endif
 
-#ifndef NODES_GATEWAY_PACKET_REPLY_DELAY
-#define NODES_GATEWAY_PACKET_REPLY_DELAY            3000            // Delay in ms to wait for response on packet from node
-#endif
-
-#ifndef NODES_GATEWAY_NODES_CHECK_INTERVAL
-#define NODES_GATEWAY_NODES_CHECK_INTERVAL          8000            // Nodes heartbeat check interval
-#endif
-
-#ifndef NODES_GATEWAY_ADDRESSING_TIMEOUT
-#define NODES_GATEWAY_ADDRESSING_TIMEOUT            4000            // After timeout is reached, gateway stop searching for connected nodes
-#endif
-
 #ifndef NODES_GATEWAY_LIST_ADDRESSES_TIME
-#define NODES_GATEWAY_LIST_ADDRESSES_TIME           250             // Master reception time during GATEWAY_ACQUIRE_ADDRESS_LIST broadcast (250 milliseconds)
-#endif
-
-#ifndef NODES_GATEWAY_DI_READING_INTERVAL
-#define NODES_GATEWAY_DI_READING_INTERVAL           150
-#endif
-
-#ifndef NODES_GATEWAY_DO_READING_INTERVAL
-#define NODES_GATEWAY_DO_READING_INTERVAL           3000
-#endif
-
-#ifndef NODES_GATEWAY_AI_READING_INTERVAL
-#define NODES_GATEWAY_AI_READING_INTERVAL           150
-#endif
-
-#ifndef NODES_GATEWAY_AO_READING_INTERVAL
-#define NODES_GATEWAY_AO_READING_INTERVAL           3000
-#endif
-
-#ifndef NODES_GATEWAY_EV_READING_INTERVAL
-#define NODES_GATEWAY_EV_READING_INTERVAL           150
+#define NODES_GATEWAY_LIST_ADDRESSES_TIME           1000            // Master reception time during GATEWAY_ACQUIRE_ADDRESS_LIST broadcast (250 milliseconds)
 #endif
 
 #ifndef NODES_GATEWAY_NODES_BUFFER_FULL
 #define NODES_GATEWAY_NODES_BUFFER_FULL             254
-#endif
-
-#ifndef NODES_GATEWAY_NODES_NOT_FOUND
-#define NODES_GATEWAY_NODES_NOT_FOUND               255
 #endif
 
 #ifndef NODES_GATEWAY_FAIL

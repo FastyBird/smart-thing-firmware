@@ -34,7 +34,7 @@ typedef struct {
 
 std::vector<BaseSensor *> _sensors;
 std::vector<sensor_magnitude_t> _magnitudes;
-bool _sensors_ready = false;
+bool _sensor_ready = false;
 
 uint8_t _sensor_types_count[SENSOR_TYPES_MAX];
 uint8_t _sensor_magnitudes_count[MAGNITUDE_MAX];
@@ -254,81 +254,81 @@ bool _sensorHasMagnitude(
         }
 
         // SENSORS GLOBAL
-        JsonObject& sensors_read_interval = configuration.createNestedObject();
+        JsonObject& sensor_read_interval = configuration.createNestedObject();
 
-        sensors_read_interval["name"] = "sensors_read_interval";
-        sensors_read_interval["type"] = "select";
-        sensors_read_interval["default"] = SENSOR_READ_INTERVAL;
+        sensor_read_interval["name"] = "sensor_read_interval";
+        sensor_read_interval["type"] = "select";
+        sensor_read_interval["default"] = SENSOR_READ_INTERVAL;
 
-        JsonArray& sensors_read_interval_values = sensors_read_interval.createNestedArray("values");
+        JsonArray& sensor_read_interval_values = sensor_read_interval.createNestedArray("values");
 
-        JsonObject& sensors_read_interval_values_value1 = sensors_read_interval_values.createNestedObject();
-        sensors_read_interval_values_value1["value"] = 1;
-        sensors_read_interval_values_value1["name"] = "1";
+        JsonObject& sensor_read_interval_values_value1 = sensor_read_interval_values.createNestedObject();
+        sensor_read_interval_values_value1["value"] = 1;
+        sensor_read_interval_values_value1["name"] = "1";
 
-        JsonObject& sensors_read_interval_values_value2 = sensors_read_interval_values.createNestedObject();
-        sensors_read_interval_values_value2["value"] = 6;
-        sensors_read_interval_values_value2["name"] = "6";
+        JsonObject& sensor_read_interval_values_value2 = sensor_read_interval_values.createNestedObject();
+        sensor_read_interval_values_value2["value"] = 6;
+        sensor_read_interval_values_value2["name"] = "6";
 
-        JsonObject& sensors_read_interval_values_value3 = sensors_read_interval_values.createNestedObject();
-        sensors_read_interval_values_value3["value"] = 10;
-        sensors_read_interval_values_value3["name"] = "10";
+        JsonObject& sensor_read_interval_values_value3 = sensor_read_interval_values.createNestedObject();
+        sensor_read_interval_values_value3["value"] = 10;
+        sensor_read_interval_values_value3["name"] = "10";
 
-        JsonObject& sensors_read_interval_values_value4 = sensors_read_interval_values.createNestedObject();
-        sensors_read_interval_values_value4["value"] = 15;
-        sensors_read_interval_values_value4["name"] = "15";
+        JsonObject& sensor_read_interval_values_value4 = sensor_read_interval_values.createNestedObject();
+        sensor_read_interval_values_value4["value"] = 15;
+        sensor_read_interval_values_value4["name"] = "15";
 
-        JsonObject& sensors_read_interval_values_value5 = sensors_read_interval_values.createNestedObject();
-        sensors_read_interval_values_value5["value"] = 30;
-        sensors_read_interval_values_value5["name"] = "30";
+        JsonObject& sensor_read_interval_values_value5 = sensor_read_interval_values.createNestedObject();
+        sensor_read_interval_values_value5["value"] = 30;
+        sensor_read_interval_values_value5["name"] = "30";
 
-        JsonObject& sensors_read_interval_values_value7 = sensors_read_interval_values.createNestedObject();
-        sensors_read_interval_values_value7["value"] = 60;
-        sensors_read_interval_values_value7["name"] = "60";
+        JsonObject& sensor_read_interval_values_value7 = sensor_read_interval_values.createNestedObject();
+        sensor_read_interval_values_value7["value"] = 60;
+        sensor_read_interval_values_value7["name"] = "60";
 
-        JsonObject& sensors_read_interval_values_value8 = sensors_read_interval_values.createNestedObject();
-        sensors_read_interval_values_value8["value"] = 300;
-        sensors_read_interval_values_value8["name"] = "300";
+        JsonObject& sensor_read_interval_values_value8 = sensor_read_interval_values.createNestedObject();
+        sensor_read_interval_values_value8["value"] = 300;
+        sensor_read_interval_values_value8["name"] = "300";
 
-        JsonObject& sensors_read_interval_values_value9 = sensors_read_interval_values.createNestedObject();
-        sensors_read_interval_values_value9["value"] = 600;
-        sensors_read_interval_values_value9["name"] = "600";
+        JsonObject& sensor_read_interval_values_value9 = sensor_read_interval_values.createNestedObject();
+        sensor_read_interval_values_value9["value"] = 600;
+        sensor_read_interval_values_value9["name"] = "600";
 
-        JsonObject& sensors_read_interval_values_value10 = sensors_read_interval_values.createNestedObject();
-        sensors_read_interval_values_value10["value"] = 900;
-        sensors_read_interval_values_value10["name"] = "900";
+        JsonObject& sensor_read_interval_values_value10 = sensor_read_interval_values.createNestedObject();
+        sensor_read_interval_values_value10["value"] = 900;
+        sensor_read_interval_values_value10["name"] = "900";
 
-        JsonObject& sensors_read_interval_values_value11 = sensors_read_interval_values.createNestedObject();
-        sensors_read_interval_values_value11["value"] = 1800;
-        sensors_read_interval_values_value11["name"] = "1800";
+        JsonObject& sensor_read_interval_values_value11 = sensor_read_interval_values.createNestedObject();
+        sensor_read_interval_values_value11["value"] = 1800;
+        sensor_read_interval_values_value11["name"] = "1800";
 
-        JsonObject& sensors_read_interval_values_value12 = sensors_read_interval_values.createNestedObject();
-        sensors_read_interval_values_value12["value"] = 3600;
-        sensors_read_interval_values_value12["name"] = "3600";
+        JsonObject& sensor_read_interval_values_value12 = sensor_read_interval_values.createNestedObject();
+        sensor_read_interval_values_value12["value"] = 3600;
+        sensor_read_interval_values_value12["name"] = "3600";
         
-        JsonObject& sensors_report_interval = configuration.createNestedObject();
+        JsonObject& sensor_report_interval = configuration.createNestedObject();
 
-        sensors_report_interval["name"] = "sensors_report_interval";
-        sensors_report_interval["type"] = "number";
-        sensors_report_interval["min"] = SENSOR_REPORT_MIN_EVERY;
-        sensors_report_interval["max"] = SENSOR_REPORT_MAX_EVERY;
-        sensors_report_interval["step"] = SENSOR_REPORT_STEP_EVERY;
-        sensors_report_interval["default"] = SENSOR_REPORT_EVERY;
+        sensor_report_interval["name"] = "sensor_report_interval";
+        sensor_report_interval["type"] = "number";
+        sensor_report_interval["min"] = SENSOR_REPORT_MIN_EVERY;
+        sensor_report_interval["max"] = SENSOR_REPORT_MAX_EVERY;
+        sensor_report_interval["step"] = SENSOR_REPORT_STEP_EVERY;
+        sensor_report_interval["default"] = SENSOR_REPORT_EVERY;
 
         if (enabled_pwr) {
             // POWER METER
-            JsonObject& sensors_save_interval = configuration.createNestedObject();
+            JsonObject& sensor_save_interval = configuration.createNestedObject();
 
-            sensors_save_interval["name"] = "sensors_save_interval";
-            sensors_save_interval["type"] = "number";
-            sensors_save_interval["min"] = 0;
-            sensors_save_interval["max"] = 200;
-            sensors_save_interval["step"] = 1;
-            sensors_save_interval["default"] = SENSOR_SAVE_EVERY;
+            sensor_save_interval["name"] = "sensor_save_interval";
+            sensor_save_interval["type"] = "number";
+            sensor_save_interval["min"] = 0;
+            sensor_save_interval["max"] = 200;
+            sensor_save_interval["step"] = 1;
+            sensor_save_interval["default"] = SENSOR_SAVE_EVERY;
 
             JsonObject& power_units = configuration.createNestedObject();
 
-            power_units["name"] = "power_units";
+            power_units["name"] = "sensor_power_units";
             power_units["type"] = "select";
             power_units["default"] = SENSOR_POWER_UNITS;
 
@@ -345,7 +345,7 @@ bool _sensorHasMagnitude(
             // ENERGY METER
             JsonObject& energy_units = configuration.createNestedObject();
 
-            energy_units["name"] = "energy_units";
+            energy_units["name"] = "sensor_energy_units";
             energy_units["type"] = "select";
             energy_units["default"] = SENSOR_ENERGY_UNITS;
 
@@ -364,7 +364,7 @@ bool _sensorHasMagnitude(
         if (_sensorHasMagnitude(MAGNITUDE_TEMPERATURE)) {
             JsonObject& temperature_units = configuration.createNestedObject();
 
-            temperature_units["name"] = "temperature_units";
+            temperature_units["name"] = "sensor_temperature_units";
             temperature_units["type"] = "select";
             temperature_units["default"] = SENSOR_TEMPERATURE_UNITS;
 
@@ -380,7 +380,7 @@ bool _sensorHasMagnitude(
 
             JsonObject& temperature_correction = configuration.createNestedObject();
 
-            temperature_correction["name"] = "temperature_correction";
+            temperature_correction["name"] = "sensor_temperature_correction";
             temperature_correction["type"] = "number";
             temperature_correction["min"] = -100;
             temperature_correction["max"] = 100;
@@ -391,7 +391,7 @@ bool _sensorHasMagnitude(
         if (_sensorHasMagnitude(MAGNITUDE_HUMIDITY)) {
             JsonObject& humidity_correction = configuration.createNestedObject();
 
-            humidity_correction["name"] = "humidity_correction";
+            humidity_correction["name"] = "sensor_humidity_correction";
             humidity_correction["type"] = "number";
             humidity_correction["min"] = -100;
             humidity_correction["max"] = 100;
@@ -402,7 +402,7 @@ bool _sensorHasMagnitude(
         if (enabled_emon) {
             JsonObject& power_voltage = configuration.createNestedObject();
 
-            power_voltage["name"] = "power_voltage";
+            power_voltage["name"] = "sensor_power_voltage";
             power_voltage["type"] = "number";
             power_voltage["readonly"] = true;
             power_voltage["min"] = 0;
@@ -414,7 +414,7 @@ bool _sensorHasMagnitude(
         if (enabled_hlw || enabled_cse) {
             JsonObject& expected_current = configuration.createNestedObject();
 
-            expected_current["name"] = "expected_current";
+            expected_current["name"] = "sensor_expected_current";
             expected_current["type"] = "number";
             expected_current["min"] = 0;
             expected_current["max"] = 500;
@@ -423,7 +423,7 @@ bool _sensorHasMagnitude(
 
             JsonObject& expected_voltage = configuration.createNestedObject();
 
-            expected_voltage["name"] = "expected_voltage";
+            expected_voltage["name"] = "sensor_expected_voltage";
             expected_voltage["type"] = "number";
             expected_voltage["min"] = 0;
             expected_voltage["max"] = 500;
@@ -434,7 +434,7 @@ bool _sensorHasMagnitude(
         if (enabled_hlw || enabled_cse || enabled_emon) {
             JsonObject& expected_power = configuration.createNestedObject();
 
-            expected_power["name"] = "expected_power";
+            expected_power["name"] = "sensor_expected_power";
             expected_power["type"] = "number";
             expected_power["min"] = 0;
             expected_power["max"] = 500;
@@ -445,7 +445,7 @@ bool _sensorHasMagnitude(
         if (enabled_pm) {
             JsonObject& energy_ratio = configuration.createNestedObject();
 
-            energy_ratio["name"] = "energy_ratio";
+            energy_ratio["name"] = "sensor_energy_ratio";
             energy_ratio["type"] = "number";
             energy_ratio["readonly"] = true;
             energy_ratio["min"] = 0;
@@ -488,42 +488,42 @@ bool _sensorHasMagnitude(
             #endif
         }
 
-        configuration["sensors_read_interval"] = _sensor_read_interval / 1000;
-        configuration["sensors_report_interval"] = _sensor_report_every;
+        configuration["sensor_read_interval"] = _sensor_read_interval / 1000;
+        configuration["sensor_report_interval"] = _sensor_report_every;
 
         if (enabled_pwr) {
-            configuration["sensors_save_interval"] = _sensor_save_every;
-            configuration["power_units"] = _sensor_power_units;
-            configuration["energy_units"] = _sensor_energy_units;
+            configuration["sensor_save_interval"] = _sensor_save_every;
+            configuration["sensor_power_units"] = _sensor_power_units;
+            configuration["sensor_energy_units"] = _sensor_energy_units;
         }
 
         if (_sensorHasMagnitude(MAGNITUDE_TEMPERATURE)) {
-            configuration["temperature_units"] = _sensor_temperature_units;
-            configuration["temperature_correction"] = _sensor_temperature_correction;
+            configuration["sensor_temperature_units"] = _sensor_temperature_units;
+            configuration["sensor_temperature_correction"] = _sensor_temperature_correction;
         }
 
         if (_sensorHasMagnitude(MAGNITUDE_HUMIDITY)) {
-            configuration["humidity_correction"] = _sensor_humidity_correction;
+            configuration["sensor_humidity_correction"] = _sensor_humidity_correction;
         }
 
         if (enabled_emon) {
-            configuration["power_voltage"] = (char*) NULL;
+            configuration["sensor_power_voltage"] = (char*) NULL;
         }
 
         if (enabled_pm) {
-            configuration["energy_ratio"] = (char*) NULL;
+            configuration["sensor_energy_ratio"] = (char*) NULL;
         }
 
         if (enabled_hlw || enabled_cse) {
-            configuration["expected_current"] = getSetting("pwrExpectedC", 0).toFloat();
+            configuration["sensor_expected_current"] = getSetting("pwrExpectedC", 0).toFloat();
         }
 
         if (enabled_hlw || enabled_cse) {
-            configuration["expected_voltage"] = getSetting("pwrExpectedV", 0).toInt();
+            configuration["sensor_expected_voltage"] = getSetting("pwrExpectedV", 0).toInt();
         }
 
         if (enabled_hlw || enabled_cse || enabled_emon) {
-            configuration["expected_power"] = getSetting("pwrExpectedP", 0).toInt();
+            configuration["sensor_expected_power"] = getSetting("pwrExpectedP", 0).toInt();
         }
     }
 
@@ -540,111 +540,111 @@ bool _sensorHasMagnitude(
         bool is_updated = false;
 
         if (
-            configuration.containsKey("sensors_read_interval")
-            && configuration["sensors_read_interval"].as<uint16_t>() >= SENSOR_READ_MIN_INTERVAL
-            && configuration["sensors_read_interval"].as<uint16_t>() <= SENSOR_READ_MAX_INTERVAL
-            && configuration["sensors_read_interval"].as<uint16_t>() != getSetting("snsRead").toInt()
+            configuration.containsKey("sensor_read_interval")
+            && configuration["sensor_read_interval"].as<uint16_t>() >= SENSOR_READ_MIN_INTERVAL
+            && configuration["sensor_read_interval"].as<uint16_t>() <= SENSOR_READ_MAX_INTERVAL
+            && configuration["sensor_read_interval"].as<uint16_t>() != getSetting("snsRead").toInt()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensors_read_interval\" to: %d\n"), configuration["sensors_read_interval"].as<uint16_t>());
+            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_read_interval\" to: %d\n"), configuration["sensor_read_interval"].as<uint16_t>());
 
-            setSetting("snsRead", configuration["sensors_read_interval"].as<uint16_t>());
+            setSetting("snsRead", configuration["sensor_read_interval"].as<uint16_t>());
 
             is_updated = true;
         }
 
         if (
-            configuration.containsKey("sensors_report_interval")
-            && configuration["sensors_report_interval"].as<uint8_t>() >= SENSOR_REPORT_MIN_EVERY
-            && configuration["sensors_report_interval"].as<uint8_t>() <= SENSOR_REPORT_MAX_EVERY
-            && configuration["sensors_report_interval"].as<uint8_t>() != getSetting("snsReport").toInt()
+            configuration.containsKey("sensor_report_interval")
+            && configuration["sensor_report_interval"].as<uint8_t>() >= SENSOR_REPORT_MIN_EVERY
+            && configuration["sensor_report_interval"].as<uint8_t>() <= SENSOR_REPORT_MAX_EVERY
+            && configuration["sensor_report_interval"].as<uint8_t>() != getSetting("snsReport").toInt()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensors_report_interval\" to: %d\n"), configuration["sensors_report_interval"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_report_interval\" to: %d\n"), configuration["sensor_report_interval"].as<uint8_t>());
 
-            setSetting("snsReport", configuration["sensors_report_interval"].as<uint8_t>());
+            setSetting("snsReport", configuration["sensor_report_interval"].as<uint8_t>());
 
             is_updated = true;
         }
 
         if (
-            configuration.containsKey("sensors_save_interval")
-            && configuration["sensors_save_interval"].as<uint8_t>() >= 0
-            && configuration["sensors_save_interval"].as<uint8_t>() <= 200
-            && configuration["sensors_save_interval"].as<uint8_t>() != getSetting("snsSave").toInt()
+            configuration.containsKey("sensor_save_interval")
+            && configuration["sensor_save_interval"].as<uint8_t>() >= 0
+            && configuration["sensor_save_interval"].as<uint8_t>() <= 200
+            && configuration["sensor_save_interval"].as<uint8_t>() != getSetting("snsSave").toInt()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensors_save_interval\" to: %d\n"), configuration["sensors_save_interval"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_save_interval\" to: %d\n"), configuration["sensor_save_interval"].as<uint8_t>());
 
-            setSetting("snsSave", configuration["sensors_save_interval"].as<uint8_t>());
+            setSetting("snsSave", configuration["sensor_save_interval"].as<uint8_t>());
 
             is_updated = true;
         }
 
         if (
-            configuration.containsKey("power_units")
+            configuration.containsKey("sensor_power_units")
             && (
-                configuration["power_units"].as<uint8_t>() == POWER_WATTS
-                || configuration["power_units"].as<uint8_t>() == POWER_KILOWATTS
+                configuration["sensor_power_units"].as<uint8_t>() == POWER_WATTS
+                || configuration["sensor_power_units"].as<uint8_t>() == POWER_KILOWATTS
             )
-            && configuration["power_units"].as<uint8_t>() != getSetting("pwrUnits").toInt()
+            && configuration["sensor_power_units"].as<uint8_t>() != getSetting("pwrUnits").toInt()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"power_units\" to: %d\n"), configuration["power_units"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_power_units\" to: %d\n"), configuration["sensor_power_units"].as<uint8_t>());
 
-            setSetting("pwrUnits", configuration["power_units"].as<uint8_t>());
+            setSetting("pwrUnits", configuration["sensor_power_units"].as<uint8_t>());
 
             is_updated = true;
         }
 
         if (
-            configuration.containsKey("energy_units")
+            configuration.containsKey("sensor_energy_units")
             && (
-                configuration["energy_units"].as<uint8_t>() == ENERGY_JOULES
-                || configuration["energy_units"].as<uint8_t>() == ENERGY_KWH
+                configuration["sensor_energy_units"].as<uint8_t>() == ENERGY_JOULES
+                || configuration["sensor_energy_units"].as<uint8_t>() == ENERGY_KWH
             )
-            && configuration["energy_units"].as<uint8_t>() != getSetting("eneUnits").toInt()
+            && configuration["sensor_energy_units"].as<uint8_t>() != getSetting("eneUnits").toInt()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"energy_units\" to: %d\n"), configuration["energy_units"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_energy_units\" to: %d\n"), configuration["sensor_energy_units"].as<uint8_t>());
 
-            setSetting("eneUnits", configuration["energy_units"].as<uint8_t>());
+            setSetting("eneUnits", configuration["sensor_energy_units"].as<uint8_t>());
 
             is_updated = true;
         }
 
         if (
-            configuration.containsKey("temperature_units")
+            configuration.containsKey("sensor_temperature_units")
             && (
-                configuration["temperature_units"].as<uint8_t>() == TMP_CELSIUS
-                || configuration["temperature_units"].as<uint8_t>() == TMP_FAHRENHEIT
+                configuration["sensor_temperature_units"].as<uint8_t>() == TMP_CELSIUS
+                || configuration["sensor_temperature_units"].as<uint8_t>() == TMP_FAHRENHEIT
             )
-            && configuration["temperature_units"].as<uint8_t>() != getSetting("tmpUnits").toInt()
+            && configuration["sensor_temperature_units"].as<uint8_t>() != getSetting("tmpUnits").toInt()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"temperature_units\" to: %d\n"), configuration["temperature_units"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_temperature_units\" to: %d\n"), configuration["sensor_temperature_units"].as<uint8_t>());
 
-            setSetting("tmpUnits", configuration["temperature_units"].as<uint8_t>());
+            setSetting("tmpUnits", configuration["sensor_temperature_units"].as<uint8_t>());
 
             is_updated = true;
         }
 
         if (
-            configuration.containsKey("temperature_correction")
-            && configuration["temperature_correction"].as<float>() >= -100
-            && configuration["temperature_correction"].as<float>() <= 100
-            && configuration["temperature_correction"].as<float>() != getSetting("tmpCorrection").toFloat()
+            configuration.containsKey("sensor_temperature_correction")
+            && configuration["sensor_temperature_correction"].as<float>() >= -100
+            && configuration["sensor_temperature_correction"].as<float>() <= 100
+            && configuration["sensor_temperature_correction"].as<float>() != getSetting("tmpCorrection").toFloat()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"temperature_correction\" to: %d\n"), configuration["temperature_correction"].as<float>());
+            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_temperature_correction\" to: %d\n"), configuration["sensor_temperature_correction"].as<float>());
 
-            setSetting("tmpCorrection", configuration["temperature_correction"].as<float>());
+            setSetting("tmpCorrection", configuration["sensor_temperature_correction"].as<float>());
 
             is_updated = true;
         }
 
         if (
-            configuration.containsKey("humidity_correction")
-            && configuration["humidity_correction"].as<float>() >= -100
-            && configuration["humidity_correction"].as<float>() <= 100
-            && configuration["humidity_correction"].as<float>() != getSetting("humCorrection").toFloat()
+            configuration.containsKey("sensor_humidity_correction")
+            && configuration["sensor_humidity_correction"].as<float>() >= -100
+            && configuration["sensor_humidity_correction"].as<float>() <= 100
+            && configuration["sensor_humidity_correction"].as<float>() != getSetting("humCorrection").toFloat()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"humidity_correction\" to: %d\n"), configuration["humidity_correction"].as<float>());
+            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_humidity_correction\" to: %d\n"), configuration["sensor_humidity_correction"].as<float>());
 
-            setSetting("humCorrection", configuration["humidity_correction"].as<float>());
+            setSetting("humCorrection", configuration["sensor_humidity_correction"].as<float>());
 
             is_updated = true;
         }
@@ -815,7 +815,7 @@ bool _sensorHasMagnitude(
                     configuration.containsKey("values")
                     && _sensorUpdateConfiguration(configuration["values"])
                 ) {
-                    wsSend_P(clientId, PSTR("{\"message\": \"sensors_updated\"}"));
+                    wsSend_P(clientId, PSTR("{\"message\": \"sensor_updated\"}"));
 
                     // Reload & cache settings
                     firmwareReload();
@@ -895,9 +895,30 @@ bool _sensorHasMagnitude(
         char channel_name[strlen(channel_base_name) + 3];
         sprintf(channel_name, channel_base_name, (index + 1));
         
+        String sensor_type;
+
+        switch (sensor->type())
+        {
+            case SENSOR_TYPE_ENERGY:
+                sensor_type = FASTYBIRD_CHANNEL_ENERGY;
+                break;
+
+            case SENSOR_TYPE_ENVIRONMENT:
+                sensor_type = FASTYBIRD_CHANNEL_ENVIRONMENT;
+                break;
+
+            case SENSOR_TYPE_ANALOG:
+                sensor_type = FASTYBIRD_CHANNEL_ANALOG_SENSOR;
+                break;
+        
+            default:
+                sensor_type = FASTYBIRD_CHANNEL_SENSOR;
+                break;
+        }
+
         fastybird_channel_t channel = {
             String(channel_name),
-            FASTYBIRD_CHANNEL_SENSOR,
+            sensor_type,
             1,              // Each registered sensor is separate channel
             false,
             false,
@@ -1071,7 +1092,7 @@ void _sensorCallback(
 // -----------------------------------------------------------------------------
 
 void _sensorInit() {
-    _sensors_ready = true;
+    _sensor_ready = true;
     _sensor_save_every = getSetting("snsSave", 0).toInt();
 
     for (uint8_t i = 0; i < _sensors.size(); i++) {
@@ -1090,7 +1111,7 @@ void _sensorInit() {
                 DEBUG_MSG(PSTR("[SENSOR]  -> ERROR %d\n"), _sensors[i]->error());
             }
 
-            _sensors_ready = false;
+            _sensor_ready = false;
             continue;
         }
 
@@ -1496,7 +1517,7 @@ void sensorLoop() {
     // Check if we still have uninitialized sensors
     static uint32_t last_init = 0;
 
-    if (!_sensors_ready) {
+    if (!_sensor_ready) {
         if (millis() - last_init > SENSOR_INIT_INTERVAL) {
             last_init = millis();
 

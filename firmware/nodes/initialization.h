@@ -15,14 +15,14 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 /**
  * Send initiliaziation packet to node
  */
-void _gatewaySendInitializationPacket(
+void __gatewayInitializationSendBaseInitializationPacket(
     const uint8_t id,
-    const uint8_t requestState
+    const uint8_t requestedPacket
 ) {
     char output_content[1];
 
     // Packet identifier at first postion
-    output_content[0] = requestState;
+    output_content[0] = requestedPacket;
 
     // Send packet to node
     bool result = _gatewaySendPacket((id + 1), output_content, 1);
@@ -30,8 +30,7 @@ void _gatewaySendInitializationPacket(
     // When successfully sent...
     if (result == true) {
         // ...add mark, that gateway is waiting for reply from node
-        _gateway_nodes[id].packet.waiting_for = requestState;
-        _gateway_nodes[id].packet.sending_time = millis();
+        _gateway_nodes[id].packet.waiting_for = requestedPacket;
 
         _gateway_nodes[id].initiliazation.attempts = _gateway_nodes[id].initiliazation.attempts + 1;
     }
@@ -42,22 +41,22 @@ void _gatewaySendInitializationPacket(
 /**
  * Send register structure request packet to node
  */
-void _gatewaySendRegisterInitializationPacket(
+void __gatewayInitializationSendRegistersInitializationPacket(
     const uint8_t id,
-    const uint8_t requestState,
+    const uint8_t requestedPacket,
     const uint8_t start
 ) {
     char output_content[_gateway_nodes[id].packet.max_length];
 
     // Packet identifier at first postion
-    output_content[0] = requestState;
+    output_content[0] = requestedPacket;
     output_content[1] = (char) (start >> 8);
     output_content[2] = (char) (start & 0xFF);
     
     // It is based on maximum packed size reduced by packet header (4 bytes)
     uint8_t max_readable_addresses = start + _gateway_nodes[id].packet.max_length - 4;
 
-    switch (requestState)
+    switch (requestedPacket)
     {
         case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
             if (max_readable_addresses <= _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI]) {
@@ -88,84 +87,9 @@ void _gatewaySendRegisterInitializationPacket(
     // When successfully sent...
     if (result == true) {
         // ...add mark, that gateway is waiting for reply from node
-        _gateway_nodes[id].packet.waiting_for = requestState;
-        _gateway_nodes[id].packet.sending_time = millis();
+        _gateway_nodes[id].packet.waiting_for = requestedPacket;
 
         _gateway_nodes[id].initiliazation.attempts = _gateway_nodes[id].initiliazation.attempts + 1;
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-uint8_t _gatewayInitializationUnfinishedAddress() {
-    for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
-        if (
-            // Check if node has finished addressing procedure
-            _gateway_nodes[i].addressing.state == true
-            // Check if node is not initialized
-            && _gateway_nodes[i].initiliazation.state == false
-            && _gateway_nodes[i].packet.waiting_for == GATEWAY_PACKET_NONE
-        ) {
-            // Attempts counter reached maximum
-            if (_gateway_nodes[i].initiliazation.attempts > NODES_GATEWAY_MAX_INIT_ATTEMPTS) {
-                // Set delay
-                if (_gateway_nodes[i].initiliazation.delay == 0) {
-                    _gateway_nodes[i].initiliazation.delay = millis();
-
-                // If the delay is finished...
-                } else if ((millis() - _gateway_nodes[i].initiliazation.delay) >= NODES_GATEWAY_INIT_DELAY) {
-                    // ...reset it and continue in initiliazation
-                    _gateway_nodes[i].initiliazation.attempts = 0;
-                    _gateway_nodes[i].initiliazation.delay = 0;
-
-                    return (i + 1);
-                }
-
-            } else {
-                return (i + 1);
-            }
-        }
-    }
-
-    return 0;
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * Get first not initialized node from the list & try to continue in initiliazation
- */
-void _gatewayInitializationContinueInProcess(
-    const uint8_t address
-) {
-    // Convert node address to index
-    uint8_t index = address - 1;
-
-    if (
-        // Check if node has finished addressing procedure
-        _gateway_nodes[index].addressing.state == true
-        // Check if node is not initialized
-        && _gateway_nodes[index].initiliazation.state == false
-        && _gateway_nodes[index].initiliazation.attempts <= NODES_GATEWAY_MAX_INIT_ATTEMPTS
-        && _gateway_nodes[index].packet.waiting_for == GATEWAY_PACKET_NONE
-    ) {
-        switch (_gateway_nodes[index].initiliazation.step)
-        {
-            case GATEWAY_PACKET_HW_MODEL:
-            case GATEWAY_PACKET_HW_MANUFACTURER:
-            case GATEWAY_PACKET_HW_VERSION:
-            case GATEWAY_PACKET_FW_MODEL:
-            case GATEWAY_PACKET_FW_MANUFACTURER:
-            case GATEWAY_PACKET_FW_VERSION:
-            case GATEWAY_PACKET_REGISTERS_SIZE:
-                _gatewaySendInitializationPacket(index, _gateway_nodes[index].initiliazation.step);
-                break;
-
-            case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
-            case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
-                _gatewaySendRegisterInitializationPacket(index, _gateway_nodes[index].initiliazation.step, 0);
-                break;
-        }
     }
 }
 
@@ -174,22 +98,12 @@ void _gatewayInitializationContinueInProcess(
 /**
  * Node is fully initialized & ready for receiving commands
  */
-void _gatewayMarkNodeAsInitialized(
+void __gatewayInitializationMarkNodeAsInitialized(
     const uint8_t id
 ) {
     _gateway_nodes[id].initiliazation.step = GATEWAY_PACKET_NONE;
     _gateway_nodes[id].initiliazation.state = true;
     _gateway_nodes[id].initiliazation.attempts = 0;
-
-    _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
-    _gateway_nodes[id].packet.sending_time = 0;
-
-    _gatewayAddNodeToStorage(id);
-
-    #if WEB_SUPPORT && WS_SUPPORT
-        // Propagate nodes structure to WS clients
-        wsSend(_gatewayWebSocketUpdate);
-    #endif
 
     #if FASTYBIRD_SUPPORT
         _gatewayRegisterFastybirdNode(id);
@@ -207,7 +121,7 @@ void _gatewayMarkNodeAsInitialized(
  * 1    => Description string length    => 1-255
  * 2-n  => Description content          => char array (a,b,c,...)
  */
-void _gatewayExtractAndStoreDescription(
+void __gatewayInitializationBaseDefinitionHandler(
     const uint8_t packetId,
     const uint8_t id,
     uint8_t * payload
@@ -277,9 +191,6 @@ void _gatewayExtractAndStoreDescription(
     }
 
     _gateway_nodes[id].initiliazation.attempts = 0;
-
-    _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
-    _gateway_nodes[id].packet.sending_time = 0;
 }
 
 // -----------------------------------------------------------------------------
@@ -295,7 +206,7 @@ void _gatewayExtractAndStoreDescription(
  * 4    => AO buffer size               => 0-255
  * 5    => EV buffer size               => 0-255
  */
-void _gatewayExtractAndStoreRegistersDefinitions(
+void __gatewayInitializationRegistersDefinitionsHandler(
     const uint8_t id,
     uint8_t * payload
 ) {
@@ -320,17 +231,11 @@ void _gatewayExtractAndStoreRegistersDefinitions(
     _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] = (uint8_t) payload[4];
     _gateway_nodes[id].registers_size[GATEWAY_REGISTER_EV] = (uint8_t) payload[5];
 
-    _gateway_nodes[id].digital_inputs_reading.start = 0;
-    _gateway_nodes[id].digital_inputs_reading.delay = 0;
-    _gateway_nodes[id].digital_outputs_reading.start = 0;
-    _gateway_nodes[id].digital_outputs_reading.delay = 0;
-    _gateway_nodes[id].analog_inputs_reading.start = 0;
-    _gateway_nodes[id].analog_inputs_reading.delay = 0;
-    _gateway_nodes[id].analog_outputs_reading.start = 0;
-    _gateway_nodes[id].analog_outputs_reading.delay = 0;
-    _gateway_nodes[id].event_inputs_reading.start = 0;
-    _gateway_nodes[id].event_inputs_reading.delay = 0;
+    _gateway_nodes[id].registers_reading.register_type = GATEWAY_REGISTER_NONE;
+    _gateway_nodes[id].registers_reading.start = 0;
     
+    _gatewayRegistersUpdateReadingPointer(id);
+
     for (uint8_t i = 0; i < _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI]; i++) {
         _gateway_nodes[id].digital_inputs.push_back((gateway_digital_register_t) {
             GATEWAY_DESCRIPTION_NOT_SET,
@@ -384,7 +289,7 @@ void _gatewayExtractAndStoreRegistersDefinitions(
 
     } else {
         // Node initiliazation successfully finished
-        _gatewayMarkNodeAsInitialized(id);
+        __gatewayInitializationMarkNodeAsInitialized(id);
     }
 }
 
@@ -400,7 +305,7 @@ void _gatewayExtractAndStoreRegistersDefinitions(
  * 3    => Register length                  => 0-255
  * 4-n  => Register data type               => 0-255
  */
-void _gatewayExtractAndStoreRegisterStructure(
+void __gatewayInitializationRegistersStructureHandler(
     const uint8_t packetId,
     const uint8_t id,
     uint8_t * payload,
@@ -510,7 +415,7 @@ void _gatewayExtractAndStoreRegisterStructure(
     {
         case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
             if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] > bytes_length) {
-                _gatewaySendRegisterInitializationPacket(id, GATEWAY_PACKET_AI_REGISTERS_STRUCTURE, (register_address + bytes_length));
+                __gatewayInitializationSendRegistersInitializationPacket(id, GATEWAY_PACKET_AI_REGISTERS_STRUCTURE, (register_address + bytes_length));
 
                 return;
             }
@@ -524,7 +429,7 @@ void _gatewayExtractAndStoreRegisterStructure(
 
         case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
             if (_gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] > bytes_length) {
-                _gatewaySendRegisterInitializationPacket(id, GATEWAY_PACKET_AO_REGISTERS_STRUCTURE, (register_address + bytes_length));
+                __gatewayInitializationSendRegistersInitializationPacket(id, GATEWAY_PACKET_AO_REGISTERS_STRUCTURE, (register_address + bytes_length));
 
                 return;
             }
@@ -532,17 +437,18 @@ void _gatewayExtractAndStoreRegisterStructure(
     }
     
     // Node initiliazation successfully finished
-    _gatewayMarkNodeAsInitialized(id);
+    __gatewayInitializationMarkNodeAsInitialized(id);
 }
 
 // -----------------------------------------------------------------------------
 // INITIALIZATION HANDLERS
 // -----------------------------------------------------------------------------
 
-void _gatewayNodeInitializationHandler(
+void _gatewayInitializationHandler(
     const uint8_t packetId,
     const uint8_t address,
-    uint8_t * payload
+    uint8_t * payload,
+    const uint8_t payloadLength
 ) {
     switch (packetId)
     {
@@ -552,32 +458,89 @@ void _gatewayNodeInitializationHandler(
         case GATEWAY_PACKET_FW_MODEL:
         case GATEWAY_PACKET_FW_MANUFACTURER:
         case GATEWAY_PACKET_FW_VERSION:
-            _gatewayExtractAndStoreDescription(packetId, (address - 1), payload);
+            __gatewayInitializationBaseDefinitionHandler(packetId, (address - 1), payload);
+            break;
+
+        case GATEWAY_PACKET_REGISTERS_SIZE:
+            __gatewayInitializationRegistersDefinitionsHandler((address - 1), payload);
+            break;
+
+        case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
+            __gatewayInitializationRegistersStructureHandler(packetId, (address - 1), payload, payloadLength, GATEWAY_REGISTER_AI);
+            break;
+
+        case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
+            __gatewayInitializationRegistersStructureHandler(packetId, (address - 1), payload, payloadLength, GATEWAY_REGISTER_AO);
             break;
     }
 }
 
 // -----------------------------------------------------------------------------
 
-void _gatewayRegistersInitializationHandler(
-    const uint8_t packetId,
-    const uint8_t address,
-    uint8_t * payload,
-    const uint8_t payloadLength
+bool _gatewayInitializationIsUnfinished(
+    uint8_t id
 ) {
-    switch (packetId)
-    {
-        case GATEWAY_PACKET_REGISTERS_SIZE:
-            _gatewayExtractAndStoreRegistersDefinitions((address - 1), payload);
-            break;
+    if (
+        // Check if node has finished addressing procedure
+        _gateway_nodes[id].addressing == true
+        // Check if node is not initialized
+        && _gateway_nodes[id].initiliazation.state == false
+    ) {
+        return true;
+    }
 
-        case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
-            _gatewayExtractAndStoreRegisterStructure(packetId, (address - 1), payload, payloadLength, GATEWAY_REGISTER_AI);
-            break;
+    return false;
+}
 
-        case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
-            _gatewayExtractAndStoreRegisterStructure(packetId, (address - 1), payload, payloadLength, GATEWAY_REGISTER_AO);
-            break;
+// -----------------------------------------------------------------------------
+
+/**
+ * Get first not initialized node from the list & try to continue in initiliazation
+ */
+void _gatewayInitializationContinueInProcess(
+    const uint8_t id
+) {
+    if (
+        // Check if node has finished addressing procedure
+        _gateway_nodes[id].addressing == true
+        // Check if node is not initialized
+        && _gateway_nodes[id].initiliazation.state == false
+        && _gateway_nodes[id].initiliazation.attempts <= NODES_GATEWAY_MAX_INIT_ATTEMPTS
+    ) {
+        // Attempts counter reached maximum
+        if (_gateway_nodes[id].initiliazation.attempts > NODES_GATEWAY_MAX_INIT_ATTEMPTS) {
+            // Set delay
+            if (_gateway_nodes[id].initiliazation.delay == 0) {
+                _gateway_nodes[id].initiliazation.delay = millis();
+
+                // Initialization is skipped
+                return;
+
+            // If the delay is finished...
+            } else if ((millis() - _gateway_nodes[id].initiliazation.delay) >= NODES_GATEWAY_INIT_DELAY) {
+                // ...reset it and continue in initiliazation
+                _gateway_nodes[id].initiliazation.attempts = 0;
+                _gateway_nodes[id].initiliazation.delay = 0;
+            }
+        }
+        
+        switch (_gateway_nodes[id].initiliazation.step)
+        {
+            case GATEWAY_PACKET_HW_MODEL:
+            case GATEWAY_PACKET_HW_MANUFACTURER:
+            case GATEWAY_PACKET_HW_VERSION:
+            case GATEWAY_PACKET_FW_MODEL:
+            case GATEWAY_PACKET_FW_MANUFACTURER:
+            case GATEWAY_PACKET_FW_VERSION:
+            case GATEWAY_PACKET_REGISTERS_SIZE:
+                __gatewayInitializationSendBaseInitializationPacket(id, _gateway_nodes[id].initiliazation.step);
+                break;
+
+            case GATEWAY_PACKET_AI_REGISTERS_STRUCTURE:
+            case GATEWAY_PACKET_AO_REGISTERS_STRUCTURE:
+                __gatewayInitializationSendRegistersInitializationPacket(id, _gateway_nodes[id].initiliazation.step, 0);
+                break;
+        }
     }
 }
 

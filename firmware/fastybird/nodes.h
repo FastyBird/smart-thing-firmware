@@ -112,15 +112,7 @@ bool _fastybirdInitializeNodeChannelProperty(
                 return false;
             }
 
-            _fastybird_node_channel_property_advertisement_progress = FASTYBIRD_PUB_CHANNEL_PROPERTY_MAPPING;
-            break;
-
-        case FASTYBIRD_PUB_CHANNEL_PROPERTY_MAPPING:
-            if (!_fastybirdPropagateChannelPropertyMappings(_fastybird_gateway_nodes[nodeId].id, channelStructure, propertyStructure)) {
-                return false;
-            }
-
-            _fastybird_node_channel_property_advertisement_progress = FASTYBIRD_PUB_CHANNEL_CONTROL_STRUCTURE;
+            _fastybird_node_channel_property_advertisement_progress = FASTYBIRD_PUB_CHANNEL_PROPERTY_DONE;
             break;
 
 // -----------------------------------------------------------------------------
@@ -172,7 +164,7 @@ bool _fastybirdInitializeNodeChannel(
                 _fastybird_node_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_ARRAY;
 
             } else {
-                _fastybird_node_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_PROPERTY_NAME;
+                _fastybird_node_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_PROPERTY;
             }
             break;
 
@@ -182,7 +174,7 @@ bool _fastybirdInitializeNodeChannel(
             }
 
             if (_fastybird_gateway_nodes[nodeId].channels[channelIndex].properties.size() > 0) {
-                _fastybird_node_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_PROPERTY_NAME;
+                _fastybird_node_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_PROPERTY;
 
             } else {
                 _fastybird_node_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_CONTROL_STRUCTURE;
@@ -210,12 +202,7 @@ bool _fastybirdInitializeNodeChannel(
                 }
             }
 
-            if (_fastybird_gateway_nodes[nodeId].channels[channelIndex].isConfigurable) {
-                _fastybird_node_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_CONFIGURATION_SCHEMA;
- 
-            } else {
-                _fastybird_node_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_DONE;
-            }
+            _fastybird_node_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_CONTROL_STRUCTURE;
             break;
 
 // -----------------------------------------------------------------------------
@@ -393,29 +380,6 @@ void _fastybirdInitializeNode(
             break;
 
         case FASTYBIRD_PUB_HEARTBEAT:
-            for (uint8_t j = 0; j < _fastybird_gateway_nodes[nodeId].channels.size(); j++) {
-                if (strcmp(_fastybird_gateway_nodes[nodeId].channels[j].type.c_str(), FASTYBIRD_CHANNEL_BINARY_SENSOR) == 0) {
-                    for (uint8_t cnt = 0; cnt < _fastybird_gateway_nodes[nodeId].channels[j].length; cnt++) {
-                        _fastybirdReportNodeChannelValue(
-                            _fastybird_gateway_nodes[nodeId].id,
-                            0,
-                            cnt,
-                            gatewayReadDigitalValue(nodeId, GATEWAY_REGISTER_DI, cnt) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
-                        );
-                    }
-
-                } else if (strcmp(_fastybird_gateway_nodes[nodeId].channels[j].type.c_str(), FASTYBIRD_CHANNEL_BINARY_ACTOR) == 0) {
-                    for (uint8_t cnt = 0; cnt < _fastybird_gateway_nodes[nodeId].channels[j].length; cnt++) {
-                        _fastybirdReportNodeChannelValue(
-                            _fastybird_gateway_nodes[nodeId].id,
-                            1,
-                            cnt,
-                            gatewayReadDigitalValue(nodeId, GATEWAY_REGISTER_DO, cnt) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
-                        );
-                    }
-                }
-            }
-
             _fastybird_gateway_nodes[nodeId].initialized = true;
 
             _fastybird_initialize_node = 0xFF;

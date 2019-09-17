@@ -75,7 +75,6 @@
 #define FASTYBIRD_TOPIC_THING_PROPERTY_QUERYABLE            "{property}/$queryable"
 #define FASTYBIRD_TOPIC_THING_PROPERTY_DATA_TYPE            "{property}/$data-type"
 #define FASTYBIRD_TOPIC_THING_PROPERTY_FORMAT               "{property}/$format"
-#define FASTYBIRD_TOPIC_THING_PROPERTY_MAPPING              "{property}/$mapping/{mapping}"
 #define FASTYBIRD_TOPIC_THING_PROPERTY_RECEIVE              "{property}/set"
 #define FASTYBIRD_TOPIC_THING_PROPERTY_QUERY                "{property}/query"
 
@@ -105,7 +104,6 @@
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_DATA_TYPE          "{channel}/{property}/$data-type"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_UNITS              "{channel}/{property}/$units"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_FORMAT             "{channel}/{property}/$format"
-#define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_MAPPING            "{channel}/{property}/$mapping/{mapping}"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_UNIT               "{channel}/{property}/$units"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_RECEIVE            "{channel}/{property}/set"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERY              "{channel}/{property}/query"
@@ -155,9 +153,8 @@
 #define FASTYBIRD_PUB_CHANNEL_PROPERTY_DATA_TYPE            3
 #define FASTYBIRD_PUB_CHANNEL_PROPERTY_UNITS                4
 #define FASTYBIRD_PUB_CHANNEL_PROPERTY_FORMAT               5
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_MAPPING              6
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_UNIT                 7
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_DONE                 8
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_UNIT                 6
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_DONE                 7
 
 // =============================================================================
 // THING CONTROLS
@@ -181,12 +178,13 @@
 // CHANNELS NAMES
 // =============================================================================
 
-#define FASTYBIRD_CHANNEL_ANALOG_SENSOR                     "analog-sensor"
-#define FASTYBIRD_CHANNEL_ANALOG_ACTOR                      "analog-actor"
-#define FASTYBIRD_CHANNEL_BINARY_SENSOR                     "digital-sensor"
-#define FASTYBIRD_CHANNEL_BINARY_ACTOR                      "digital-actor"
+#define FASTYBIRD_CHANNEL_ANALOG_SENSOR                     "analog_sensor"
+#define FASTYBIRD_CHANNEL_ANALOG_ACTOR                      "analog_actor"
+#define FASTYBIRD_CHANNEL_BINARY_SENSOR                     "digital_sensor"
+#define FASTYBIRD_CHANNEL_BINARY_ACTOR                      "digital_actor"
 #define FASTYBIRD_CHANNEL_BUTTON                            "button"
 #define FASTYBIRD_CHANNEL_ENERGY                            "energy"
+#define FASTYBIRD_CHANNEL_ENVIRONMENT                       "environment"
 #define FASTYBIRD_CHANNEL_LED                               "led"
 #define FASTYBIRD_CHANNEL_LIGHT                             "light"
 #define FASTYBIRD_CHANNEL_SWITCH                            "switch"

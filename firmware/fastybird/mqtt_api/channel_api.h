@@ -512,63 +512,6 @@ bool _fastybirdPropagateChannelPropertyFormat(
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateChannelPropertyMapping(
-    const char * thingId,
-    fastybird_channel_t channel,
-    const char * property,
-    fastybird_channel_property_mapping_t mapping
-) {
-    uint8_t packet_id;
-
-    packet_id = mqttSend(
-        _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
-            channel.name.c_str(),
-            FASTYBIRD_TOPIC_CHANNEL_PROPERTY_MAPPING,
-            "property",
-            property,
-            "mapping",
-            mapping.from
-        ).c_str(),
-        mapping.to
-    );
-
-    if (packet_id == 0) return false;
-
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateChannelPropertyMappings(
-    const char * thingId,
-    fastybird_channel_t channel,
-    fastybird_channel_property_t property
-) {
-    if (property.mappings.size() <= 0) {
-        return true;
-    }
-
-    for (uint8_t i = 0; i < property.mappings.size(); i++) {
-        if (!_fastybirdPropagateChannelPropertyMapping(thingId, channel, property.type.c_str(), property.mappings[i])) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateChannelPropertyMappings(
-    fastybird_channel_t channel,
-    fastybird_channel_property_t property
-) {
-    return _fastybirdPropagateChannelPropertyMappings((fastybirdThingSN()).c_str(), channel, property);
-}
-
-// -----------------------------------------------------------------------------
-
 bool _fastybirdPropagateChannelControlConfiguration(
     const char * thingId,
     fastybird_channel_t channel,

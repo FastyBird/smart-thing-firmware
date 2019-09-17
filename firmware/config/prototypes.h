@@ -212,11 +212,6 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
     typedef std::function<void(unsigned int, JsonArray&)> fastybird_channels_confiure_schedules_f;
 
     typedef struct {
-        char * from;
-        char * to;
-    } fastybird_channel_property_mapping_t;
-
-    typedef struct {
         String name;
         String type;
 
@@ -227,7 +222,6 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
         String units;
 
         String format;
-        std::vector<fastybird_channel_property_mapping_t> mappings;
 
         bool initialized;
 

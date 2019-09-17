@@ -19,7 +19,6 @@ SoftwareSerial _gateway_serial_bus(NODES_GATEWAY_TX_PIN, NODES_GATEWAY_RX_PIN);
 struct gateway_node_packet_t {
     uint8_t     max_length      = PJON_PACKET_MAX_LENGTH;
     uint8_t     waiting_for     = GATEWAY_PACKET_NONE;
-    uint32_t    sending_time    = 0;
 };
 
 struct gateway_node_description_t {
@@ -35,11 +34,6 @@ struct gateway_node_initiliazation_t {
     uint32_t    delay           = 0;        // In case maximum attempts is reached a wait delay is activated
 };
 
-struct gateway_node_addressing_t {
-    bool        state           = false;    // FALSE = node addresing is not finished | TRUE = addressing was successfully accepted by node
-    uint32_t    lost            = 0;        // Timestamp when gateway detected node as lost
-};
-
 struct gateway_node_searching_t {
     bool        state           = false;    // FALSE = node searching is not finished | TRUE = searching was successfully accepted by node
     uint32_t    registration    = 0;        // Timestamp when node requested for address
@@ -47,8 +41,8 @@ struct gateway_node_searching_t {
 };
 
 struct gateway_register_reading_t {
+    uint8_t     register_type   = 0;
     uint8_t     start           = 0;
-    uint32_t    delay           = 0;
 };
 
 typedef struct {
@@ -78,7 +72,7 @@ typedef struct {
 
 struct gateway_node_t {
     // Node addressing process
-    gateway_node_addressing_t addressing;
+    bool addressing = false;
 
     gateway_node_searching_t searching;
 
@@ -106,13 +100,7 @@ struct gateway_node_t {
     uint8_t registers_size[5];
 
     // Data registers reading
-    gateway_register_reading_t digital_inputs_reading;
-    gateway_register_reading_t digital_outputs_reading;
-
-    gateway_register_reading_t analog_inputs_reading;
-    gateway_register_reading_t analog_outputs_reading;
-
-    gateway_register_reading_t event_inputs_reading;
+    gateway_register_reading_t registers_reading;
 };
 
 gateway_node_t _gateway_nodes[NODES_GATEWAY_MAX_NODES];
@@ -158,20 +146,11 @@ typedef union {
 } FLOAT32_UNION_t;
 
 uint8_t _gateway_reading_node_index = 0;
-uint32_t _gateway_last_nodes_check = 0;
-uint32_t _gateway_last_nodes_scan = 0;
-uint32_t _gateway_last_new_nodes_scan = 0;
-
-uint32_t _gateway_nodes_scan_client_id = 0;
-bool _gateway_nodes_search_new = false;
-
-const char * _gateway_config_filename = "gateway.conf";
 
 #include "./nodes/storage.h"             // Module configuration storage
 #include "./nodes/registers.h"           // Nodes registers methods
-#include "./nodes/searching.h"           // Nodes searching methods
-#include "./nodes/modules.h"             // 
 #include "./nodes/addressing.h"          // Nodes addressing methods
+#include "./nodes/modules.h"             // 
 #include "./nodes/initialization.h"      // Nodes initialiazation methods
 
 // -----------------------------------------------------------------------------
@@ -183,51 +162,29 @@ bool _gatewayRegisterValueUpdated(
     const uint8_t dataRegister,
     const uint8_t address
 ) {
-    #if WEB_SUPPORT && WS_SUPPORT
-        DynamicJsonBuffer jsonBuffer;
-
-        JsonObject& message = jsonBuffer.createObject();
-
-        message["module"] = "nodes";
-
-        JsonObject& container = message.createNestedObject("node");
-
-        _gatewayCollectNode(container, id);
-
-        wsSend(message);
-    #endif
+    DEBUG_MSG(PSTR("[GATEWAY] Node: %i register %d:%d updated\n"), (id + 1), dataRegister, address);
 
     #if FASTYBIRD_SUPPORT
         switch (dataRegister)
         {
             case GATEWAY_REGISTER_DI:
-                _fastybirdReportNodeChannelValue(
-                    _gateway_nodes[id].serial_number,
-                    0,
-                    address,
-                    _gatewayReadDigitalRegisterValue(id, dataRegister, address) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
-                );
+                _gatewayFastybirdReportDigitalRegisterValue(id, dataRegister, address, 0);
                 break;
 
             case GATEWAY_REGISTER_DO:
-                _fastybirdReportNodeChannelValue(
-                    _gateway_nodes[id].serial_number,
-                    1,
-                    address,
-                    _gatewayReadDigitalRegisterValue(id, dataRegister, address) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
-                );
+                _gatewayFastybirdReportDigitalRegisterValue(id, dataRegister, address, 1);
                 break;
 
             case GATEWAY_REGISTER_AI:
-                _gatewayReportAnalogRegisterValue(id, dataRegister, address, 2);
+                _gatewayFastybirdReportAnalogRegisterValue(id, dataRegister, address, 2);
                 break;
 
             case GATEWAY_REGISTER_AO:
-                _gatewayReportAnalogRegisterValue(id, dataRegister, address, 3);
+                _gatewayFastybirdReportAnalogRegisterValue(id, dataRegister, address, 3);
                 break;
 
             case GATEWAY_REGISTER_EV:
-                _gatewayReportEventRegisterValue(id, dataRegister, address, 4);
+                _gatewayFastybirdReportEventRegisterValue(id, dataRegister, address, 4);
                 break;
         }
     #endif
@@ -239,8 +196,7 @@ void _gatewayResetNodeIndex(
     const uint8_t id
 ) {
     // Reset addressing
-    _gateway_nodes[id].addressing.state = false;
-    _gateway_nodes[id].addressing.lost = 0;
+    _gateway_nodes[id].addressing = false;
 
     _gateway_nodes[id].searching.state = false;
     _gateway_nodes[id].searching.registration = 0;
@@ -252,7 +208,6 @@ void _gatewayResetNodeIndex(
     _gateway_nodes[id].initiliazation.attempts = 0;
 
     _gateway_nodes[id].packet.waiting_for = GATEWAY_PACKET_NONE;
-    _gateway_nodes[id].packet.sending_time = 0;
     _gateway_nodes[id].packet.max_length = PJON_PACKET_MAX_LENGTH;
 
     strcpy(_gateway_nodes[id].hardware.manufacturer, (char *) GATEWAY_DESCRIPTION_NOT_SET);
@@ -267,6 +222,9 @@ void _gatewayResetNodeIndex(
     _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] = 0;
     _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] = 0;
     _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] = 0;
+
+    _gateway_nodes[id].registers_reading.register_type = GATEWAY_REGISTER_NONE;
+    _gateway_nodes[id].registers_reading.start = 0;
 
     // Reset registers
     std::vector<gateway_digital_register_t> reset_digital_inputs;
@@ -301,16 +259,6 @@ void _gatewayCheckPacketsDelays()
             // Node does not respons in reserved time window
             // Node slot is free to use by other node
             _gatewayResetNodeIndex(i);
-        }
-
-        // Packets
-        if (
-            _gateway_nodes[i].packet.waiting_for != GATEWAY_PACKET_NONE
-            && _gateway_nodes[i].packet.sending_time > 0
-            && (millis() - _gateway_nodes[i].packet.sending_time) > NODES_GATEWAY_PACKET_REPLY_DELAY
-        ) {
-            _gateway_nodes[i].packet.waiting_for = GATEWAY_PACKET_NONE;
-            _gateway_nodes[i].packet.sending_time = 0;
         }
     }
 }
@@ -359,17 +307,11 @@ String _gatewayPacketName(
     if (_gatewayIsPacketInGroup(packetId, gateway_packets_searching, GATEWAY_PACKET_SEARCH_MAX)) {
         strncpy_P(buffer, gateway_packets_searching_string[_gatewayGetPacketIndexInGroup(packetId, gateway_packets_searching, GATEWAY_PACKET_SEARCH_MAX)], sizeof(buffer));
 
-    } else if (_gatewayIsPacketInGroup(packetId, gateway_packets_addresing, GATEWAY_PACKET_ADDRESS_MAX)) {
-        strncpy_P(buffer, gateway_packets_addresing_string[_gatewayGetPacketIndexInGroup(packetId, gateway_packets_addresing, GATEWAY_PACKET_ADDRESS_MAX)], sizeof(buffer));
-
     } else if (_gatewayIsPacketInGroup(packetId, gateway_packets_node_initialization, GATEWAY_PACKET_NODE_INIT_MAX)) {
         strncpy_P(buffer, gateway_packets_node_initialization_string[_gatewayGetPacketIndexInGroup(packetId, gateway_packets_node_initialization, GATEWAY_PACKET_NODE_INIT_MAX)], sizeof(buffer));
 
-    } else if (_gatewayIsPacketInGroup(packetId, gateway_packets_registers_initialization, GATEWAY_PACKET_REGISTERS_INIT_MAX)) {
-        strncpy_P(buffer, gateway_packets_registers_initialization_string[_gatewayGetPacketIndexInGroup(packetId, gateway_packets_registers_initialization, GATEWAY_PACKET_REGISTERS_INIT_MAX)], sizeof(buffer));
-
-    } else if (_gatewayIsPacketInGroup(packetId, gateway_packets_registers_reading, GATEWAY_PACKET_REGISTERS_REDING_MAX)) {
-        strncpy_P(buffer, gateway_packets_registers_reading_string[_gatewayGetPacketIndexInGroup(packetId, gateway_packets_registers_reading, GATEWAY_PACKET_REGISTERS_REDING_MAX)], sizeof(buffer));
+    } else if (_gatewayIsPacketInGroup(packetId, gateway_packets_registers_reading, GATEWAY_PACKET_REGISTERS_READING_MAX)) {
+        strncpy_P(buffer, gateway_packets_registers_reading_string[_gatewayGetPacketIndexInGroup(packetId, gateway_packets_registers_reading, GATEWAY_PACKET_REGISTERS_READING_MAX)], sizeof(buffer));
 
     } else if (_gatewayIsPacketInGroup(packetId, gateway_packets_registers_writing, GATEWAY_PACKET_REGISTERS_WRITING_MAX)) {
         strncpy_P(buffer, gateway_packets_registers_writing_string[_gatewayGetPacketIndexInGroup(packetId, gateway_packets_registers_writing, GATEWAY_PACKET_REGISTERS_WRITING_MAX)], sizeof(buffer));
@@ -402,21 +344,21 @@ bool _gatewaySendPacket(
     char * payload,
     const uint8_t length
 ) {
-    uint16_t result = _gateway_bus.send_packet_blocking(
-        address,    // Master address
+    uint16_t result = _gateway_bus.send_packet(
+        address,    // Node address
         payload,    // Content
         length      // Content length
     );
 
     if (result != PJON_ACK) {
         if (result == PJON_BUSY ) {
-            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Sending packet: %s for node: %d failed, bus is busy\n"), _gatewayPacketName(payload[0]).c_str(), address);
+            DEBUG_MSG(PSTR("[GATEWAY][ERR] Sending packet: %s for node: %d failed, bus is busy\n"), _gatewayPacketName(payload[0]).c_str(), address);
 
         } else if (result == PJON_FAIL) {
-            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Sending packet: %s for node: %d failed\n"), _gatewayPacketName(payload[0]).c_str(), address);
+            DEBUG_MSG(PSTR("[GATEWAY][ERR] Sending packet: %s for node: %d failed\n"), _gatewayPacketName(payload[0]).c_str(), address);
 
         } else {
-            DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Sending packet: %s for node: %d failed, unknonw error\n"), _gatewayPacketName(payload[0]).c_str(), address);
+            DEBUG_MSG(PSTR("[GATEWAY][ERR] Sending packet: %s for node: %d failed, unknonw error\n"), _gatewayPacketName(payload[0]).c_str(), address);
         }
 
         return false;
@@ -439,158 +381,62 @@ bool _gatewaySendPacket(
 /**
  * Read data registers from node
  */
-void _gatewayReadNodes()
-{
-    if (_gateway_reading_node_index > 0 && _gateway_reading_node_index >= NODES_GATEWAY_MAX_NODES) {
-        _gateway_reading_node_index = 0;
-    }
-
-    for (uint8_t i = _gateway_reading_node_index; i < NODES_GATEWAY_MAX_NODES; i++) {
+bool _gatewayReadNode(
+    uint8_t id
+) {
+    if (
+        _gateway_nodes[id].initiliazation.state == true
+        && (
+            _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] > 0
+            || _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] > 0
+            || _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] > 0
+            || _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] > 0
+            || _gateway_nodes[id].registers_size[GATEWAY_REGISTER_EV] > 0
+        )
+    ) {
         if (
-            _gateway_nodes[i].initiliazation.state == true
-            && _gateway_nodes[i].addressing.lost == 0
-            && (
-                _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DI] > 0
-                || _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DO] > 0
-                || _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AI] > 0
-                || _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AO] > 0
-                || _gateway_nodes[i].registers_size[GATEWAY_REGISTER_EV] > 0
-            )
-            && _gateway_nodes[i].packet.waiting_for == GATEWAY_PACKET_NONE
+            _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DI] > 0
+            && _gateway_nodes[id].registers_reading.register_type == GATEWAY_REGISTER_DI
         ) {
-            _gateway_reading_node_index = i;
+            _gatewayRequestReadingMultipleDigitalInputsRegisters(id);
 
-            if (
-                _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DI] > 0
-                && (
-                    _gateway_nodes[i].digital_inputs_reading.delay == 0
-                    || (millis() - _gateway_nodes[i].digital_inputs_reading.delay) > NODES_GATEWAY_DI_READING_INTERVAL
-                )
-            ) {
-                _gatewayRequestReadingMultipleDigitalInputsRegisters(i);
+            return true;
 
-            } else if (
-                _gateway_nodes[i].registers_size[GATEWAY_REGISTER_DO] > 0
-                && (
-                    _gateway_nodes[i].digital_outputs_reading.delay == 0
-                    || (millis() - _gateway_nodes[i].digital_outputs_reading.delay) > NODES_GATEWAY_DO_READING_INTERVAL
-                )
-            ) {
-                _gatewayRequestReadingMultipleDigitalOutputsRegisters(i);
+        } else if (
+            _gateway_nodes[id].registers_size[GATEWAY_REGISTER_DO] > 0
+            && _gateway_nodes[id].registers_reading.register_type == GATEWAY_REGISTER_DO
+        ) {
+            _gatewayRequestReadingMultipleDigitalOutputsRegisters(id);
 
-            } else if (
-                _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AI] > 0
-                && (
-                    _gateway_nodes[i].analog_inputs_reading.delay == 0
-                    || (millis() - _gateway_nodes[i].analog_inputs_reading.delay) > NODES_GATEWAY_AI_READING_INTERVAL
-                )
-            ) {
-                _gatewayRequestReadingMultipleAnalogInputsRegisters(i);
+            return true;
 
-            } else if (
-                _gateway_nodes[i].registers_size[GATEWAY_REGISTER_AO] > 0
-                && (
-                    _gateway_nodes[i].analog_outputs_reading.delay == 0
-                    || (millis() - _gateway_nodes[i].analog_outputs_reading.delay) > NODES_GATEWAY_AO_READING_INTERVAL
-                )
-            ) {
-                _gatewayRequestReadingMultipleAnalogOutputsRegisters(i);
+        } else if (
+            _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AI] > 0
+            && _gateway_nodes[id].registers_reading.register_type == GATEWAY_REGISTER_AI
+        ) {
+            _gatewayRequestReadingMultipleAnalogInputsRegisters(id);
 
-            } else if (
-                _gateway_nodes[i].registers_size[GATEWAY_REGISTER_EV] > 0
-                && (
-                    _gateway_nodes[i].event_inputs_reading.delay == 0
-                    || (millis() - _gateway_nodes[i].event_inputs_reading.delay) > NODES_GATEWAY_EV_READING_INTERVAL
-                )
-            ) {
-                _gatewayRequestReadingMultipleEventInputsRegisters(i);
-            }
+            return true;
 
-            return;
-        }
-    }
-}
+        } else if (
+            _gateway_nodes[id].registers_size[GATEWAY_REGISTER_AO] > 0
+            && _gateway_nodes[id].registers_reading.register_type == GATEWAY_REGISTER_AO
+        ) {
+            _gatewayRequestReadingMultipleAnalogOutputsRegisters(id);
 
-// -----------------------------------------------------------------------------
-// NODES CHECKING
-// -----------------------------------------------------------------------------
+            return true;
 
-/**
- * Gateway searching for active nodes
- */
-void _gatewaySearchForNodes()
-{
-    // Store start timestamp
-    uint32_t time = millis();
+        } else if (
+            _gateway_nodes[id].registers_size[GATEWAY_REGISTER_EV] > 0
+            && _gateway_nodes[id].registers_reading.register_type == GATEWAY_REGISTER_EV
+        ) {
+            _gatewayRequestReadingMultipleEventInputsRegisters(id);
 
-    char output_content[1];
-
-    output_content[0] = GATEWAY_PACKET_SEARCH_NODES;
-
-    _gatewayBroadcastPacket(
-        output_content,
-        1
-    );
-
-    while((millis() - time) <= NODES_GATEWAY_LIST_ADDRESSES_TIME) {
-        if (_gateway_bus.receive() == PJON_ACK) {
-            return;
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * Iterate all registered nodes and PING them
- * If node is not able to receive PING request, remove it from list
- */
-void _gatewayCheckNodesPresence()
-{
-    char output_content[1];
-
-    uint8_t counter = 0;
-
-    // Packet identifier at first postion
-    output_content[0] = GATEWAY_PACKET_GATEWAY_PING;
-    
-    DEBUG_MSG(PSTR("[GATEWAY] Checking node presence\n"));
-
-    // Process all nodes
-    for (uint8_t i = 0; i < NODES_GATEWAY_MAX_NODES; i++) {
-        if (_gateway_nodes[i].addressing.state == true) {
-            // Check if node can receive PING
-            if (
-                _gatewaySendPacket(
-                    i + 1,              // Node address
-                    output_content,     // Payload
-                    1                   // Payload length
-                ) != true
-            ) {
-                if (_gateway_nodes[i].addressing.lost == 0) {
-                    DEBUG_MSG(PSTR("[GATEWAY] Node with address: %d is lost\n"), (i + 1));
-                }
-
-                _gateway_nodes[i].addressing.lost = millis();
-
-            } else {
-                if (_gateway_nodes[i].addressing.lost > 0) {
-                    DEBUG_MSG(PSTR("[GATEWAY] Node with address: %d is back alive\n"), (i + 1));
-                }
-
-                _gateway_nodes[i].addressing.lost = 0;
-
-                counter++;
-            }
+            return true;
         }
     }
 
-    if (counter > 0) {
-        DEBUG_MSG(PSTR("[GATEWAY] Sent PING to: %d nodes\n"), counter);
-
-    } else {
-        DEBUG_MSG(PSTR("[GATEWAY] No nodes registered to gateway\n"));
-    }
+    return false;
 }
 
 // -----------------------------------------------------------------------------
@@ -616,11 +462,7 @@ void _gatewayReceiveHandler(
 
     // Node is trying to acquire address
     if (_gatewayIsPacketInGroup(packet_id, gateway_packets_searching, GATEWAY_PACKET_SEARCH_MAX)) {
-        _gatewaySearchRequestHandler(packet_id, sender_address, payload);
-
-    // Node is trying to acquire address
-    } else if (_gatewayIsPacketInGroup(packet_id, gateway_packets_addresing, GATEWAY_PACKET_ADDRESS_MAX)) {
-        _gatewayAddressRequestHandler(packet_id, sender_address, payload);
+        _gatewayAddressingRequestHandler(packet_id, sender_address, payload);
 
     // Node send reply to request
     } else {
@@ -632,31 +474,28 @@ void _gatewayReceiveHandler(
 
         // Check if gateway is waiting for reply from node (initiliazation sequence)
         if (_gateway_nodes[(sender_address - 1)].packet.waiting_for == GATEWAY_PACKET_NONE) {
-            //DEBUG_GW_MSG(
-            //    PSTR("[GATEWAY][ERR] Received packet for node with address: %d but gateway is not waiting for packet from this node\n"),
-            //    sender_address
-            //);
+            DEBUG_GW_MSG(
+                PSTR("[GATEWAY][ERR] Received packet for node with address: %d but gateway is not waiting for packet from this node\n"),
+                sender_address
+            );
 
             return;
         }
 
         // Check if gateway is waiting for reply from node (initiliazation sequence)
         if (_gateway_nodes[(sender_address - 1)].packet.waiting_for != packet_id) {
-            //DEBUG_GW_MSG(
-            //    PSTR("[GATEWAY][ERR] Received packet: %s for node with address: %d but gateway is waiting for: %s\n"),
-            //    _gatewayPacketName(packet_id).c_str(),
-            //    sender_address,
-            //    _gatewayPacketName(_gateway_nodes[(sender_address - 1)].packet.waiting_for).c_str()
-            //);
+            DEBUG_GW_MSG(
+                PSTR("[GATEWAY][ERR] Received packet: %s for node with address: %d but gateway is waiting for: %s\n"),
+                _gatewayPacketName(packet_id).c_str(),
+                sender_address,
+                _gatewayPacketName(_gateway_nodes[(sender_address - 1)].packet.waiting_for).c_str()
+            );
 
             return;
         }
         
         if (_gatewayIsPacketInGroup(packet_id, gateway_packets_node_initialization, GATEWAY_PACKET_NODE_INIT_MAX)) {
-            _gatewayNodeInitializationHandler(packet_id, sender_address, payload);
-
-        } else if (_gatewayIsPacketInGroup(packet_id, gateway_packets_registers_initialization, GATEWAY_PACKET_REGISTERS_INIT_MAX)) {
-            _gatewayRegistersInitializationHandler(packet_id, sender_address, payload, length);
+            _gatewayInitializationHandler(packet_id, sender_address, payload, length);
 
         } else {
             switch (packet_id)
@@ -750,9 +589,7 @@ void _gatewayErrorHandler(
     void *customPointer
 ) {
     if (code == PJON_CONNECTION_LOST) {
-        _gateway_nodes[_gateway_bus.packets[data].content[0] -1].addressing.lost = millis();
-
-        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Connection lost with node\n"));
+        DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Node with address: %d is lost\n"), (_gateway_bus.packets[data].content[0] -1));
 
     } else if (code == PJON_PACKETS_BUFFER_FULL) {
         DEBUG_GW_MSG(PSTR("[GATEWAY][ERR] Buffer is full\n"));
@@ -774,7 +611,7 @@ bool gatewayReadDigitalValue(
     const uint8_t dataRegister,
     const uint8_t address
 ) {
-    return _gatewayReadDigitalRegisterValue(id, dataRegister, address);
+    return _gatewayRegistersReadDigitalValue(id, dataRegister, address);
 }
 
 // -----------------------------------------------------------------------------
@@ -786,6 +623,8 @@ void gatewaySetup() {
 
     _gateway_bus.strategy.set_serial(&_gateway_serial_bus);
 
+    _gateway_bus.set_synchronous_acknowledge(false);
+
     // Communication callbacks
     _gateway_bus.set_receiver(_gatewayReceiveHandler);
     _gateway_bus.set_error(_gatewayErrorHandler);
@@ -794,21 +633,20 @@ void gatewaySetup() {
 
     #if WEB_SUPPORT
         webServer()->on(WEB_API_GATEWAY_CONFIGURATION, HTTP_GET, _gatewayOnGetConfig);
-        webServer()->on(WEB_API_GATEWAY_CONFIGURATION, HTTP_POST, _gatewayOnPostConfig);
-
-        #if WS_SUPPORT
-            //wsOnConnectRegister(_gatewayWSOnConnect);
-            //wsOnConfigureRegister(_gatewayWSOnConfigure);
-            //wsOnActionRegister(_gatewayWSOnAction);
-        #endif
+        webServer()->on(WEB_API_GATEWAY_CONFIGURATION, HTTP_POST, _gatewayOnPostConfig, _gatewayOnPostConfigData);
     #endif
 
     #if FASTYBIRD_SUPPORT
+        // Module schema report
+        fastybirdReportConfigurationSchemaRegister(_gatewayReportConfigurationSchema);
+        fastybirdReportConfigurationRegister(_gatewayReportConfiguration);
+        fastybirdOnConfigureRegister(_gatewayUpdateConfiguration);
+
         fastybirdOnControlRegister(
             [](const char * payload) {
                 DEBUG_MSG(PSTR("[GATEWAY] Searching for new nodes\n"));
 
-                _gatewaySearchNewNodesStart();
+                gatewayAddressingStartSearchingNodes();
             },
             FASTYBIRD_THING_CONTROL_SEARCH_FOR_NODES
         );
@@ -823,7 +661,8 @@ void gatewaySetup() {
         );
     #endif
 
-    _gatewayRestoreStorageFromMemory();
+    // Restore nodes structure
+    _gatewayStorageRestoreFromMemory();
 
     firmwareRegisterLoop(gatewayLoop);
 }
@@ -838,68 +677,33 @@ void gatewayLoop() {
 
     _gatewayCheckPacketsDelays();
 
-    // If some node is not initialized, get its address
-    uint8_t node_address_to_initialize = _gatewayInitializationUnfinishedAddress();
-    uint8_t node_address_to_search = _gatewaySearchUnfinishedAddress();
-
-    if (_gateway_nodes_search_new == true && (_gateway_last_new_nodes_scan + NODES_GATEWAY_SEARCHING_TIMEOUT) <= millis()) {
-        _gateway_nodes_search_new = false;
-        _gateway_last_new_nodes_scan = 0;
-
-        #if WEB_SUPPORT && WS_SUPPORT
-            if (_gateway_nodes_scan_client_id != 0) {
-                DynamicJsonBuffer jsonBuffer;
-
-                JsonObject& scan_result = jsonBuffer.createObject();
-
-                scan_result["module"] = "nodes";
-                scan_result["result"] = String("OK");
-
-                String converted_output;
-
-                scan_result.printTo(converted_output);
-
-                wsSend(_gateway_nodes_scan_client_id, converted_output.c_str());  
-            }
-        #endif
-    }
-
-    // Search for new unaddressed nodes
-    if (_gateway_nodes_search_new == true && (_gateway_last_new_nodes_scan + NODES_GATEWAY_SEARCHING_TIMEOUT) > millis()) {
-        _gatewaySearchForNewNodes();
-
-    // Search for nodes after bootup
-    } else if (_gateway_last_nodes_scan == 0 || (_gateway_last_nodes_scan + NODES_GATEWAY_ADDRESSING_TIMEOUT) > millis()) {
-        if (_gateway_last_nodes_scan == 0) {
-            _gateway_last_nodes_scan = millis();
+    if (!_gatewayAddressingLoop()) {
+        if (_gateway_reading_node_index >= NODES_GATEWAY_MAX_NODES) {
+            _gateway_reading_node_index = 0;
         }
 
-        _gatewaySearchForNodes();
+        for (uint8_t i = _gateway_reading_node_index; i < NODES_GATEWAY_MAX_NODES; i++) {
+            _gateway_reading_node_index++;
 
-    // Check nodes presence in given interval
-    } else if (millis() - _gateway_last_nodes_check > NODES_GATEWAY_NODES_CHECK_INTERVAL) {
-        _gateway_last_nodes_check = millis();
+            if (_gatewayInitializationIsUnfinished(i)) {
+                _gatewayInitializationContinueInProcess(i);
 
-        _gatewayCheckNodesPresence();
+                break;
 
-    // Check if all connected nodes are initialized
-    } else if (node_address_to_initialize != 0) {
-        _gatewayInitializationContinueInProcess(node_address_to_initialize);
-
-    // Check if all connected nodes have finished searching process
-    } else if (node_address_to_search != 0) {
-        _gatewaySearchContinueInProcess(node_address_to_search);
-
-    // Continue in nodes registers reading
-    } else {
-        _gatewayReadNodes();
+            } else {
+                // Continue in nodes registers reading
+                if (_gatewayReadNode(i)) {
+                    break;
+                }
+            }
+        }
     }
 
     _gatewayDigitalRegisterProcess(false);
     _gatewayDigitalRegisterProcess(true);
 
-    _gateway_bus.receive(50000);
     _gateway_bus.update();
+    _gateway_bus.receive(50000);
 }
 
 #endif // NODES_GATEWAY_SUPPORT

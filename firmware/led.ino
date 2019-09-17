@@ -123,7 +123,7 @@ void _ledBlink(
     void _ledReportConfiguration(
         JsonObject& configuration
     ) {
-        configuration["led_mode"] = _ledMode();
+        configuration["led_mode"] = getSetting("ledMode").toInt();
     }
 
 // -----------------------------------------------------------------------------
@@ -150,6 +150,8 @@ void _ledBlink(
             DEBUG_MSG(PSTR("[LED] Setting: \"led_mode\" to: %d\n"), configuration["led_mode"].as<uint8_t>());
 
             setSetting("ledMode", configuration["led_mode"].as<uint8_t>());
+
+            _ledMode(configuration["led_mode"].as<uint8_t>());
 
             is_updated = true;
         }

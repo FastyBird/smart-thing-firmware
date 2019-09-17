@@ -41,6 +41,8 @@ String storageReadConfiguration(
 
         file.close();
 
+        configuration.trim();
+
         return configuration;
 
     } else {
@@ -56,6 +58,14 @@ bool storageWriteConfiguration(
     const char * filename,
     String configuration
 ) {
+    String saved_configuration = storageReadConfiguration(filename);
+
+    if (strcmp(saved_configuration.c_str(), configuration.c_str()) == 0) {
+        DEBUG_MSG(PSTR("[STORAGE] Saved file: %s has same content\n"), filename);
+
+        return true;
+    }
+
     File file = SPIFFS.open(filename, "w");
 
     if (!file) {
