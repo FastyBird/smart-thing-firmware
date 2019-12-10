@@ -94,7 +94,7 @@ void _onDiscover(
     root["manufacturer"] = FIRMWARE_MANUFACTURER;
     root["version"] = FIRMWARE_VERSION;
     root["hostname"] = getIdentifier();
-    root["thing"] = THING_NAME;
+    root["device"] = DEVICE_NAME;
 
     root.printTo(*response);
 

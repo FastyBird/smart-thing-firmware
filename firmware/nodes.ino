@@ -12,7 +12,7 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #include <vector>
 #include <SoftwareSerial.h>
 
-PJON<ThroughSerial> _gateway_bus(PJON_MASTER_ID);
+PJON<ThroughSerialAsync> _gateway_bus(NODES_GATEWAY_MASTER_ID);
 
 SoftwareSerial _gateway_serial_bus(NODES_GATEWAY_TX_PIN, NODES_GATEWAY_RX_PIN);
 
@@ -623,9 +623,7 @@ void gatewaySetup() {
 
     _gateway_bus.strategy.set_serial(&_gateway_serial_bus);
 
-    _gateway_bus.set_synchronous_acknowledge(false);
-
-    // Communication callbacks
+     // Communication callbacks
     _gateway_bus.set_receiver(_gatewayReceiveHandler);
     _gateway_bus.set_error(_gatewayErrorHandler);
 
@@ -648,7 +646,7 @@ void gatewaySetup() {
 
                 gatewayAddressingStartSearchingNodes();
             },
-            FASTYBIRD_THING_CONTROL_SEARCH_FOR_NODES
+            FASTYBIRD_DEVICE_CONTROL_SEARCH_FOR_NODES
         );
 
         fastybirdOnControlRegister(
@@ -657,7 +655,7 @@ void gatewaySetup() {
 
                 // TODO: implement
             },
-            FASTYBIRD_THING_CONTROL_DISCONNECT_NODE
+            FASTYBIRD_DEVICE_CONTROL_DISCONNECT_NODE
         );
     #endif
 

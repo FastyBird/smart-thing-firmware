@@ -10,7 +10,7 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 // GENERAL
 //------------------------------------------------------------------------------
 
-#define THING_NAME                      MANUFACTURER "_" THING      // Concatenate both to get a unique thing name
+#define DEVICE_NAME                     MANUFACTURER "_" DEVICE      // Concatenate both to get a unique device name
 
 #ifndef LOOP_DELAY_TIME
 #define LOOP_DELAY_TIME                 10                          // Delay for this millis in the main loop [0-250]
@@ -97,21 +97,10 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define SPIFFS_SUPPORT                  0                           // Do not add support for SPIFFS by default
 #endif
 
-// -----------------------------------------------------------------------------
-// OTA
-// -----------------------------------------------------------------------------
-
-#ifndef OTA_PORT
-#define OTA_PORT                        8266                        // OTA port
-#endif
-
-#define OTA_GITHUB_FP                   "D7:9F:07:61:10:B3:92:93:E3:49:AC:89:84:5B:03:80:C1:9E:2F:8B"
-
-
 // =============================================================================
 // =============================================================================
 //
-//                            THING CORE MODULES
+//                            DEVICE CORE MODULES
 //
 //
 // =============================================================================
@@ -123,19 +112,27 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 //------------------------------------------------------------------------------
 
 #ifndef FASTYBIRD_SUPPORT
-#define FASTYBIRD_SUPPORT               1                           // Enable FastyBird cloud connection
+#define FASTYBIRD_SUPPORT                   1                           // Enable FastyBird cloud connection by default
 #endif
 
 #ifndef FASTYBIRD_GATEWAY_SUPPORT
-#define FASTYBIRD_GATEWAY_SUPPORT       0                           // Gateway support dissabled by default
+#define FASTYBIRD_GATEWAY_SUPPORT           0                           // Gateway support dissabled by default
 #endif
 
 #ifndef FASTYBIRD_MQTT_BASE_TOPIC
-#define FASTYBIRD_MQTT_BASE_TOPIC       "/v2/{cloudThingId}"
+#define FASTYBIRD_MQTT_BASE_TOPIC           "/v2"
+#endif
+
+#ifndef FASTYBIRD_MQTT_DEVICE_BASE_TOPIC
+#define FASTYBIRD_MQTT_DEVICE_BASE_TOPIC    "/v2/{deviceId}"
 #endif
 
 #ifndef FASTYBIRD_MQTT_NODE_BASE_TOPIC
-#define FASTYBIRD_MQTT_NODE_BASE_TOPIC  "/v2/{cloudThingId}/child/{nodeId}"
+#define FASTYBIRD_MQTT_NODE_BASE_TOPIC      "/v2/{deviceId}/child/{nodeId}"
+#endif
+
+#ifndef FASTYBIRD_MAX_CHANNELS
+#define FASTYBIRD_MAX_CHANNELS              0                           // Maximum channels count
 #endif
 
 //------------------------------------------------------------------------------
@@ -143,7 +140,7 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 //------------------------------------------------------------------------------
 
 #ifndef DEBUG_SUPPORT
-#define DEBUG_SUPPORT                   0                           // Thing debug is disabled by default
+#define DEBUG_SUPPORT                   0                           // Device debug is disabled by default
 #endif
 
 #ifndef DEBUG_SERIAL_SUPPORT
@@ -237,55 +234,6 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define WIFI_SCAN_NETWORKS              1                           // Perform a network scan before connecting
 #endif
 
-// Optional hardcoded configuration (up to 2 networks)
-#ifndef WIFI1_SSID
-#define WIFI1_SSID                      ""
-#endif
-
-#ifndef WIFI1_PASS
-#define WIFI1_PASS                      ""
-#endif
-
-#ifndef WIFI1_IP
-#define WIFI1_IP                        ""
-#endif
-
-#ifndef WIFI1_GW
-#define WIFI1_GW                        ""
-#endif
-
-#ifndef WIFI1_MASK
-#define WIFI1_MASK                      ""
-#endif
-
-#ifndef WIFI1_DNS
-#define WIFI1_DNS                       ""
-#endif
-
-#ifndef WIFI2_SSID
-#define WIFI2_SSID                      ""
-#endif
-
-#ifndef WIFI2_PASS
-#define WIFI2_PASS                      ""
-#endif
-
-#ifndef WIFI2_IP
-#define WIFI2_IP                        ""
-#endif
-
-#ifndef WIFI2_GW
-#define WIFI2_GW                        ""
-#endif
-
-#ifndef WIFI2_MASK
-#define WIFI2_MASK                      ""
-#endif
-
-#ifndef WIFI2_DNS
-#define WIFI2_DNS                       ""
-#endif
-
 #ifndef WIFI_RSSI_1M
 #define WIFI_RSSI_1M                    -30                         // Calibrate it with your router reading the RSSI at 1m
 #endif
@@ -336,36 +284,36 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define WEB_API_REPORT_CRASH            "/control/report-crash"             // 
 #endif
 
-#ifndef WEB_API_FB_INITIALIZE
-#define WEB_API_FB_INITIALIZE           "/control/fastybird/initialize"     //
+#ifndef WEB_API_INITIALIZE
+#define WEB_API_INITIALIZE              "/control/initialize"               //
 #endif
 
 #ifndef WEB_API_REBOOT
-#define WEB_API_REBOOT                  "/control/system/reboot"            //
+#define WEB_API_REBOOT                  "/control/reboot"                   //
 #endif
 
 #ifndef WEB_API_FACTORY
-#define WEB_API_FACTORY                 "/control/system/factory"           //
+#define WEB_API_FACTORY                 "/control/factory-reset"            //
 #endif
 
 #ifndef WEB_API_FIRMWARE_UPGRADE
-#define WEB_API_FIRMWARE_UPGRADE        "/control/firmware/upgrade"         //
+#define WEB_API_FIRMWARE_UPGRADE        "/control/upgrade-firmware"         //
 #endif
 
 #ifndef WEB_API_FIRMWARE_CONFIGURATION
-#define WEB_API_FIRMWARE_CONFIGURATION  "/control/firmware/configuration"   //
+#define WEB_API_FIRMWARE_CONFIGURATION  "/control/configuration"            //
 #endif
 
 #ifndef WEB_API_NETWORK_RECONNECT
-#define WEB_API_NETWORK_RECONNECT       "/control/network/reconnect"        //
+#define WEB_API_NETWORK_RECONNECT       "/control/reconnect"                //
 #endif
 
 #ifndef WEB_API_NETWORK_CONFIGURATION
-#define WEB_API_NETWORK_CONFIGURATION   "/control/network/configure"        //
+#define WEB_API_NETWORK_CONFIGURATION   "/control/network-configuration"    //
 #endif
 
 #ifndef WEB_API_GATEWAY_CONFIGURATION
-#define WEB_API_GATEWAY_CONFIGURATION   "/control/gateway/configure"        //
+#define WEB_API_GATEWAY_CONFIGURATION   "/control/gateway-configuration"    //
 #endif
 
 #ifndef WEB_API_WS_DATA
@@ -404,22 +352,10 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define MQTT_SUPPORT                    1                           // MQTT support (22.38Kb async, 12.48Kb sync)
 #endif
 
-#ifndef MQTT_USE_ASYNC
-#define MQTT_USE_ASYNC                  1                           // Use AysncMQTTClient (1) or PubSubClient (0)
-#endif
-
 // MQTT OVER SSL
 // Using MQTT over SSL works pretty well but generates problems with the web interface.
 // It could be a good idea to use it in conjuntion with WEB_SUPPORT=0.
 // Requires NETWORK_ASYNC_TCP_SSL_ENABLED to 1 and ESP8266 Arduino Core 2.4.0.
-//
-// You can use SSL with MQTT_USE_ASYNC=1 (AsyncMqttClient library)
-// but you might experience hiccups on the web interface, so my recommendation is:
-// WEB_SUPPORT=0
-//
-// If you use SSL with MQTT_USE_ASYNC=0 (PubSubClient library)
-// you will have to disable all the modules that use ESPAsyncTCP, that is:
-// ALEXA_SUPPORT=0 and WEB_SUPPORT=0
 //
 // You will need the fingerprint for your MQTT server, example for CloudMQTT:
 // $ echo -n | openssl s_client -connect m11.cloudmqtt.com:24055 > cloudmqtt.pem
@@ -489,23 +425,21 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define LED_SUPPORT                     1
 #endif
 
-
 // =============================================================================
 // =============================================================================
 //
-//                          THING FUNCTIONALS MODULES
+//                          DEVICE FUNCTIONALS MODULES
 //
 //
 // =============================================================================
 // =============================================================================
-
 
 //------------------------------------------------------------------------------
 // BUTTON MODULE
 //------------------------------------------------------------------------------
 
 #ifndef BUTTON_SUPPORT
-#define BUTTON_SUPPORT                              1
+#define BUTTON_SUPPORT                              0
 #endif
 
 #ifndef BUTTON_DEBOUNCE_DELAY
@@ -645,24 +579,12 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 // =============================================================================
 // =============================================================================
 //
-//                          THING OTHER MODULES
+//                          DEVICE OTHER MODULES
 //
 //
 // =============================================================================
 // =============================================================================
 
-
-// -----------------------------------------------------------------------------
-// SCHEDULER MODULE
-// -----------------------------------------------------------------------------
-
-#ifndef SCHEDULER_SUPPORT
-#define SCHEDULER_SUPPORT               0           // Enable scheduler (1.77Kb)
-#endif
-
-#ifndef SCHEDULER_MAX_SCHEDULES
-#define SCHEDULER_MAX_SCHEDULES         10          // Max schedules alowed
-#endif
 
 // -----------------------------------------------------------------------------
 // ALEXA MODULE
@@ -678,66 +600,6 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 // Both ALEXA_SUPPORT and alexaEnabled should be 1 for Alexa support to work.
 #ifndef ALEXA_ENABLED
 #define ALEXA_ENABLED                   1
-#endif
-
-// -----------------------------------------------------------------------------
-// NOFUSS MODULE
-// -----------------------------------------------------------------------------
-
-#ifndef NOFUSS_SUPPORT
-#define NOFUSS_SUPPORT                  0                           // Do not enable support for NoFuss by default (12.65Kb)
-#endif
-
-#ifndef NOFUSS_ENABLED
-#define NOFUSS_ENABLED                  0                           // Do not perform NoFUSS updates by default
-#endif
-
-#ifndef NOFUSS_SERVER
-#define NOFUSS_SERVER                   ""                          // Default NoFuss Server
-#endif
-
-#ifndef NOFUSS_INTERVAL
-#define NOFUSS_INTERVAL                 3600000                     // Check for updates every hour
-#endif
-
-// -----------------------------------------------------------------------------
-// NTP MODULE
-// -----------------------------------------------------------------------------
-
-#ifndef NTP_SUPPORT
-#define NTP_SUPPORT                     0                           // Build with NTP support by default (6.78Kb)
-#endif
-
-#ifndef NTP_SERVER
-#define NTP_SERVER                      "pool.ntp.org"              // Default NTP server
-#endif
-
-#ifndef NTP_TIMEOUT
-#define NTP_TIMEOUT                     1000                        // Set NTP request timeout to 2 seconds (issue #452)
-#endif
-
-#ifndef NTP_TIME_OFFSET
-#define NTP_TIME_OFFSET                 60                          // Default timezone offset (GMT+1)
-#endif
-
-#ifndef NTP_DAY_LIGHT
-#define NTP_DAY_LIGHT                   1                           // Enable daylight time saving by default
-#endif
-
-#ifndef NTP_SYNC_INTERVAL
-#define NTP_SYNC_INTERVAL               60                          // NTP initial check every minute
-#endif
-
-#ifndef NTP_UPDATE_INTERVAL
-#define NTP_UPDATE_INTERVAL             1800                        // NTP check every 30 minutes
-#endif
-
-#ifndef NTP_START_DELAY
-#define NTP_START_DELAY                 1000                        // Delay NTP start 1 second
-#endif
-
-#ifndef NTP_DST_REGION
-#define NTP_DST_REGION                  0                           // 0 for Europe, 1 for USA (defined in NtpClientLib)
 #endif
 
 // -----------------------------------------------------------------------------
@@ -854,12 +716,4 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 #ifndef LIGHT_TRANSITION_TIME
 #define LIGHT_TRANSITION_TIME           500         // Time in millis from color to color
-#endif
-
-//------------------------------------------------------------------------------
-// ENCODER
-//------------------------------------------------------------------------------
-
-#ifndef ENCODER_SUPPORT
-#define ENCODER_SUPPORT                 0
 #endif

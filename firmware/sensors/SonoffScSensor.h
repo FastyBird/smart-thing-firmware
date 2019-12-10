@@ -186,7 +186,7 @@ class SonoffScSensor : public BaseSensor {
                     _send("AT+STATUS=4");
 
                 } else {
-                    // Do nothing
+                    _send("AT+SEND=unknown");
                 }
 
                 rec_string = "";

@@ -251,33 +251,6 @@ bool _wifiClean(
 
 // -----------------------------------------------------------------------------
 
-// Inject hardcoded networks
-void _wifiInject() {
-    if (strlen(WIFI1_SSID)) {
-        if (!hasSetting("ssid", (uint8_t) 0)) {
-            setSetting("ssid", (uint8_t) 0, WIFI1_SSID);
-            setSetting("pass", (uint8_t) 0, WIFI1_PASS);
-            setSetting("ip", (uint8_t) 0, WIFI1_IP);
-            setSetting("gw", (uint8_t) 0, WIFI1_GW);
-            setSetting("mask", (uint8_t) 0, WIFI1_MASK);
-            setSetting("dns", (uint8_t) 0, WIFI1_DNS);
-        }
-
-        if (strlen(WIFI2_SSID)) {
-            if (!hasSetting("ssid", (uint8_t) 1)) {
-                setSetting("ssid", (uint8_t) 1, WIFI2_SSID);
-                setSetting("pass", (uint8_t) 1, WIFI2_PASS);
-                setSetting("ip", (uint8_t) 1, WIFI2_IP);
-                setSetting("gw", (uint8_t) 1, WIFI2_GW);
-                setSetting("mask", (uint8_t) 1, WIFI2_MASK);
-                setSetting("dns", (uint8_t) 1, WIFI2_DNS);
-            }
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
-
 #if DEBUG_SUPPORT
     void _wifiDebugCallback(
         justwifi_messages_t code,
@@ -696,7 +669,6 @@ void wifiRegister(
 void wifiSetup() {
     WiFi.setSleepMode(WIFI_SLEEP_MODE);
 
-    _wifiInject();
     _wifiConfigure();
 
     #if DEBUG_SUPPORT
@@ -739,7 +711,7 @@ void wifiSetup() {
                 
                 _wifi_defer.once_ms(250, wifiDisconnect);
             },
-            FASTYBIRD_THING_CONTROL_RECONNECT
+            FASTYBIRD_DEVICE_CONTROL_RECONNECT
         );
     #endif
 

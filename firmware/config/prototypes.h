@@ -4,6 +4,7 @@
 #include <vector>
 #include <pgmspace.h>
 #include <core_version.h>
+#include <ESPAsyncTCP.h>
 
 extern "C" {
     #include "user_interface.h"
@@ -90,11 +91,6 @@ void niceDelay(uint32_t ms);
 // RTC MEMORY
 // -----------------------------------------------------------------------------
 #include "rtcmem.h"
-
-// -----------------------------------------------------------------------------
-// OTA MODULE
-// -----------------------------------------------------------------------------
-#include <ESPAsyncTCP.h>
 
 // -----------------------------------------------------------------------------
 // WEB MODULE
@@ -204,12 +200,9 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
 // FASTYBIRD MODULE
 // -----------------------------------------------------------------------------
 #if FASTYBIRD_SUPPORT
-    typedef std::function<void(unsigned int, const char *)> fastybird_channels_process_payload_f;
-    typedef std::function<void(unsigned int, const char *)> fastybird_channels_process_query_f;
-
-    typedef std::function<JsonArray&()> fastybird_channels_confiuration_schema_f;
-    typedef std::function<void(unsigned int, JsonObject&)> fastybird_channels_configure_f;
-    typedef std::function<void(unsigned int, JsonArray&)> fastybird_channels_confiure_schedules_f;
+    // Channel properties
+    typedef std::function<void(uint8_t, const char *)> fastybird_channels_process_payload_f;
+    typedef std::function<void(uint8_t, const char *)> fastybird_channels_process_query_f;
 
     typedef struct {
         String name;
@@ -229,43 +222,48 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
         fastybird_channels_process_query_f queryCallback;
     } fastybird_channel_property_t;
 
+// -----------------------------------------------------------------------------
+
+    // Channels
+    typedef std::function<void(JsonArray&)> fastybird_report_channel_confiuration_schema_callback_f;
+    typedef std::function<void(JsonObject&)> fastybird_report_channel_configuration_callback_f;
+    typedef std::function<void(JsonObject&)> fastybird_on_channel_configure_callback_f;
+
     typedef struct {
         String name;
-        String type;
-        unsigned int length;
-
-        bool isConfigurable;
-        bool hasScheduler;
+        uint8_t length;
 
         bool initialized;
 
-        String configurationSchema;
+        // Channel configuration callbacks - each module could register own callback
+        std::vector<fastybird_report_channel_confiuration_schema_callback_f> configurationSchemaCallback;
+        std::vector<fastybird_report_channel_configuration_callback_f> configurationCallback;
+        std::vector<fastybird_on_channel_configure_callback_f> configureCallback;
 
-        fastybird_channels_configure_f configureCallback;
-        fastybird_channels_confiure_schedules_f configureSchedulesCallback;
-
-        std::vector<fastybird_channel_property_t> properties;
+        // Properties mapping via array indexes
+        std::vector<uint8_t> properties;
     } fastybird_channel_t;
 
-    typedef std::function<void(JsonArray&)> fastybird_report_configuration_schema_callback_f;
-    void fastybirdReportConfigurationSchemaRegister(fastybird_report_configuration_schema_callback_f callback);
-    typedef std::function<void(JsonObject&)> fastybird_report_configuration_callback_f;
-    void fastybirdReportConfigurationRegister(fastybird_report_configuration_callback_f callback);
-    typedef std::function<void(JsonObject&)> fastybird_on_configure_callback_f;
-    void fastybirdOnConfigureRegister(fastybird_on_configure_callback_f callback);
+// -----------------------------------------------------------------------------
 
+    // Device
+    typedef std::function<void(JsonArray&)> fastybird_report_configuration_schema_callback_f;
+    typedef std::function<void(JsonObject&)> fastybird_report_configuration_callback_f;
+    typedef std::function<void(JsonObject&)> fastybird_on_configure_callback_f;
     typedef std::function<void(const char *)> fastybird_on_control_callback_f;
+    typedef std::function<void()> fastybird_on_connect_callback_f;
+
     typedef struct {
         fastybird_on_control_callback_f callback;
         const char * controlName;
-    } fastybird_thing_control_callback_t;
+    } fastybird_on_control_callback_t;
 
+    void fastybirdReportConfigurationSchemaRegister(fastybird_report_configuration_schema_callback_f callback);
+    void fastybirdReportConfigurationRegister(fastybird_report_configuration_callback_f callback);
+    void fastybirdOnConfigureRegister(fastybird_on_configure_callback_f callback);
     void fastybirdOnControlRegister(fastybird_on_control_callback_f callback, const char * controlName);
 
-    typedef std::function<bool()> fastybird_channels_report_configuration_callback_f;
-    void fastybirdChannelsReportConfigurationRegister(fastybird_channels_report_configuration_callback_f callback);
-    typedef std::function<bool()> fastybird_channels_report_scheduler_callback_f;
-    void fastybirdChannelsReportSchedulerRegister(fastybird_channels_report_scheduler_callback_f callback);
+// -----------------------------------------------------------------------------
 
     #if NODES_GATEWAY_SUPPORT
         typedef struct {
@@ -296,6 +294,8 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
 
             // Node channels
             std::vector<fastybird_channel_t> channels;
+            // Node channel properties
+            std::vector<fastybird_channel_property_t> properties;
 
             std::vector<fastybird_node_setting_t> settings;
         } fastybird_node_t;
@@ -307,20 +307,27 @@ void systemOnHeartbeatRegister(system_on_heartbeat_callback_f callback);
     #define fastybird_report_configuration_schema_callback_f void *
     #define fastybird_report_configuration_callback_f void *
     #define fastybird_on_configure_callback_f void *
+    #define fastybird_on_control_callback_f void *
 
-    #define fastybird_channels_report_configuration_callback_f void *
-    #define fastybird_channels_report_scheduler_callback_f void *
+    #define fastybird_report_channel_confiuration_schema_callback_f void *
+    #define fastybird_report_channel_configuration_callback_f void *
+    #define fastybird_on_channel_configure_callback_f void *
+
+    #define fastybird_channels_process_payload_f void *
+    #define fastybird_channels_process_query_f void *
 #endif
 
 // -----------------------------------------------------------------------------
 // NODES MODULE
 // -----------------------------------------------------------------------------
 #if NODES_GATEWAY_SUPPORT
-    #define PJON_INCLUDE_TS
+    #define PJON_INCLUDE_TSA
 
     #ifndef PJON_PACKET_MAX_LENGTH
         #define PJON_PACKET_MAX_LENGTH 80
     #endif
+
+    //#define TSA_RESPONSE_TIME_OUT 20000
 
     #include <PJON.h>
 #else

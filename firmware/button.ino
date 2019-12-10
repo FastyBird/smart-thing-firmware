@@ -12,14 +12,11 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 typedef struct {
     DebounceEvent * button;
+    uint8_t channel;
     std::vector<button_on_event_callback_f> callbacks;
 } button_t;
 
 std::vector<button_t> _buttons;
-
-#if FASTYBIRD_SUPPORT
-    uint8_t _button_fastybird_channel_index = 0xFF;
-#endif
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
@@ -121,10 +118,11 @@ uint8_t _buttonMapEvent(
 // -----------------------------------------------------------------------------
 
 #if FASTYBIRD_SUPPORT
-    fastybird_channel_property_t _buttonFastybirdGetChannelStatePropertyStructure() {
+    void _buttonFastybirdRegister() {
+        // Create button property structure
         fastybird_channel_property_t property = {
-            FASTYBIRD_PROPERTY_STATE,
-            FASTYBIRD_PROPERTY_STATE,
+            FASTYBIRD_PROPERTY_BUTTON,
+            FASTYBIRD_PROPERTY_BUTTON,
             false,
             false,
             FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
@@ -147,24 +145,15 @@ uint8_t _buttonMapEvent(
 
         property.format = String(format);
 
-        return property;
-    }
+        // Register channel property into fastybird
+        uint8_t propertyIndex = fastybirdRegisterChannelProperty(property);
 
-// -----------------------------------------------------------------------------
-
-    fastybird_channel_t _buttonFastybirdGetChannelStructure() {
-        fastybird_channel_t channel = {
-            FASTYBIRD_CHANNEL_BUTTON,
-            FASTYBIRD_CHANNEL_BUTTON,
-            _buttons.size(),
-            false,
-            false,
-            false
-        };
-
-        channel.properties.push_back(_buttonFastybirdGetChannelStatePropertyStructure());
-
-        return channel;
+        // Process all buttons
+        for (uint8_t i = 0; i < _buttons.size(); i++) {
+            if (_buttons[i].channel != INDEX_NONE) {
+                fastybirdRegisterPropertyToChannel(_buttons[i].channel, propertyIndex);
+            }
+        }
     }
 #endif // FASTYBIRD_SUPPORT
 
@@ -239,55 +228,49 @@ void _buttonEvent(
     #if FASTYBIRD_SUPPORT
         switch (event) {
             case BUTTON_EVENT_PRESSED:
-                fastybirdReportChannelValue(
-                    _button_fastybird_channel_index,
-                    0,
-                    id,
+                fastybirdReportChannelPropertyValue(
+                    _buttons[id].channel,
+                    FASTYBIRD_PROPERTY_BUTTON,
                     FASTYBIRD_BTN_PAYLOAD_PRESS
                 );
                 break;
 
             case BUTTON_EVENT_CLICK:
-                fastybirdReportChannelValue(
-                    _button_fastybird_channel_index,
-                    0,
-                    id,
+                fastybirdReportChannelPropertyValue(
+                    _buttons[id].channel,
+                    FASTYBIRD_PROPERTY_BUTTON,
                     FASTYBIRD_BTN_PAYLOAD_CLICK
                 );
                 break;
 
             case BUTTON_EVENT_DBLCLICK:
-                fastybirdReportChannelValue(
-                    _button_fastybird_channel_index,
-                    0,
-                    id,
+                fastybirdReportChannelPropertyValue(
+                    _buttons[id].channel,
+                    FASTYBIRD_PROPERTY_BUTTON,
                     FASTYBIRD_BTN_PAYLOAD_DBL_CLICK
                 );
                 break;
 
             case BUTTON_EVENT_TRIPLECLICK:
-                fastybirdReportChannelValue(
-                    _button_fastybird_channel_index,
-                    0,
-                    id,
+                fastybirdReportChannelPropertyValue(
+                    _buttons[id].channel,
+                    FASTYBIRD_PROPERTY_BUTTON,
                     FASTYBIRD_BTN_PAYLOAD_TRIPLE_CLICK
                 );
                 break;
 
             case BUTTON_EVENT_LNGCLICK:
-                fastybirdReportChannelValue(
-                    _button_fastybird_channel_index,
-                    0,
-                    id,
+                fastybirdReportChannelPropertyValue(
+                    _buttons[id].channel,
+                    FASTYBIRD_PROPERTY_BUTTON,
                     FASTYBIRD_BTN_PAYLOAD_LNG_CLICK
                 );
                 break;
 
             case BUTTON_EVENT_LNGLNGCLICK:
-                fastybirdReportChannelValue(
-                    _button_fastybird_channel_index,
-                    0,
-                    id,
+                fastybirdReportChannelPropertyValue(
+                    _buttons[id].channel,
+                    FASTYBIRD_PROPERTY_BUTTON,
                     FASTYBIRD_BTN_PAYLOAD_LNG_LNG_CLICK
                 );
                 break;
@@ -322,49 +305,49 @@ void buttonSetup() {
 
     #if BUTTON1_PIN != GPIO_NONE
     {
-        _buttons.push_back({new DebounceEvent(BUTTON1_PIN, BUTTON1_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay)});
+        _buttons.push_back({new DebounceEvent(BUTTON1_PIN, BUTTON1_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay), BUTTON1_CHANNEL});
     }
     #endif
 
     #if BUTTON2_PIN != GPIO_NONE
     {
-        _buttons.push_back({new DebounceEvent(BUTTON2_PIN, BUTTON2_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay)});
+        _buttons.push_back({new DebounceEvent(BUTTON2_PIN, BUTTON2_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay), BUTTON2_CHANNEL});
     }
     #endif
 
     #if BUTTON3_PIN != GPIO_NONE
     {
-        _buttons.push_back({new DebounceEvent(BUTTON3_PIN, BUTTON3_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay)});
+        _buttons.push_back({new DebounceEvent(BUTTON3_PIN, BUTTON3_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay), BUTTON3_CHANNEL});
     }
     #endif
 
     #if BUTTON4_PIN != GPIO_NONE
     {
-        _buttons.push_back({new DebounceEvent(BUTTON4_PIN, BUTTON4_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay)});
+        _buttons.push_back({new DebounceEvent(BUTTON4_PIN, BUTTON4_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay), BUTTON4_CHANNEL});
     }
     #endif
 
     #if BUTTON5_PIN != GPIO_NONE
     {
-        _buttons.push_back({new DebounceEvent(BUTTON5_PIN, BUTTON5_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay)});
+        _buttons.push_back({new DebounceEvent(BUTTON5_PIN, BUTTON5_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay), BUTTON5_CHANNEL});
     }
     #endif
 
     #if BUTTON6_PIN != GPIO_NONE
     {
-        _buttons.push_back({new DebounceEvent(BUTTON6_PIN, BUTTON6_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay)});
+        _buttons.push_back({new DebounceEvent(BUTTON6_PIN, BUTTON6_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay), BUTTON6_CHANNEL});
     }
     #endif
 
     #if BUTTON7_PIN != GPIO_NONE
     {
-        _buttons.push_back({new DebounceEvent(BUTTON7_PIN, BUTTON7_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay)});
+        _buttons.push_back({new DebounceEvent(BUTTON7_PIN, BUTTON7_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay), BUTTON7_CHANNEL});
     }
     #endif
 
     #if BUTTON8_PIN != GPIO_NONE
     {
-        _buttons.push_back({new DebounceEvent(BUTTON8_PIN, BUTTON8_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay)});
+        _buttons.push_back({new DebounceEvent(BUTTON8_PIN, BUTTON8_MODE, BUTTON_DEBOUNCE_DELAY, btn_delay), BUTTON8_CHANNEL});
     }
     #endif
 
@@ -383,7 +366,7 @@ void buttonSetup() {
 
         // Channels registration
         if (_buttons.size() > 0) {
-            _button_fastybird_channel_index = fastybirdRegisterChannel(_buttonFastybirdGetChannelStructure());
+            _buttonFastybirdRegister();
         }
     #endif
 

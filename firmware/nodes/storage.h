@@ -123,9 +123,9 @@ void _gatewayStorageRemoveNode(
 bool _gatewayStorageRestoreFromJson(
     JsonObject& data
 ) {
-    const char * _thing = data["thing"];
+    const char * _device = data["device"];
 
-    if (strcmp(_thing, THING) != 0) {
+    if (strcmp(_device, DEVICE) != 0) {
         return false;
     }
 
@@ -137,7 +137,7 @@ bool _gatewayStorageRestoreFromJson(
 
     for (auto element : data) {
         if (
-            strcmp(element.key, "thing") == 0
+            strcmp(element.key, "device") == 0
             || strcmp(element.key, "manufacturer") == 0
             || strcmp(element.key, "version") == 0
             || strcmp(element.key, "backup") == 0

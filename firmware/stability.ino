@@ -48,7 +48,7 @@ void _stabilityCounter(
 // If the counter reaches STABILTY_CHECK_MAX then the system is flagged as unstable
 // _stability_system_stable = false;
 //
-// An unstable system will only have serial access, WiFi in AP mode and OTA
+// An unstable system will only have serial access, WiFi in AP mode
 
 void stabiltyCheck(
     const bool stable

@@ -1,6 +1,6 @@
 /*
 
-FASTYBIRD THING MQTT MODULE
+FASTYBIRD DEVICE MQTT MODULE
 
 Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
@@ -12,35 +12,35 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-String _fastybirdMqttApiCreateThingTopicString(
-    const char * thingId,
+String _fastybirdMqttApiCreateDeviceTopicString(
+    const char * deviceId,
     String topic
 ) {
-    return fastybirdMqttApiBuildTopicPrefix(thingId) + topic;
+    return fastybirdMqttApiBuildTopicPrefix(deviceId) + topic;
 }
 
 // -----------------------------------------------------------------------------
 
-String _fastybirdMqttApiCreateThingTopicString(
-    const char * thingId,
+String _fastybirdMqttApiCreateDeviceTopicString(
+    const char * deviceId,
     String topic,
     String replace,
     String replaceWith
 ) {
     topic.replace("{" + replace + "}", replaceWith);
 
-    return fastybirdMqttApiBuildTopicPrefix(thingId) + topic;
+    return fastybirdMqttApiBuildTopicPrefix(deviceId) + topic;
 }
 
 // -----------------------------------------------------------------------------
 
 String _fastybirdMqttApiCreatePropertyTopicString(
-    const char * thingId,
+    const char * deviceId,
     String property
 ) {
-    return _fastybirdMqttApiCreateThingTopicString(
-        thingId,
-        FASTYBIRD_TOPIC_THING_PROPERTY,
+    return _fastybirdMqttApiCreateDeviceTopicString(
+        deviceId,
+        FASTYBIRD_TOPIC_DEVICE_PROPERTY,
         "property",
         property
     );
@@ -49,12 +49,12 @@ String _fastybirdMqttApiCreatePropertyTopicString(
 // -----------------------------------------------------------------------------
 
 String _fastybirdMqttApiCreateHWTopicString(
-    const char * thingId,
+    const char * deviceId,
     String field
 ) {
-    return _fastybirdMqttApiCreateThingTopicString(
-        thingId,
-        FASTYBIRD_TOPIC_THING_HW_INFO,
+    return _fastybirdMqttApiCreateDeviceTopicString(
+        deviceId,
+        FASTYBIRD_TOPIC_DEVICE_HW_INFO,
         "hw",
         field
     );
@@ -63,12 +63,12 @@ String _fastybirdMqttApiCreateHWTopicString(
 // -----------------------------------------------------------------------------
 
 String _fastybirdMqttApiCreateFWTopicString(
-    const char * thingId,
+    const char * deviceId,
     String field
 ) {
-    return _fastybirdMqttApiCreateThingTopicString(
-        thingId,
-        FASTYBIRD_TOPIC_THING_FW_INFO,
+    return _fastybirdMqttApiCreateDeviceTopicString(
+        deviceId,
+        FASTYBIRD_TOPIC_DEVICE_FW_INFO,
         "fw",
         field
     );
@@ -78,8 +78,8 @@ String _fastybirdMqttApiCreateFWTopicString(
 // MODULE INTERNAL API
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingPropertiesStructure(
-    const char * thingId,
+bool _fastybirdPropagateDevicePropertiesStructure(
+    const char * deviceId,
     std::vector<String> properties
 ) {
     if (properties.size() <= 0) {
@@ -98,8 +98,9 @@ bool _fastybirdPropagateThingPropertiesStructure(
     uint8_t packet_id;
 
     packet_id = mqttSend(
-        _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_PROPERTIES_STRUCTURE).c_str(),
-        payload
+        _fastybirdMqttApiCreateDeviceTopicString(deviceId, FASTYBIRD_TOPIC_DEVICE_PROPERTIES_STRUCTURE).c_str(),
+        payload,
+        false
     );
 
     if (packet_id == 0) return false;
@@ -109,24 +110,27 @@ bool _fastybirdPropagateThingPropertiesStructure(
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingPropertiesStructure(
+bool _fastybirdPropagateDevicePropertiesStructure(
     std::vector<String> properties
 ) {
-    return _fastybirdPropagateThingPropertiesStructure((fastybirdThingSN()).c_str(), properties);
+    return _fastybirdPropagateDevicePropertiesStructure((fastybirdDeviceSN()).c_str(), properties);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingProperty(
-    const char * thingId,
+bool _fastybirdPropagateDeviceProperty(
+    const char * deviceId,
     const char * property,
     const char * payload
 ) {
     uint8_t packet_id;
 
+    bool retain = false;
+
     packet_id = mqttSend(
-        _fastybirdMqttApiCreatePropertyTopicString(thingId, property).c_str(),
-        payload
+        _fastybirdMqttApiCreatePropertyTopicString(deviceId, property).c_str(),
+        payload,
+        true
     );
 
     if (packet_id == 0) return false;
@@ -136,24 +140,25 @@ bool _fastybirdPropagateThingProperty(
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingProperty(
+bool _fastybirdPropagateDeviceProperty(
     const char * property,
     const char * payload
 ) {
-    return _fastybirdPropagateThingProperty((fastybirdThingSN()).c_str(), property, payload);
+    return _fastybirdPropagateDeviceProperty((fastybirdDeviceSN()).c_str(), property, payload);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingName(
-    const char * thingId,
+bool _fastybirdPropagateDeviceName(
+    const char * deviceId,
     const char * name
 ) {
     uint8_t packet_id;
 
     packet_id = mqttSend(
-        _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_NAME).c_str(),
-        name
+        _fastybirdMqttApiCreateDeviceTopicString(deviceId, FASTYBIRD_TOPIC_DEVICE_NAME).c_str(),
+        name,
+        false
     );
 
     if (packet_id == 0) return false;
@@ -163,24 +168,25 @@ bool _fastybirdPropagateThingName(
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingName(
+bool _fastybirdPropagateDeviceName(
     const char * name
 ) {
-    return _fastybirdPropagateThingName((fastybirdThingSN()).c_str(), name);
+    return _fastybirdPropagateDeviceName((fastybirdDeviceSN()).c_str(), name);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingHardwareField(
-    const char * thingId,
+bool _fastybirdPropagateDeviceHardwareField(
+    const char * deviceId,
     const char * field,
     const char * payload
 ) {
     uint8_t packet_id;
 
     packet_id = mqttSend(
-        _fastybirdMqttApiCreateHWTopicString(thingId, field).c_str(),
-        payload
+        _fastybirdMqttApiCreateHWTopicString(deviceId, field).c_str(),
+        payload,
+        false
     );
 
     if (packet_id == 0) return false;
@@ -190,76 +196,77 @@ bool _fastybirdPropagateThingHardwareField(
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingHardwareField(
+bool _fastybirdPropagateDeviceHardwareField(
     const char * field,
     const char * payload
 ) {
-    return _fastybirdPropagateThingHardwareField((fastybirdThingSN()).c_str(), field, payload);
+    return _fastybirdPropagateDeviceHardwareField((fastybirdDeviceSN()).c_str(), field, payload);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingHardwareVersion(
-    const char * thingId,
+bool _fastybirdPropagateDeviceHardwareVersion(
+    const char * deviceId,
     const char * name
 ) {
-    return _fastybirdPropagateThingHardwareField(thingId, "version", name);
+    return _fastybirdPropagateDeviceHardwareField(deviceId, "version", name);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingHardwareVersion(
+bool _fastybirdPropagateDeviceHardwareVersion(
     const char * name
 ) {
-    return _fastybirdPropagateThingHardwareVersion((fastybirdThingSN()).c_str(), name);
+    return _fastybirdPropagateDeviceHardwareVersion((fastybirdDeviceSN()).c_str(), name);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingHardwareModelName(
-    const char * thingId,
+bool _fastybirdPropagateDeviceHardwareModelName(
+    const char * deviceId,
     const char * model
 ) {
-    return _fastybirdPropagateThingHardwareField(thingId, "model", model);
+    return _fastybirdPropagateDeviceHardwareField(deviceId, "model", model);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingHardwareModelName(
+bool _fastybirdPropagateDeviceHardwareModelName(
     const char * model
 ) {
-    return _fastybirdPropagateThingHardwareModelName((fastybirdThingSN()).c_str(), model);
+    return _fastybirdPropagateDeviceHardwareModelName((fastybirdDeviceSN()).c_str(), model);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingHardwareManufacturer(
-    const char * thingId,
+bool _fastybirdPropagateDeviceHardwareManufacturer(
+    const char * deviceId,
     const char * manufacturer
 ) {
-    return _fastybirdPropagateThingHardwareField(thingId, "manufacturer", manufacturer);
+    return _fastybirdPropagateDeviceHardwareField(deviceId, "manufacturer", manufacturer);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingHardwareManufacturer(
+bool _fastybirdPropagateDeviceHardwareManufacturer(
     const char * manufacturer
 ) {
-    return _fastybirdPropagateThingHardwareManufacturer((fastybirdThingSN()).c_str(), manufacturer);
+    return _fastybirdPropagateDeviceHardwareManufacturer((fastybirdDeviceSN()).c_str(), manufacturer);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingFirmwareField(
-    const char * thingId,
+bool _fastybirdPropagateDeviceFirmwareField(
+    const char * deviceId,
     const char * field,
     const char * payload
 ) {
     uint8_t packet_id;
 
     packet_id = mqttSend(
-        _fastybirdMqttApiCreateFWTopicString(thingId, field).c_str(),
-        payload
+        _fastybirdMqttApiCreateFWTopicString(deviceId, field).c_str(),
+        payload,
+        false
     );
 
     if (packet_id == 0) return false;
@@ -269,100 +276,98 @@ bool _fastybirdPropagateThingFirmwareField(
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingFirmwareField(
+bool _fastybirdPropagateDeviceFirmwareField(
     const char * field,
     const char * payload
 ) {
-    return _fastybirdPropagateThingFirmwareField((fastybirdThingSN()).c_str(), field, payload);
+    return _fastybirdPropagateDeviceFirmwareField((fastybirdDeviceSN()).c_str(), field, payload);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingFirmwareName(
-    const char * thingId,
+bool _fastybirdPropagateDeviceFirmwareName(
+    const char * deviceId,
     const char * name
 ) {
-    return _fastybirdPropagateThingFirmwareField(thingId, "name", name);
+    return _fastybirdPropagateDeviceFirmwareField(deviceId, "name", name);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingFirmwareName(
+bool _fastybirdPropagateDeviceFirmwareName(
     const char * name
 ) {
-    return _fastybirdPropagateThingFirmwareName((fastybirdThingSN()).c_str(), name);
+    return _fastybirdPropagateDeviceFirmwareName((fastybirdDeviceSN()).c_str(), name);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingFirmwareManufacturer(
-    const char * thingId,
+bool _fastybirdPropagateDeviceFirmwareManufacturer(
+    const char * deviceId,
     const char * manufacturer
 ) {
-    return _fastybirdPropagateThingFirmwareField(thingId, "manufacturer", manufacturer);
+    return _fastybirdPropagateDeviceFirmwareField(deviceId, "manufacturer", manufacturer);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingFirmwareManufacturer(
+bool _fastybirdPropagateDeviceFirmwareManufacturer(
     const char * manufacturer
 ) {
-    return _fastybirdPropagateThingFirmwareManufacturer((fastybirdThingSN()).c_str(), manufacturer);
+    return _fastybirdPropagateDeviceFirmwareManufacturer((fastybirdDeviceSN()).c_str(), manufacturer);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingFirmwareVersion(
-    const char * thingId,
+bool _fastybirdPropagateDeviceFirmwareVersion(
+    const char * deviceId,
     const char * version
 ) {
-    return _fastybirdPropagateThingFirmwareField(thingId, "version", version);
+    return _fastybirdPropagateDeviceFirmwareField(deviceId, "version", version);
 }
 
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingFirmwareVersion(
+bool _fastybirdPropagateDeviceFirmwareVersion(
     const char * version
 ) {
-    return _fastybirdPropagateThingFirmwareVersion((fastybirdThingSN()).c_str(), version);
+    return _fastybirdPropagateDeviceFirmwareVersion((fastybirdDeviceSN()).c_str(), version);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingChannels(
-    const char * thingId,
+bool _fastybirdPropagateDeviceChannels(
+    const char * deviceId,
     std::vector<fastybird_channel_t> channels
 ) {
-    if (channels.size() <= 0) {
-        return true;
-    }
-
     char payload[80];
 
-    uint8_t start_index = 0;
+    if (channels.size() > 0) {
+        uint8_t start_index = 0;
 
-    for (uint8_t i = 0; i < channels.size(); i++) {
-        start_index = i;
+        for (uint8_t i = 0; i < channels.size(); i++) {
+            start_index = i;
 
-        if (channels[i].length > 0) {
-            strcpy(payload, channels[i].name.c_str());
+            if (channels[i].length > 0) {
+                strcpy(payload, channels[i].name.c_str());
 
-            if (channels[i].length > 1) {
-                strcat(payload, "[]");
+                if (channels[i].length > 1) {
+                    strcat(payload, "[]");
+                }
+
+                break;
             }
-
-            break;
         }
-    }
 
-    for (uint8_t i = (start_index + 1); i < channels.size(); i++) {
-        if (channels[i].length > 0) {
-            strcat(payload, ",");
-            strcat(payload, channels[i].name.c_str());
+        for (uint8_t i = (start_index + 1); i < channels.size(); i++) {
+            if (channels[i].length > 0) {
+                strcat(payload, ",");
+                strcat(payload, channels[i].name.c_str());
 
-            if (channels[i].length > 1) {
-                strcat(payload, "[]");
+                if (channels[i].length > 1) {
+                    strcat(payload, "[]");
+                }
             }
         }
     }
@@ -370,8 +375,9 @@ bool _fastybirdPropagateThingChannels(
     uint8_t packet_id;
 
     packet_id = mqttSend(
-        _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_CHANNELS).c_str(),
-        payload
+        _fastybirdMqttApiCreateDeviceTopicString(deviceId, FASTYBIRD_TOPIC_DEVICE_CHANNELS).c_str(),
+        payload,
+        false
     );
 
     if (packet_id == 0) {
@@ -383,16 +389,16 @@ bool _fastybirdPropagateThingChannels(
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingChannels(
+bool _fastybirdPropagateDeviceChannels(
     std::vector<fastybird_channel_t> channels
 ) {
-    return _fastybirdPropagateThingChannels((fastybirdThingSN()).c_str(), channels);
+    return _fastybirdPropagateDeviceChannels((fastybirdDeviceSN()).c_str(), channels);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingControlConfiguration(
-    const char * thingId,
+bool _fastybirdPropagateDeviceControlConfiguration(
+    const char * deviceId,
     std::vector<String> controls
 ) {
     if (controls.size() <= 0) {
@@ -411,8 +417,9 @@ bool _fastybirdPropagateThingControlConfiguration(
     uint8_t packet_id;
 
     packet_id = mqttSend(
-        _fastybirdMqttApiCreateThingTopicString(thingId, FASTYBIRD_TOPIC_THING_CONTROL).c_str(),
-        payload
+        _fastybirdMqttApiCreateDeviceTopicString(deviceId, FASTYBIRD_TOPIC_DEVICE_CONTROL).c_str(),
+        payload,
+        false
     );
 
     if (packet_id == 0) return false;
@@ -421,9 +428,9 @@ bool _fastybirdPropagateThingControlConfiguration(
         std::function<void(const char *)> controll_callback = _fastybird_on_control_callbacks[i].callback;
 
         packet_id = mqttSubscribe(
-            _fastybirdMqttApiCreateThingTopicString(
-                thingId,
-                FASTYBIRD_TOPIC_THING_CONTROL_RECEIVE,
+            _fastybirdMqttApiCreateDeviceTopicString(
+                deviceId,
+                FASTYBIRD_TOPIC_DEVICE_CONTROL_RECEIVE,
                 "control",
                 _fastybird_on_control_callbacks[i].controlName
             ).c_str(),
@@ -440,19 +447,19 @@ bool _fastybirdPropagateThingControlConfiguration(
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingControlConfiguration(
+bool _fastybirdPropagateDeviceControlConfiguration(
     std::vector<String> controls
 ) {
-    return _fastybirdPropagateThingControlConfiguration(
-        (fastybirdThingSN()).c_str(),
+    return _fastybirdPropagateDeviceControlConfiguration(
+        (fastybirdDeviceSN()).c_str(),
         controls
     );
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingConfigurationSchema(
-    const char * thingId,
+bool _fastybirdPropagateDeviceConfigurationSchema(
+    const char * deviceId,
     JsonArray& schema
 ) {
     uint8_t packet_id;
@@ -463,13 +470,14 @@ bool _fastybirdPropagateThingConfigurationSchema(
         schema.printTo(output);
 
         packet_id = mqttSend(
-            _fastybirdMqttApiCreateThingTopicString(
-                thingId,
-                FASTYBIRD_TOPIC_THING_CONTROL_SCHEMA,
+            _fastybirdMqttApiCreateDeviceTopicString(
+                deviceId,
+                FASTYBIRD_TOPIC_DEVICE_CONTROL_SCHEMA,
                 "control",
-                FASTYBIRD_THING_CONTROL_CONFIGURE
+                FASTYBIRD_DEVICE_CONTROL_CONFIGURE
             ).c_str(),
-            output.c_str()
+            output.c_str(),
+            false
         );
 
         if (packet_id == 0) return false;
@@ -480,16 +488,16 @@ bool _fastybirdPropagateThingConfigurationSchema(
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingConfigurationSchema(
+bool _fastybirdPropagateDeviceConfigurationSchema(
     JsonArray& schema
 ) {
-    return _fastybirdPropagateThingConfigurationSchema((fastybirdThingSN()).c_str(), schema);
+    return _fastybirdPropagateDeviceConfigurationSchema((fastybirdDeviceSN()).c_str(), schema);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingConfiguration(
-    const char * thingId,
+bool _fastybirdPropagateDeviceConfiguration(
+    const char * deviceId,
     JsonObject& configuration
 ) {
     if (configuration.size() > 0) {
@@ -500,13 +508,14 @@ bool _fastybirdPropagateThingConfiguration(
         uint8_t packet_id;
 
         packet_id = mqttSend(
-            _fastybirdMqttApiCreateThingTopicString(
-                thingId,
-                FASTYBIRD_TOPIC_THING_CONTROL_DATA,
+            _fastybirdMqttApiCreateDeviceTopicString(
+                deviceId,
+                FASTYBIRD_TOPIC_DEVICE_CONTROL_DATA,
                 "control",
-                FASTYBIRD_THING_CONTROL_CONFIGURE
+                FASTYBIRD_DEVICE_CONTROL_CONFIGURE
             ).c_str(),
-            output.c_str()
+            output.c_str(),
+            false
         );
 
         if (packet_id == 0) return false;
@@ -517,10 +526,10 @@ bool _fastybirdPropagateThingConfiguration(
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateThingConfiguration(
+bool _fastybirdPropagateDeviceConfiguration(
     JsonObject& configuration
 ) {
-    return _fastybirdPropagateThingConfiguration((fastybirdThingSN()).c_str(), configuration);
+    return _fastybirdPropagateDeviceConfiguration((fastybirdDeviceSN()).c_str(), configuration);
 }
 
 #endif

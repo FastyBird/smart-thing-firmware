@@ -87,8 +87,6 @@ void setup() {
         wifiSetup();
     #endif
 
-    otaSetup();
-
     // -------------------------------------------------------------------------
     // Check if system is stable
     // -------------------------------------------------------------------------
@@ -135,10 +133,6 @@ void setup() {
     #if VIRTUAL_BTN_SUPPORT
         virtualButtonSetup();
     #endif
-
-    #if NTP_SUPPORT
-        ntpSetup();
-    #endif
     
     #if FASTYBIRD_SUPPORT
         fastybirdSetup();
@@ -148,16 +142,8 @@ void setup() {
         gatewaySetup();
     #endif
 
-    #if NOFUSS_SUPPORT
-        nofussSetup();
-    #endif
-
     #if SENSOR_SUPPORT
         sensorSetup();
-    #endif
-
-    #if SCHEDULER_SUPPORT
-        schSetup();
     #endif
 }
 

@@ -13,25 +13,25 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 // -----------------------------------------------------------------------------
 
 String _fastybirdMqttApiCreateChannelTopicString(
-    const char * thingId,
+    const char * deviceId,
     const char * channel,
     String topic
 ) {
     topic.replace("{channel}", channel);
 
-    return fastybirdMqttApiBuildTopicPrefix(thingId) + topic;
+    return fastybirdMqttApiBuildTopicPrefix(deviceId) + topic;
 }
 
 // -----------------------------------------------------------------------------
 
 String _fastybirdMqttApiCreateChannelTopicString(
-    const char * thingId,
+    const char * deviceId,
     const char * channel,
     String topic,
     String replace,
     String replaceWith
 ) {
-    topic = _fastybirdMqttApiCreateChannelTopicString(thingId, channel, topic);
+    topic = _fastybirdMqttApiCreateChannelTopicString(deviceId, channel, topic);
     topic.replace("{" + replace + "}", replaceWith);
 
     return topic;
@@ -40,7 +40,7 @@ String _fastybirdMqttApiCreateChannelTopicString(
 // -----------------------------------------------------------------------------
 
 String _fastybirdMqttApiCreateChannelTopicString(
-    const char * thingId,
+    const char * deviceId,
     const char * channel,
     String topic,
     String replace,
@@ -48,7 +48,7 @@ String _fastybirdMqttApiCreateChannelTopicString(
     String secondReplace,
     String secondReplaceWith
 ) {
-    topic = _fastybirdMqttApiCreateChannelTopicString(thingId, channel, topic, replace, replaceWith);
+    topic = _fastybirdMqttApiCreateChannelTopicString(deviceId, channel, topic, replace, replaceWith);
     topic.replace("{" + secondReplace + "}", secondReplaceWith);
 
     return topic;
@@ -57,7 +57,7 @@ String _fastybirdMqttApiCreateChannelTopicString(
 // -----------------------------------------------------------------------------
 
 String _fastybirdMqttApiCreateChannelTopicString(
-    const char * thingId,
+    const char * deviceId,
     const char * channel,
     int channelNo,
     String topic,
@@ -75,7 +75,7 @@ String _fastybirdMqttApiCreateChannelTopicString(
     topic.replace("{channel}", channel_topic);
     topic.replace("{" + replace + "}", replaceWith);
 
-    return fastybirdMqttApiBuildTopicPrefix(thingId) + topic;
+    return fastybirdMqttApiBuildTopicPrefix(deviceId) + topic;
 }
 
 // -----------------------------------------------------------------------------
@@ -83,19 +83,19 @@ String _fastybirdMqttApiCreateChannelTopicString(
 // -----------------------------------------------------------------------------
 
 bool _fastybirdPropagateChannelName(
-    const char * thingId,
-    fastybird_channel_t channel,
-    const char * name
+    const char * deviceId,
+    fastybird_channel_t channel
 ) {
     uint8_t packet_id;
 
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
+            deviceId,
             channel.name.c_str(),
             FASTYBIRD_TOPIC_CHANNEL_NAME
         ).c_str(),
-        name
+        channel.name.c_str(),
+        false
     );
 
     if (packet_id == 0) return false;
@@ -106,28 +106,41 @@ bool _fastybirdPropagateChannelName(
 // -----------------------------------------------------------------------------
 
 bool _fastybirdPropagateChannelName(
-    fastybird_channel_t channel,
-    const char * name
+    fastybird_channel_t channel
 ) {
-    return _fastybirdPropagateChannelName((fastybirdThingSN()).c_str(), channel, name);
+    return _fastybirdPropagateChannelName((fastybirdDeviceSN()).c_str(), channel);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateChannelType(
-    const char * thingId,
+bool _fastybirdPropagateChannelProperties(
+    const char * deviceId,
     fastybird_channel_t channel,
-    const char * type
+    std::vector<String> properties
 ) {
+    if (properties.size() <= 0) {
+        return true;
+    }
+
+    char formatted_properties[100];
+
+    strcpy(formatted_properties, properties[0].c_str());
+
+    for (uint8_t i = 1; i < properties.size(); i++) {
+        strcat(formatted_properties, ",");
+        strcat(formatted_properties, properties[i].c_str());
+    }
+
     uint8_t packet_id;
 
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
+            deviceId,
             channel.name.c_str(),
-            FASTYBIRD_TOPIC_CHANNEL_TYPE
+            FASTYBIRD_TOPIC_CHANNEL_PROPERTIES
         ).c_str(),
-        type
+        formatted_properties,
+        false
     );
 
     if (packet_id == 0) return false;
@@ -137,42 +150,140 @@ bool _fastybirdPropagateChannelType(
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateChannelType(
+bool _fastybirdPropagateChannelProperties(
     fastybird_channel_t channel,
-    const char * type
+    std::vector<String> properties
 ) {
-    return _fastybirdPropagateChannelType((fastybirdThingSN()).c_str(), channel, type);
+    return _fastybirdPropagateChannelProperties((fastybirdDeviceSN()).c_str(), channel, properties);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateChannelProperties(
-    const char * thingId,
-    fastybird_channel_t channel,
-    std::vector<fastybird_channel_property_t> properties
+bool _fastybirdPropagateChannelSize(
+    const char * deviceId,
+    fastybird_channel_t channel
 ) {
-    if (properties.size() <= 0) {
+    if (channel.length <= 1) {
         return true;
-    }
-
-    char formatted_properties[50];
-
-    strcpy(formatted_properties, properties[0].type.c_str());
-
-    for (uint8_t i = 1; i < properties.size(); i++) {
-        strcat(formatted_properties, ",");
-        strcat(formatted_properties, properties[i].type.c_str());
     }
 
     uint8_t packet_id;
 
+    char array_size[6];
+    sprintf(array_size, "0-%d", (channel.length - 1));
+
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
+            deviceId,
             channel.name.c_str(),
-            FASTYBIRD_TOPIC_CHANNEL_PROPERTIES
+            FASTYBIRD_TOPIC_CHANNEL_ARRAY
         ).c_str(),
-        formatted_properties
+        array_size,
+        false
+    );
+
+    if (packet_id == 0) return false;
+
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+
+bool _fastybirdPropagateChannelSize(
+    fastybird_channel_t channel
+) {
+    return _fastybirdPropagateChannelSize((fastybirdDeviceSN()).c_str(), channel);
+}
+
+// -----------------------------------------------------------------------------
+
+bool _fastybirdPropagateChannelPropertyName(
+    const char * deviceId,
+    fastybird_channel_t channel,
+    fastybird_channel_property_t property
+) {
+    uint8_t packet_id;
+
+    packet_id = mqttSend(
+        _fastybirdMqttApiCreateChannelTopicString(
+            deviceId,
+            channel.name.c_str(),
+            FASTYBIRD_TOPIC_CHANNEL_PROPERTY_NAME,
+            "property",
+            property.name.c_str()
+        ).c_str(),
+        property.name.c_str(),
+        false
+    );
+
+    if (packet_id == 0) return false;
+
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+
+bool _fastybirdPropagateChannelPropertyName(
+    fastybird_channel_t channel,
+    fastybird_channel_property_t property
+) {
+    return _fastybirdPropagateChannelPropertyName((fastybirdDeviceSN()).c_str(), channel, property);
+}
+
+// -----------------------------------------------------------------------------
+
+bool _fastybirdPropagateChannelPropertyType(
+    const char * deviceId,
+    fastybird_channel_t channel,
+    fastybird_channel_property_t property
+) {
+    uint8_t packet_id;
+
+    packet_id = mqttSend(
+        _fastybirdMqttApiCreateChannelTopicString(
+            deviceId,
+            channel.name.c_str(),
+            FASTYBIRD_TOPIC_CHANNEL_PROPERTY_TYPE,
+            "property",
+            property.name.c_str()
+        ).c_str(),
+        property.type.c_str(),
+        false
+    );
+
+    if (packet_id == 0) return false;
+
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+
+bool _fastybirdPropagateChannelPropertyType(
+    fastybird_channel_t channel,
+    fastybird_channel_property_t property
+) {
+    return _fastybirdPropagateChannelPropertyType((fastybirdDeviceSN()).c_str(), channel, property);
+}
+
+// -----------------------------------------------------------------------------
+
+bool _fastybirdPropagateChannelPropertySettable(
+    const char * deviceId,
+    fastybird_channel_t channel,
+    fastybird_channel_property_t property
+) {
+    uint8_t packet_id;
+
+    packet_id = mqttSend(
+        _fastybirdMqttApiCreateChannelTopicString(
+            deviceId,
+            channel.name.c_str(),
+            FASTYBIRD_TOPIC_CHANNEL_PROPERTY_SETTABLE,
+            "property",
+            property.name.c_str()
+        ).c_str(),
+        property.settable ? FASTYBIRD_PROPERTY_IS_SETTABLE : FASTYBIRD_PROPERTY_IS_NOT_SETTABLE,
+        false
     );
 
     if (packet_id == 0) return false;
@@ -180,70 +291,35 @@ bool _fastybirdPropagateChannelProperties(
     String topic;
 
     for (uint8_t i = 0; i < channel.length; i++) {
-        for (uint8_t j = 0; j < properties.size(); j++) {
-            fastybird_channel_property_t property = properties[j];
-
-            if (property.settable) {
-                if (channel.length > 1) {
-                    topic = _fastybirdMqttApiCreateChannelTopicString(
-                        thingId,
-                        channel.name.c_str(),
-                        i,
-                        FASTYBIRD_TOPIC_CHANNEL_PROPERTY_RECEIVE,
-                        "property",
-                        property.type.c_str()
-                    );
-
-                } else {
-                    topic = _fastybirdMqttApiCreateChannelTopicString(
-                        thingId,
-                        channel.name.c_str(),
-                        FASTYBIRD_TOPIC_CHANNEL_PROPERTY_RECEIVE,
-                        "property",
-                        property.type.c_str()
-                    );
-                }
-
-                packet_id = mqttSubscribe(
-                    topic.c_str(),
-                    [channel, i, property](const char * topic, const char * payload) {
-                        property.payloadCallback(i, payload);
-                    }
+        if (property.settable) {
+            if (channel.length > 1) {
+                topic = _fastybirdMqttApiCreateChannelTopicString(
+                    deviceId,
+                    channel.name.c_str(),
+                    i,
+                    FASTYBIRD_TOPIC_CHANNEL_PROPERTY_RECEIVE,
+                    "property",
+                    property.name.c_str()
                 );
 
-                if (packet_id == 0) return false;
-            }
-
-            if (property.queryable) {
-                if (channel.length > 1) {
-                    topic = _fastybirdMqttApiCreateChannelTopicString(
-                        thingId,
-                        channel.name.c_str(),
-                        i,
-                        FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERY,
-                        "property",
-                        property.type.c_str()
-                    );
-
-                } else {
-                    topic = _fastybirdMqttApiCreateChannelTopicString(
-                        thingId,
-                        channel.name.c_str(),
-                        FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERY,
-                        "property",
-                        property.type.c_str()
-                    );
-                }
-
-                packet_id = mqttSubscribe(
-                    topic.c_str(),
-                    [i, property](const char * topic, const char * payload) {
-                        property.queryCallback(i, payload);
-                    }
+            } else {
+                topic = _fastybirdMqttApiCreateChannelTopicString(
+                    deviceId,
+                    channel.name.c_str(),
+                    FASTYBIRD_TOPIC_CHANNEL_PROPERTY_RECEIVE,
+                    "property",
+                    property.name.c_str()
                 );
-
-                if (packet_id == 0) return false;
             }
+
+            packet_id = mqttSubscribe(
+                topic.c_str(),
+                [i, property](const char * topic, const char * payload) {
+                    property.payloadCallback((i + 1), payload);
+                }
+            );
+
+            if (packet_id == 0) return false;
         }
     }
 
@@ -252,124 +328,17 @@ bool _fastybirdPropagateChannelProperties(
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateChannelProperties(
-    fastybird_channel_t channel,
-    std::vector<fastybird_channel_property_t> properties
-) {
-    return _fastybirdPropagateChannelProperties((fastybirdThingSN()).c_str(), channel, properties);
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateChannelSize(
-    const char * thingId,
-    fastybird_channel_t channel,
-    uint8_t size
-) {
-    if (size <= 1) {
-        return true;
-    }
-
-    uint8_t packet_id;
-
-    char array_size[6];
-    sprintf(array_size, "0-%d", (size - 1));
-
-    packet_id = mqttSend(
-        _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
-            channel.name.c_str(),
-            FASTYBIRD_TOPIC_CHANNEL_ARRAY
-        ).c_str(),
-        array_size
-    );
-
-    if (packet_id == 0) return false;
-
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateChannelSize(
-    fastybird_channel_t channel,
-    uint8_t size
-) {
-    return _fastybirdPropagateChannelSize((fastybirdThingSN()).c_str(), channel, size);
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateChannelPropertyName(
-    const char * thingId,
-    fastybird_channel_t channel,
-    fastybird_channel_property_t property
-) {
-    uint8_t packet_id;
-
-    packet_id = mqttSend(
-        _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
-            channel.name.c_str(),
-            FASTYBIRD_TOPIC_CHANNEL_PROPERTY_NAME,
-            "property",
-            property.type.c_str()
-        ).c_str(),
-        property.name.c_str()
-    );
-
-    if (packet_id == 0) return false;
-
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateChannelPropertyName(
-    fastybird_channel_t channel,
-    fastybird_channel_property_t property
-) {
-    return _fastybirdPropagateChannelPropertyName((fastybirdThingSN()).c_str(), channel, property);
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateChannelPropertySettable(
-    const char * thingId,
-    fastybird_channel_t channel,
-    fastybird_channel_property_t property
-) {
-    uint8_t packet_id;
-
-    packet_id = mqttSend(
-        _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
-            channel.name.c_str(),
-            FASTYBIRD_TOPIC_CHANNEL_PROPERTY_SETTABLE,
-            "property",
-            property.type.c_str()
-        ).c_str(),
-        property.settable ? FASTYBIRD_PROPERTY_IS_SETTABLE : FASTYBIRD_PROPERTY_IS_NOT_SETTABLE
-    );
-
-    if (packet_id == 0) return false;
-
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-
 bool _fastybirdPropagateChannelPropertySettable(
     fastybird_channel_t channel,
     fastybird_channel_property_t property
 ) {
-    return _fastybirdPropagateChannelPropertySettable((fastybirdThingSN()).c_str(), channel, property);
+    return _fastybirdPropagateChannelPropertySettable((fastybirdDeviceSN()).c_str(), channel, property);
 }
 
 // -----------------------------------------------------------------------------
 
 bool _fastybirdPropagateChannelPropertyQueryable(
-    const char * thingId,
+    const char * deviceId,
     fastybird_channel_t channel,
     fastybird_channel_property_t property
 ) {
@@ -377,16 +346,52 @@ bool _fastybirdPropagateChannelPropertyQueryable(
 
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
+            deviceId,
             channel.name.c_str(),
             FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERYABLE,
             "property",
-            property.type.c_str()
+            property.name.c_str()
         ).c_str(),
-        property.queryable ? FASTYBIRD_PROPERTY_IS_QUERYABLE : FASTYBIRD_PROPERTY_IS_NOT_QUERYABLE
+        property.queryable ? FASTYBIRD_PROPERTY_IS_QUERYABLE : FASTYBIRD_PROPERTY_IS_NOT_QUERYABLE,
+        false
     );
 
     if (packet_id == 0) return false;
+
+    String topic;
+
+    for (uint8_t i = 0; i < channel.length; i++) {
+        if (property.queryable) {
+            if (channel.length > 1) {
+                topic = _fastybirdMqttApiCreateChannelTopicString(
+                    deviceId,
+                    channel.name.c_str(),
+                    i,
+                    FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERY,
+                    "property",
+                    property.name.c_str()
+                );
+
+            } else {
+                topic = _fastybirdMqttApiCreateChannelTopicString(
+                    deviceId,
+                    channel.name.c_str(),
+                    FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERY,
+                    "property",
+                    property.name.c_str()
+                );
+            }
+
+            packet_id = mqttSubscribe(
+                topic.c_str(),
+                [i, property](const char * topic, const char * payload) {
+                    property.queryCallback((i + 1), payload);
+                }
+            );
+
+            if (packet_id == 0) return false;
+        }
+    }
 
     return true;
 }
@@ -397,13 +402,13 @@ bool _fastybirdPropagateChannelPropertyQueryable(
     fastybird_channel_t channel,
     fastybird_channel_property_t property
 ) {
-    return _fastybirdPropagateChannelPropertyQueryable((fastybirdThingSN()).c_str(), channel, property);
+    return _fastybirdPropagateChannelPropertyQueryable((fastybirdDeviceSN()).c_str(), channel, property);
 }
 
 // -----------------------------------------------------------------------------
 
 bool _fastybirdPropagateChannelPropertyDataType(
-    const char * thingId,
+    const char * deviceId,
     fastybird_channel_t channel,
     fastybird_channel_property_t property
 ) {
@@ -411,13 +416,14 @@ bool _fastybirdPropagateChannelPropertyDataType(
 
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
+            deviceId,
             channel.name.c_str(),
             FASTYBIRD_TOPIC_CHANNEL_PROPERTY_DATA_TYPE,
             "property",
-            property.type.c_str()
+            property.name.c_str()
         ).c_str(),
-        property.dataType.c_str()
+        property.dataType.c_str(),
+        false
     );
 
     if (packet_id == 0) return false;
@@ -431,13 +437,13 @@ bool _fastybirdPropagateChannelPropertyDataType(
     fastybird_channel_t channel,
     fastybird_channel_property_t property
 ) {
-    return _fastybirdPropagateChannelPropertyDataType((fastybirdThingSN()).c_str(), channel, property);
+    return _fastybirdPropagateChannelPropertyDataType((fastybirdDeviceSN()).c_str(), channel, property);
 }
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateChannelPropertyUnits(
-    const char * thingId,
+bool _fastybirdPropagateChannelPropertyUnit(
+    const char * deviceId,
     fastybird_channel_t channel,
     fastybird_channel_property_t property
 ) {
@@ -449,13 +455,14 @@ bool _fastybirdPropagateChannelPropertyUnits(
 
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
+            deviceId,
             channel.name.c_str(),
-            FASTYBIRD_TOPIC_CHANNEL_PROPERTY_UNITS,
+            FASTYBIRD_TOPIC_CHANNEL_PROPERTY_UNIT,
             "property",
-            property.type.c_str()
+            property.name.c_str()
         ).c_str(),
-        property.units.c_str()
+        property.units.c_str(),
+        false
     );
 
     if (packet_id == 0) return false;
@@ -465,17 +472,17 @@ bool _fastybirdPropagateChannelPropertyUnits(
 
 // -----------------------------------------------------------------------------
 
-bool _fastybirdPropagateChannelPropertyUnits(
+bool _fastybirdPropagateChannelPropertyUnit(
     fastybird_channel_t channel,
     fastybird_channel_property_t property
 ) {
-    return _fastybirdPropagateChannelPropertyUnits((fastybirdThingSN()).c_str(), channel, property);
+    return _fastybirdPropagateChannelPropertyUnit((fastybirdDeviceSN()).c_str(), channel, property);
 }
 
 // -----------------------------------------------------------------------------
 
 bool _fastybirdPropagateChannelPropertyFormat(
-    const char * thingId,
+    const char * deviceId,
     fastybird_channel_t channel,
     fastybird_channel_property_t property
 ) {
@@ -487,13 +494,14 @@ bool _fastybirdPropagateChannelPropertyFormat(
 
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
+            deviceId,
             channel.name.c_str(),
             FASTYBIRD_TOPIC_CHANNEL_PROPERTY_FORMAT,
             "property",
-            property.type.c_str()
+            property.name.c_str()
         ).c_str(),
-        property.format.c_str()
+        property.format.c_str(),
+        false
     );
 
     if (packet_id == 0) return false;
@@ -507,13 +515,13 @@ bool _fastybirdPropagateChannelPropertyFormat(
     fastybird_channel_t channel,
     fastybird_channel_property_t property
 ) {
-    return _fastybirdPropagateChannelPropertyFormat((fastybirdThingSN()).c_str(), channel, property);
+    return _fastybirdPropagateChannelPropertyFormat((fastybirdDeviceSN()).c_str(), channel, property);
 }
 
 // -----------------------------------------------------------------------------
 
 bool _fastybirdPropagateChannelControlConfiguration(
-    const char * thingId,
+    const char * deviceId,
     fastybird_channel_t channel,
     std::vector<String> controls
 ) {
@@ -534,11 +542,12 @@ bool _fastybirdPropagateChannelControlConfiguration(
 
     packet_id = mqttSend(
         _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
+            deviceId,
             channel.name.c_str(),
             FASTYBIRD_TOPIC_CHANNEL_CONTROL
         ).c_str(),
-        payload
+        payload,
+        false
     );
 
     if (packet_id == 0) return false;
@@ -546,10 +555,10 @@ bool _fastybirdPropagateChannelControlConfiguration(
     String topic;
 
     for (uint8_t i = 0; i < channel.length; i++) {
-        if (channel.isConfigurable) {
+        if (channel.configureCallback.size()) {
             if (channel.length > 1) {
                 topic = _fastybirdMqttApiCreateChannelTopicString(
-                    thingId,
+                    deviceId,
                     channel.name.c_str(),
                     i,
                     FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
@@ -559,7 +568,7 @@ bool _fastybirdPropagateChannelControlConfiguration(
 
             } else {
                 topic = _fastybirdMqttApiCreateChannelTopicString(
-                    thingId,
+                    deviceId,
                     channel.name.c_str(),
                     FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
                     "control",
@@ -576,11 +585,15 @@ bool _fastybirdPropagateChannelControlConfiguration(
                     JsonObject& root = jsonBuffer.parseObject(payload);
 
                     if (root.success()) {
-                        DEBUG_MSG(PSTR("[FASTYBIRD] Sending configuration to channel: %s:%d\n"), channel.type.c_str(), i);
+                        for(uint8_t j = 0; j < channel.configureCallback.size(); j++) {
+                            DEBUG_MSG(PSTR("[FASTYBIRD] Sending configuration to channel: %s:%d\n"), channel.name.c_str(), j);
 
-                        channel.configureCallback(i, root);
+                            channel.configureCallback[j](root);
+                        }
 
                         DEBUG_MSG(PSTR("[FASTYBIRD] Changes were saved\n"));
+
+                        fastybirdReportChannelConfiguration(i);
 
                         #if WEB_SUPPORT && WS_SUPPORT
                             wsReportConfiguration();
@@ -597,60 +610,6 @@ bool _fastybirdPropagateChannelControlConfiguration(
 
             if (packet_id == 0) return false;
         }
-
-        #if SCHEDULER_SUPPORT
-            if (channel.hasScheduler) {
-                if (channel.length > 1) {
-                    topic = _fastybirdMqttApiCreateChannelTopicString(
-                        thingId,
-                        channel.name.c_str(),
-                        i,
-                        FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
-                        "control",
-                        FASTYBIRD_CHANNEL_CONTROL_SCHEDULE
-                    );
-
-                } else {
-                    topic = _fastybirdMqttApiCreateChannelTopicString(
-                        thingId,
-                        channel.name.c_str(),
-                        FASTYBIRD_TOPIC_CHANNEL_CONTROL_RECEIVE,
-                        "control",
-                        FASTYBIRD_CHANNEL_CONTROL_SCHEDULE
-                    );
-                }
-
-                packet_id = mqttSubscribe(
-                    topic.c_str(),
-                    [channel, i](const char * topic, const char * payload) {
-                        DynamicJsonBuffer jsonBuffer;
-
-                        // Parse payload
-                        JsonArray& root = jsonBuffer.parseArray(payload);
-
-                        if (root.success()) {
-                            DEBUG_MSG(PSTR("[FASTYBIRD] Sending scheduler configuration to channel: %s\n"), channel.type.c_str());
-
-                            channel.configureSchedulesCallback(i, root);
-
-                            DEBUG_MSG(PSTR("[FASTYBIRD] Changes were saved\n"));
-
-                            #if WEB_SUPPORT && WS_SUPPORT
-                                wsReportConfiguration();
-                            #endif
-
-                            // Reload & cache settings
-                            firmwareReload();
-
-                        } else {
-                            DEBUG_MSG(PSTR("[FASTYBIRD] Error parsing scheduler configuration data\n"));
-                        }
-                    }
-                );
-
-                if (packet_id == 0) return false;
-            }
-        #endif
     }
 
     return true;
@@ -662,30 +621,37 @@ bool _fastybirdPropagateChannelControlConfiguration(
     fastybird_channel_t channel,
     std::vector<String> controls
 ) {
-    return _fastybirdPropagateChannelControlConfiguration((fastybirdThingSN()).c_str(), channel, controls);
+    return _fastybirdPropagateChannelControlConfiguration((fastybirdDeviceSN()).c_str(), channel, controls);
 }
 
 // -----------------------------------------------------------------------------
 
 bool _fastybirdPropagateChannelConfigurationSchema(
-    const char * thingId,
+    const char * deviceId,
     fastybird_channel_t channel,
-    String payload
+    JsonArray& schema
 ) {
     uint8_t packet_id;
 
-    packet_id = mqttSend(
-        _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
-            channel.name.c_str(),
-            FASTYBIRD_TOPIC_CHANNEL_CONTROL_SCHEMA,
-            "control",
-            FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
-        ).c_str(),
-        payload.c_str()
-    );
+    if (schema.size() > 0) {
+        String output;
 
-    if (packet_id == 0) return false;
+        schema.printTo(output);
+
+        packet_id = mqttSend(
+            _fastybirdMqttApiCreateChannelTopicString(
+                deviceId,
+                channel.name.c_str(),
+                FASTYBIRD_TOPIC_CHANNEL_CONTROL_SCHEMA,
+                "control",
+                FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
+            ).c_str(),
+            output.c_str(),
+            false
+        );
+
+        if (packet_id == 0) return false;
+    }
 
     return true;
 }
@@ -694,49 +660,56 @@ bool _fastybirdPropagateChannelConfigurationSchema(
 
 bool _fastybirdPropagateChannelConfigurationSchema(
     fastybird_channel_t channel,
-    String payload
+    JsonArray& schema
 ) {
-    return _fastybirdPropagateChannelConfigurationSchema((fastybirdThingSN()).c_str(), channel, payload);
+    return _fastybirdPropagateChannelConfigurationSchema((fastybirdDeviceSN()).c_str(), channel, schema);
 }
 
 // -----------------------------------------------------------------------------
 
 bool _fastybirdPropagateChannelConfiguration(
-    const char * thingId,
+    const char * deviceId,
     fastybird_channel_t channel,
     const uint8_t channelId,
-    String payload
+    JsonObject& configuration
 ) {
-    String topic;
+    if (configuration.size() > 0) {
+        String output;
 
-    if (channel.length > 1) {
-        topic = _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
-            channel.name.c_str(),
-            channelId,
-            FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
-            "control",
-            FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
+        configuration.printTo(output);
+
+        String topic;
+
+        if (channel.length > 1) {
+            topic = _fastybirdMqttApiCreateChannelTopicString(
+                deviceId,
+                channel.name.c_str(),
+                channelId,
+                FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
+                "control",
+                FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
+            );
+
+        } else {
+            topic = _fastybirdMqttApiCreateChannelTopicString(
+                deviceId,
+                channel.name.c_str(),
+                FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
+                "control",
+                FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
+            );
+        }
+
+        uint8_t packet_id;
+
+        packet_id = mqttSend(
+            topic.c_str(),
+            output.c_str(),
+            false
         );
 
-    } else {
-        topic = _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
-            channel.name.c_str(),
-            FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
-            "control",
-            FASTYBIRD_CHANNEL_CONTROL_CONFIGURE
-        );
+        if (packet_id == 0) return false;
     }
-
-    uint8_t packet_id;
-
-    packet_id = mqttSend(
-        topic.c_str(),
-        payload.c_str()
-    );
-
-    if (packet_id == 0) return false;
 
     return true;
 }
@@ -746,67 +719,15 @@ bool _fastybirdPropagateChannelConfiguration(
 bool _fastybirdPropagateChannelConfiguration(
     fastybird_channel_t channel,
     const uint8_t channelId,
-    String payload
+    JsonObject& configuration
 ) {
-    return _fastybirdPropagateChannelConfiguration((fastybirdThingSN()).c_str(), channel, channelId, payload);
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateChannelSchedulerConfiguration(
-    const char * thingId,
-    fastybird_channel_t channel,
-    const uint8_t channelId,
-    String payload
-) {
-    String topic;
-
-    if (channel.length > 1) {
-        topic = _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
-            channel.name.c_str(),
-            channelId,
-            FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
-            "control",
-            FASTYBIRD_CHANNEL_CONTROL_SCHEDULE
-        );
-
-    } else {
-        topic = _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
-            channel.name.c_str(),
-            FASTYBIRD_TOPIC_CHANNEL_CONTROL_DATA,
-            "control",
-            FASTYBIRD_CHANNEL_CONTROL_SCHEDULE
-        );
-    }
-
-    uint8_t packet_id;
-
-    packet_id = mqttSend(
-        topic.c_str(),
-        payload.c_str()
-    );
-
-    if (packet_id == 0) return false;
-
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-
-bool _fastybirdPropagateChannelSchedulerConfiguration(
-    fastybird_channel_t channel,
-    const uint8_t channelId,
-    String payload
-) {
-    return _fastybirdPropagateChannelSchedulerConfiguration((fastybirdThingSN()).c_str(), channel, channelId, payload);
+    return _fastybirdPropagateChannelConfiguration((fastybirdDeviceSN()).c_str(), channel, channelId, configuration);
 }
 
 // -----------------------------------------------------------------------------
 
 bool _fastybirdPropagateChannelValue(
-    const char * thingId,
+    const char * deviceId,
     fastybird_channel_t channel,
     fastybird_channel_property_t property,
     const uint8_t channelId,
@@ -814,31 +735,21 @@ bool _fastybirdPropagateChannelValue(
 ) {
     String topic;
 
-    if (channel.length > 1) {
-        topic = _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
-            channel.name.c_str(),
-            channelId,
-            FASTYBIRD_TOPIC_CHANNEL_PROPERTY,
-            "property",
-            property.type.c_str()
-        );
-
-    } else {
-        topic = _fastybirdMqttApiCreateChannelTopicString(
-            thingId,
-            channel.name.c_str(),
-            FASTYBIRD_TOPIC_CHANNEL_PROPERTY,
-            "property",
-            property.type.c_str()
-        );
-    }
+    topic = _fastybirdMqttApiCreateChannelTopicString(
+        deviceId,
+        channel.name.c_str(),
+        channelId,
+        FASTYBIRD_TOPIC_CHANNEL_PROPERTY,
+        "property",
+        property.name.c_str()
+    );
 
     uint8_t packet_id;
 
     packet_id = mqttSend(
         topic.c_str(),
-        payload
+        payload,
+        false
     );
 
     if (packet_id == 0) return false;
@@ -854,7 +765,48 @@ bool _fastybirdPropagateChannelValue(
     const uint8_t channelId,
     const char * payload
 ) {
-    return _fastybirdPropagateChannelValue((fastybirdThingSN()).c_str(), channel, property, channelId, payload);
+    return _fastybirdPropagateChannelValue((fastybirdDeviceSN()).c_str(), channel, property, channelId, payload);
+}
+
+// -----------------------------------------------------------------------------
+
+bool _fastybirdPropagateChannelValue(
+    const char * deviceId,
+    fastybird_channel_t channel,
+    fastybird_channel_property_t property,
+    const char * payload
+) {
+    String topic;
+
+    topic = _fastybirdMqttApiCreateChannelTopicString(
+        deviceId,
+        channel.name.c_str(),
+        FASTYBIRD_TOPIC_CHANNEL_PROPERTY,
+        "property",
+        property.name.c_str()
+    );
+
+    uint8_t packet_id;
+
+    packet_id = mqttSend(
+        topic.c_str(),
+        payload,
+        true
+    );
+
+    if (packet_id == 0) return false;
+
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+
+bool _fastybirdPropagateChannelValue(
+    fastybird_channel_t channel,
+    fastybird_channel_property_t property,
+    const char * payload
+) {
+    return _fastybirdPropagateChannelValue((fastybirdDeviceSN()).c_str(), channel, property, payload);
 }
 
 #endif

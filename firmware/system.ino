@@ -32,12 +32,6 @@ uint8_t _systemBytes2Sectors(
 
 // -----------------------------------------------------------------------------
 
-uint32_t _systemOTASpace() {
-    return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-}
-
-// -----------------------------------------------------------------------------
-
 uint32_t _systemFilesystemSpace() {
     return ((uint32_t)&_SPIFFS_end - (uint32_t)&_SPIFFS_start);
 }
@@ -170,17 +164,16 @@ void _systemInfoOnHeartbeat() {
         firmware["build"] = getBuildTime();
         firmware["sketch_size"] = ESP.getSketchSize();
         firmware["free_space"] = ESP.getFreeSketchSpace();
-        firmware["max_ota_size"] = _systemOTASpace();
 
-        // Thing
-        JsonObject& thing = data.createNestedObject("thing");
+        // Device
+        JsonObject& device = data.createNestedObject("device");
 
-        thing["thing"] = THING;
-        thing["manufacturer"] = MANUFACTURER;
-        thing["chipid"] = String(chipid);
-        thing["sdk"] = ESP.getSdkVersion();
-        thing["core"] = getCoreVersion();
-        thing["mac"] = WiFi.macAddress();
+        device["device"] = DEVICE;
+        device["manufacturer"] = MANUFACTURER;
+        device["chipid"] = String(chipid);
+        device["sdk"] = ESP.getSdkVersion();
+        device["core"] = getCoreVersion();
+        device["mac"] = WiFi.macAddress();
 
         // Network
         JsonObject& network = data.createNestedObject("network");
@@ -257,7 +250,6 @@ void _systemInfo() {
     _systemPrintMemoryLayoutLine("Flash size (SDK)", ESP.getFlashChipSize(), true);
     _systemPrintMemoryLayoutLine("Reserved", 1 * SPI_FLASH_SEC_SIZE, true);
     _systemPrintMemoryLayoutLine("Firmware size", ESP.getSketchSize());
-    _systemPrintMemoryLayoutLine("Max OTA size", _systemOTASpace());
     _systemPrintMemoryLayoutLine("SPIFFS size", _systemFilesystemSpace());
     _systemPrintMemoryLayoutLine("EEPROM size", _systemEepromSpace());
     _systemPrintMemoryLayoutLine("Reserved", 4 * SPI_FLASH_SEC_SIZE);
@@ -318,7 +310,7 @@ void _systemInfo() {
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG(PSTR("[SYSTEM] Board: %s\n"), THING);
+    DEBUG_MSG(PSTR("[SYSTEM] Board: %s\n"), DEVICE);
     DEBUG_MSG(PSTR("[SYSTEM] Support: %s\n"), getFirmwareModules().c_str());
 
     #if SENSOR_SUPPORT
@@ -342,7 +334,7 @@ void _systemInfo() {
     #if STABILTY_CHECK_ENABLED
         if (!stabiltyCheck()) {
             DEBUG_MSG(PSTR("\n"));
-            DEBUG_MSG(PSTR("[SYSTEM] Thing is in SAFE MODE\n"));
+            DEBUG_MSG(PSTR("[SYSTEM] Device is in SAFE MODE\n"));
         }
     #endif
 
@@ -421,6 +413,10 @@ void systemSetup() {
     #if WEB_SUPPORT && WS_SUPPORT
         wsOnConnectRegister(_systemWSOnConnect);
         wsOnUpdateRegister(_systemWSOnUpdate);
+    #endif
+
+    #if FASTYBIRD_SUPPORT
+        fastybirdOnConnectRegister(systemSendHeartbeat);
     #endif
 
     systemOnHeartbeatRegister(_systemInfoOnHeartbeat);

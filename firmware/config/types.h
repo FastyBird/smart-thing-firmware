@@ -19,12 +19,10 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define CUSTOM_FACTORY_BUTTON                   6       // Reset after factory reset via hardware button
 
 #define CUSTOM_UPGRADE_WEB                      7       // Reset after successful update from web interface
-#define CUSTOM_UPGRADE_OTA                      8       // Reset after successful OTA update
-#define CUSTOM_UPGRADE_NOFUSS                   9       // Reset after successful NOFUSS update
 
-#define CUSTOM_RESTORE_WEB                      10      // Reset after successful setting restore from web interface
+#define CUSTOM_RESTORE_WEB                      8      // Reset after successful setting restore from web interface
 
-#define CUSTOM_RESET_MAX                        10
+#define CUSTOM_RESET_MAX                        8
 
 // =============================================================================
 // WIFI
@@ -143,13 +141,6 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define GATEWAY_REGISTER_EV                     4
 
 // =============================================================================
-// ENCODER
-// =============================================================================
-
-#define ENCODER_MODE_CHANNEL                    0
-#define ENCODER_MODE_RATIO                      1
-
-// =============================================================================
 // RELAY
 // =============================================================================
 
@@ -187,32 +178,6 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 #define LIGHT_PROVIDER_NONE                     0
 #define LIGHT_PROVIDER_MY92XX                   1       // works with MY9291 and MY9231
 #define LIGHT_PROVIDER_DIMMER                   2
-
-// =============================================================================
-// SCHEDULER
-// =============================================================================
-
-#define SCHEDULER_TYPE_SWITCH                   1
-#define SCHEDULER_TYPE_DIM                      2
-
-// =============================================================================
-// IR
-// =============================================================================
-
-// IR Button modes
-#define IR_BUTTON_MODE_NONE                     0
-#define IR_BUTTON_MODE_RGB                      1
-#define IR_BUTTON_MODE_HSV                      2
-#define IR_BUTTON_MODE_BRIGHTER                 3
-#define IR_BUTTON_MODE_STATE                    4
-#define IR_BUTTON_MODE_EFFECT                   5
-#define IR_BUTTON_MODE_TOGGLE                   6
-
-#define LIGHT_EFFECT_SOLID                      0
-#define LIGHT_EFFECT_FLASH                      1
-#define LIGHT_EFFECT_STROBE                     2
-#define LIGHT_EFFECT_FADE                       3
-#define LIGHT_EFFECT_SMOOTH                     4
 
 // =============================================================================
 // ENVIRONMENTAL

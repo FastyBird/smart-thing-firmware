@@ -29,17 +29,10 @@
 //#define DEBUG_WEB_SUPPORT             0
 //#define DEBUG_MQTT_SUPPORT            0
 //#define DEBUG_NODES_SUPPORT           0
-//#define ENCODER_SUPPORT               1
 //#define FASTYBIRD_SUPPORT             1
 //#define I2C_SUPPORT                   1
-//#define IR_SUPPORT                    1
 //#define LED_SUPPORT                   0
 //#define MQTT_SUPPORT                  0
-//#define NOFUSS_SUPPORT                1
-//#define NTP_SUPPORT                   0
-//#define RFM69_SUPPORT                 1
-//#define RF_SUPPORT                    1
-//#define SCHEDULER_SUPPORT             0
 //#define SENSOR_SUPPORT                1
 //#define SPIFFS_SUPPORT                1
 //#define WIFI_SUPPORT                  1

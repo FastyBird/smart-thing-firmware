@@ -19,6 +19,7 @@ typedef struct {
     uint8_t pin;            // GPIO pin for the relay
     uint8_t type;           // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
     uint8_t reset_pin;      // GPIO to reset the relay if RELAY_TYPE_LATCHED
+    uint8_t channel;        // Communication channel number
     uint32_t delay_on;      // Delay to turn relay ON
     uint32_t delay_off;     // Delay to turn relay OFF
     uint8_t pulse;          // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
@@ -42,10 +43,6 @@ std::vector<relay_t> _relays;
 bool _relayRecursive = false;
 
 Ticker _relay_save_ticker;
-
-#if FASTYBIRD_SUPPORT
-    uint8_t _relay_fastybird_channel_index = 0xFF;
-#endif
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
@@ -256,7 +253,12 @@ uint8_t _relayParsePayload(
         DEBUG_MSG(PSTR("[RELAY] Updating module\n"));
 
         if (relayCount() > 1) {
-            if (configuration.containsKey("relays_sync"))  {
+            if (
+                configuration.containsKey("relays_sync")
+                && configuration["relays_sync"].as<uint8_t>() >= 0  // Minimum select value
+                && configuration["relays_sync"].as<uint8_t>() <= 3  // Maximum select value
+                && configuration["relays_sync"].as<uint8_t>() != getSetting("relaysSync").toInt()
+            )  {
                 setSetting("relaysSync", configuration["relays_sync"].as<uint8_t>());
 
                 return true;
@@ -356,21 +358,6 @@ uint8_t _relayParsePayload(
 
 // -----------------------------------------------------------------------------
 
-    String _relayReportChannelConfigurationSchema() {
-        DynamicJsonBuffer jsonBuffer;
-        JsonArray& schema = jsonBuffer.createArray();
-
-        _relayReportChannelConfigurationSchema(schema);
-
-        String output;
-
-        schema.printTo(output);
-
-        return output;
-    }
-
-// -----------------------------------------------------------------------------
-
     void _relayReportChannelConfiguration(
         const uint8_t id,
         JsonObject& configuration
@@ -379,23 +366,6 @@ uint8_t _relayParsePayload(
         configuration["pulse_mode"] = getSetting("relayPulse", id, RELAY_PULSE_MODE).toInt();
         configuration["pulse_time"] = getSetting("relayTime", id, RELAY_PULSE_TIME).toFloat();
         configuration["on_disconnect"] = getSetting("relayOnDisc", id, 0).toInt();
-    }
-
-// -----------------------------------------------------------------------------
-
-    String _relayReportChannelConfiguration(
-        const uint8_t id
-    ) {
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& configuration = jsonBuffer.createObject();
-
-        _relayReportChannelConfiguration(id, configuration);
-
-        String output;
-
-        configuration.printTo(output);
-
-        return output;
     }
 
 // -----------------------------------------------------------------------------
@@ -527,11 +497,8 @@ uint8_t _relayParsePayload(
         for (uint8_t i = 0; i < relayCount(); i++) {
             JsonObject& channel_configuration_value = channels_configuration_values.createNestedObject();
 
+            _relayReportChannelConfiguration(i, channel_configuration_value);
             channel_configuration_value["gpio"] = _relays[i].pin;
-            channel_configuration_value["relay_boot"] = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
-            channel_configuration_value["on_disconnect"] = getSetting("relayOnDisc", i, 0).toInt();
-            channel_configuration_value["pulse_mode"] = _relays[i].pulse;
-            channel_configuration_value["pulse_time"] = _relays[i].pulse_ms / 1000.0;
         }
     }
 
@@ -632,14 +599,21 @@ uint8_t _relayParsePayload(
 // -----------------------------------------------------------------------------
 
 #if FASTYBIRD_SUPPORT
-    fastybird_channel_property_t _relayFastybirdGetChannelStatePropertyStructure() {
+    void _relayFastybirdRegisterRealy(
+        const uint8_t id
+    ) {
+        // Check relay ID
+        if (id >= _relays.size()) {
+            return;
+        }
+        
         fastybird_channel_property_t property = {
-            FASTYBIRD_PROPERTY_STATE,
-            FASTYBIRD_PROPERTY_STATE,
+            FASTYBIRD_PROPERTY_SWITCH,
+            FASTYBIRD_PROPERTY_SWITCH,
             true,
             true,
             FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
-            "",
+            FASTYBIRD_EMPTY_VALUE,
         };
 
         char format[30];
@@ -652,7 +626,7 @@ uint8_t _relayParsePayload(
 
         property.format = String(format);
 
-        property.payloadCallback = ([](uint8_t id, const char * payload) {
+        property.payloadCallback = ([id](uint8_t channel, const char * payload) {
             // Toggle relay status
             if (strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE) == 0) {
                 relayToggle(id);
@@ -663,120 +637,39 @@ uint8_t _relayParsePayload(
             }
         });
 
-        property.queryCallback = ([](uint8_t id, const char * payload) {
-            fastybirdReportChannelValue(
-                _relay_fastybird_channel_index,
-                0,
-                id,
+        property.queryCallback = ([id](uint8_t channel, const char * payload) {
+            fastybirdReportChannelPropertyValue(
+                _relays[id].channel,
+                FASTYBIRD_PROPERTY_SWITCH,
                 relayStatus(id) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
             );
         });
 
-        return property;
-    }
+        // Register channel property into fastybird
+        uint8_t propertyIndex = fastybirdRegisterChannelProperty(property);
 
-// -----------------------------------------------------------------------------
-
-    fastybird_channel_t _relayFastybirdGetChannelStructure() {
-        fastybird_channel_t channel = {
-            FASTYBIRD_CHANNEL_SWITCH,
-            FASTYBIRD_CHANNEL_SWITCH,
-            relayCount(),
-            true,
-            true,
-            false
-        };
-
-        channel.properties.push_back(_relayFastybirdGetChannelStatePropertyStructure());
-
-        channel.configurationSchema = (_relayReportChannelConfigurationSchema());
-
-        channel.configureCallback = ([](uint8_t id, JsonObject& configuration){
-            _relayConfigureChannel(id, configuration);
-
-            fastybirdReportChannelConfiguration(
-                _relay_fastybird_channel_index,
-                id,
-                _relayReportChannelConfiguration(id)
-            );
-
-            DEBUG_MSG(PSTR("[RELAY] Configuration changes were saved\n"));
-        });
-
-        #if SCHEDULER_SUPPORT
-            channel.configureSchedulesCallback = ([](uint8_t id, JsonArray& configuration){
-                schConfigureChannelConfiguration(id, FASTYBIRD_CHANNEL_SWITCH, configuration);
-
-                String output;
-                DynamicJsonBuffer jsonBuffer;
-
-                JsonArray& schedules = jsonBuffer.createArray();
-
-                schReportChannelConfiguration(id, FASTYBIRD_CHANNEL_SWITCH, schedules);
-
-                schedules.printTo(output);
-
-                fastybirdReportChannelScheduler(
-                    _relay_fastybird_channel_index,
-                    id,
-                    output
-                );
-
-                DEBUG_MSG(PSTR("[RELAY] Scheduler configuration changes were saved\n"));
+        // Process all relays
+        if (_relays[id].channel != INDEX_NONE) {
+            fastybirdRegisterPropertyToChannel(_relays[id].channel, propertyIndex);
+            fastybirdRegisterConfigurationSchemaToChannel(_relays[id].channel, _relayReportChannelConfigurationSchema);
+            fastybirdRegisterConfigurationToChannel(_relays[id].channel, [id](JsonObject& configuration){
+                _relayReportChannelConfiguration(id, configuration);
             });
-        #else
-            channel.hasScheduler = false;
-        #endif
+            fastybirdRegisterConfigureActionToChannel(_relays[id].channel, [id](JsonObject& configuration){
+                _relayConfigureChannel(id, configuration);
 
-        return channel;
+                DEBUG_MSG(PSTR("[RELAY] Configuration changes were saved\n"));
+            });
+        }
     }
 
 // -----------------------------------------------------------------------------
 
-    bool _relayFastybirdReportChannelsConfiguration() {
-        for (uint8_t i = 0; i < relayCount(); i++) {
-            if (
-                !fastybirdReportChannelConfiguration(
-                    _relay_fastybird_channel_index,
-                    i,
-                    _relayReportChannelConfiguration(i)
-                )
-            ) {
-                return false;
-            }
+    void _relayFastybirdRegisterRealys() {
+        for (uint8_t i = 0; i < _relays.size(); i++) {
+            _relayFastybirdRegisterRealy(i);
         }
-
-        return true;
     }
-
-// -----------------------------------------------------------------------------
-
-    #if SCHEDULER_SUPPORT
-        bool _relayFastybirdReportChannelsScheduler() {
-            String output;
-            DynamicJsonBuffer jsonBuffer;
-
-            for (uint8_t i = 0; i < relayCount(); i++) {
-                JsonArray& schedules = jsonBuffer.createArray();
-                
-                schReportChannelConfiguration(i, FASTYBIRD_CHANNEL_SWITCH, schedules);
-
-                schedules.printTo(output);
-
-                if (
-                    !fastybirdReportChannelScheduler(
-                        _relay_fastybird_channel_index,
-                        i,
-                        output
-                    )
-                ) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-    #endif
 #endif // FASTYBIRD_SUPPORT
 
 // -----------------------------------------------------------------------------
@@ -963,10 +856,9 @@ void _relayProcess(
 
         // Send to Broker
         #if FASTYBIRD_SUPPORT
-            fastybirdReportChannelValue(
-                _relay_fastybird_channel_index,
-                0,
-                id,
+            fastybirdReportChannelPropertyValue(
+                _relays[id].channel,
+                FASTYBIRD_PROPERTY_SWITCH,
                 target ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
             );
         #endif
@@ -1248,32 +1140,32 @@ bool relayStatus(
 void relaySetup() {
     // Ad-hoc relays
     #if RELAY1_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_CHANNEL, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
     #endif
     #if RELAY2_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_CHANNEL, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
     #endif
     #if RELAY3_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_CHANNEL, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
     #endif
     #if RELAY4_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_CHANNEL, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
     #endif
     #if RELAY5_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_CHANNEL, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
     #endif
     #if RELAY6_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_CHANNEL, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
     #endif
     #if RELAY7_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_CHANNEL, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
     #endif
     #if RELAY8_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_CHANNEL, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
     #endif
 
     #if BUTTON_SUPPORT
-        #if RELAY1_BTN > 0
+        #if RELAY1_BTN != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY1_BTN_EVENT) {
@@ -1284,7 +1176,7 @@ void relaySetup() {
             );
         #endif
 
-        #if RELAY2_BTN > 0
+        #if RELAY2_BTN != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY2_BTN_EVENT) {
@@ -1295,7 +1187,7 @@ void relaySetup() {
             );
         #endif
 
-        #if RELAY3_BTN > 0
+        #if RELAY3_BTN != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY3_BTN_EVENT) {
@@ -1306,7 +1198,7 @@ void relaySetup() {
             );
         #endif
 
-        #if RELAY4_BTN > 0
+        #if RELAY4_BTN != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY4_BTN_EVENT) {
@@ -1317,7 +1209,7 @@ void relaySetup() {
             );
         #endif
 
-        #if RELAY5_BTN > 0
+        #if RELAY5_BTN != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY5_BTN_EVENT) {
@@ -1328,7 +1220,7 @@ void relaySetup() {
             );
         #endif
 
-        #if RELAY6_BTN > 0
+        #if RELAY6_BTN != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY6_BTN_EVENT) {
@@ -1339,7 +1231,7 @@ void relaySetup() {
             );
         #endif
 
-        #if RELAY7_BTN > 0
+        #if RELAY7_BTN != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY7_BTN_EVENT) {
@@ -1350,7 +1242,7 @@ void relaySetup() {
             );
         #endif
 
-        #if RELAY8_BTN > 0
+        #if RELAY8_BTN != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY8_BTN_EVENT) {
@@ -1366,7 +1258,7 @@ void relaySetup() {
     // No delay_on or off for these devices to easily allow having more than
     // 8 channels. This behaviour will be recovered with v2.
     for (uint8_t i = 0; i < DUMMY_RELAY_COUNT; i++) {
-        _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0});
+        _relays.push_back((relay_t) {GPIO_NONE, RELAY_TYPE_NORMAL, 0, 0, 0, INDEX_NONE});
     }
 
     _relayConfigure();
@@ -1393,13 +1285,17 @@ void relaySetup() {
 
         // Channels registration
         if (relayCount() > 0) {
-            _relay_fastybird_channel_index = fastybirdRegisterChannel(_relayFastybirdGetChannelStructure());
+            _relayFastybirdRegisterRealys();
 
-            fastybirdChannelsReportConfigurationRegister(_relayFastybirdReportChannelsConfiguration);
-
-            #if SCHEDULER_SUPPORT
-               fastybirdChannelsReportSchedulerRegister(_relayFastybirdReportChannelsScheduler);
-            #endif
+            fastybirdOnConnectRegister([](){
+                for (uint8_t i = 0; i < relayCount(); i++) {
+                    fastybirdReportChannelPropertyValue(
+                        _relays[i].channel,
+                        FASTYBIRD_PROPERTY_SWITCH,
+                        relayStatus(i) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
+                    );
+                }
+            });
         }
     #endif
 

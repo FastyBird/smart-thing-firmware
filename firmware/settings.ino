@@ -127,9 +127,9 @@ std::vector<String> _settingsKeys() {
 bool _settingsRestoreJson(
     JsonObject& data
 ) {
-    const char * _thing = data["thing"];
+    const char * _device = data["device"];
 
-    if (strcmp(_thing, THING) != 0) {
+    if (strcmp(_device, DEVICE) != 0) {
         return false;
     }
 
@@ -145,7 +145,7 @@ bool _settingsRestoreJson(
 
     for (auto element : data) {
         if (
-            strcmp(element.key, "thing") == 0
+            strcmp(element.key, "device") == 0
             || strcmp(element.key, "manufacturer") == 0
             || strcmp(element.key, "version") == 0
             || strcmp(element.key, "backup") == 0
@@ -191,14 +191,10 @@ bool _settingsRestoreJson(
 
         response->addHeader("X-Suggested-Filename", buffer);
 
-        response->printf("{\n\"thing\": \"%s\"", THING);
+        response->printf("{\n\"device\": \"%s\"", DEVICE);
         response->printf(",\n\"manufacturer\": \"%s\"", FIRMWARE_MANUFACTURER);
         response->printf(",\n\"version\": \"%s\"", FIRMWARE_VERSION);
         response->printf(",\n\"backup\": \"1\"");
-
-        #if NTP_SUPPORT
-            response->printf(",\n\"timestamp\": \"%s\"", ntpDateTime().c_str());
-        #endif
 
         // Write the keys line by line (not sorted)
         uint32_t count = settingsKeyCount();
@@ -548,7 +544,7 @@ void settingsSetup() {
 
                 deferredReset(250, CUSTOM_FACTORY_BROKER);
             },
-            FASTYBIRD_THING_CONTROL_FACTORY_RESET
+            FASTYBIRD_DEVICE_CONTROL_FACTORY_RESET
         );
     #endif
 

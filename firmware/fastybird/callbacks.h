@@ -13,11 +13,8 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 std::vector<fastybird_report_configuration_schema_callback_f> _fastybird_report_configuration_schema_callbacks;
 std::vector<fastybird_report_configuration_callback_f> _fastybird_report_configuration_callbacks;
 std::vector<fastybird_on_configure_callback_f> _fastybird_on_configure_callbacks;
-std::vector<fastybird_thing_control_callback_t> _fastybird_on_control_callbacks;
-
-std::vector<fastybird_channels_report_configuration_callback_f> _fastybird_channels_report_configuration_callbacks;
-
-std::vector<fastybird_channels_report_scheduler_callback_f> _fastybird_channels_report_scheduler_callbacks;
+std::vector<fastybird_on_control_callback_t> _fastybird_on_control_callbacks;
+std::vector<fastybird_on_connect_callback_f> _fastybird_on_connect_callbacks;
 
 // -----------------------------------------------------------------------------
 // MODULE API
@@ -51,7 +48,7 @@ void fastybirdOnControlRegister(
     fastybird_on_control_callback_f callback,
     const char * controlName
 ) {
-    _fastybird_on_control_callbacks.push_back((fastybird_thing_control_callback_t) {
+    _fastybird_on_control_callbacks.push_back((fastybird_on_control_callback_t) {
         callback,
         controlName
     });
@@ -59,18 +56,10 @@ void fastybirdOnControlRegister(
 
 // -----------------------------------------------------------------------------
 
-void fastybirdChannelsReportConfigurationRegister(
-    fastybird_channels_report_configuration_callback_f callback
+void fastybirdOnConnectRegister(
+    fastybird_on_connect_callback_f callback
 ) {
-    _fastybird_channels_report_configuration_callbacks.push_back(callback);
-}
-
-// -----------------------------------------------------------------------------
-
-void fastybirdChannelsReportSchedulerRegister(
-    fastybird_channels_report_scheduler_callback_f callback
-) {
-    _fastybird_channels_report_scheduler_callbacks.push_back(callback);
+    _fastybird_on_connect_callbacks.push_back(callback);
 }
 
 #endif

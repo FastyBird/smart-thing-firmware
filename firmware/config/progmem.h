@@ -13,15 +13,12 @@ const char custom_factory_web[] PROGMEM     = "Reboot by factory reset from web 
 const char custom_factory_broker[] PROGMEM  = "Reboot by factory reset from MQTT";
 const char custom_factory_button[] PROGMEM  = "Reboot by factory reset by bytton";
 const char custom_upgrade_web[] PROGMEM     = "Reboot after successful web update";
-const char custom_upgrade_ota[] PROGMEM     = "Reboot after successful OTA update";
-const char custom_upgrade_nofuss[] PROGMEM  = "Reboot after successful NoFUSS update";
 const char custom_restore_web[] PROGMEM     = "Reboot by settings restore from web interface";
 
 PROGMEM const char * const custom_reset_string[] = {
     custom_reset_web, custom_reset_broker, custom_reset_button,
     custom_factory_web, custom_factory_broker, custom_factory_button,
-    custom_upgrade_web, custom_upgrade_ota, custom_upgrade_nofuss,
-    custom_restore_web
+    custom_upgrade_web, custom_restore_web
 };
 
 //--------------------------------------------------------------------------------
@@ -53,35 +50,14 @@ const char firmware_modules[] PROGMEM =
     #if DEBUG_NODES_SUPPORT
         "DEBUG_NODES "
     #endif
-    #if ENCODER_SUPPORT
-        "ENCODER "
-    #endif
     #if I2C_SUPPORT
         "I2C "
-    #endif
-    #if IR_SUPPORT
-        "IR "
     #endif
     #if LED_SUPPORT
         "LED "
     #endif
     #if MQTT_SUPPORT
         "MQTT "
-    #endif
-    #if NOFUSS_SUPPORT
-        "NOFUSS "
-    #endif
-    #if NTP_SUPPORT
-        "NTP "
-    #endif
-    #if RFM69_SUPPORT
-        "RFM69 "
-    #endif
-    #if RF_SUPPORT
-        "RF "
-    #endif
-    #if SCHEDULER_SUPPORT
-        "SCHEDULER "
     #endif
     #if SENSOR_SUPPORT
         "SENSOR "
@@ -327,4 +303,26 @@ PROGMEM const char* const magnitude_units[] = {
     magnitude_empty, magnitude_empty, magnitude_empty
 };
 
+PROGMEM const char magnitude_unknown_type[] = "unknown";
+PROGMEM const char magnitude_environment_type[] =  "environment";
+PROGMEM const char magnitude_energy_type[] =  "energy";
+PROGMEM const char magnitude_analog_sensor_type[] = "analog_sensor";
+PROGMEM const char magnitude_binary_sensor_type[] = "binary_sensor";
+PROGMEM const char magnitude_event_type[] =  "event";
+
+PROGMEM const char* const magnitude_types[] = {
+    magnitude_unknown_type, magnitude_environment_type, magnitude_environment_type,
+    magnitude_analog_sensor_type, magnitude_energy_type, magnitude_energy_type,
+    magnitude_energy_type, magnitude_energy_type, magnitude_energy_type,
+    magnitude_energy_type, magnitude_energy_type, magnitude_energy_type,
+    magnitude_analog_sensor_type, magnitude_binary_sensor_type, magnitude_event_type,
+    magnitude_environment_type, magnitude_environment_type, magnitude_environment_type,
+    magnitude_environment_type, magnitude_environment_type,
+    magnitude_environment_type, magnitude_environment_type, magnitude_environment_type,
+    magnitude_analog_sensor_type, magnitude_environment_type,
+    magnitude_environment_type, magnitude_environment_type,
+    magnitude_binary_sensor_type,
+    magnitude_environment_type, magnitude_environment_type, magnitude_analog_sensor_type, magnitude_environment_type,
+    magnitude_environment_type, magnitude_environment_type, magnitude_environment_type
+};
 #endif // SENSOR_SUPPORT

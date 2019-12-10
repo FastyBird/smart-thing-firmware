@@ -31,5 +31,7 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
     #if NODES_GATEWAY_SUPPORT
         #define DEBUG_GW_MSG(...)
+    #else
+        #define DEBUG_GW_MSG(...)
     #endif
 #endif

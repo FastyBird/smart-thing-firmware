@@ -2,6 +2,8 @@
 // FASTYBIRD MQTT CONFIGURATION
 // =============================================================================
 
+#define FASTYBIRD_EMPTY_VALUE                               "none"
+
 #define FASTYBIRD_STATUS_INIT                               "init"
 #define FASTYBIRD_STATUS_READY                              "ready"
 #define FASTYBIRD_STATUS_DISCONNECTED                       "disconnected"
@@ -56,39 +58,47 @@
 #define FASTYBIRD_PROPERTY_VCC                              "vcc"
 #define FASTYBIRD_PROPERTY_SSID                             "ssid"
 #define FASTYBIRD_PROPERTY_RSSI                             "rssi"
+#define FASTYBIRD_PROPERTY_BUTTON                           "button"
+#define FASTYBIRD_PROPERTY_SWITCH                           "switch"
 
 #define FASTYBIRD_HARDWARE_MAC_ADDRESS                      "mac-address"
 
 // =============================================================================
-// THING TOPICS
+// BROADCAST TOPICS
 // =============================================================================
 
-#define FASTYBIRD_TOPIC_THING_NAME		                    "$name"
-#define FASTYBIRD_TOPIC_THING_PROPERTIES_STRUCTURE          "$properties"
-#define FASTYBIRD_TOPIC_THING_HW_INFO                       "$hw/{hw}"
-#define FASTYBIRD_TOPIC_THING_FW_INFO                       "$fw/{fw}"
-#define FASTYBIRD_TOPIC_THING_CHANNELS                      "$channels"
+#define FASTYBIRD_TOPIC_BROADCAST_ALERT                     "$broadcast/+"
+#define FASTYBIRD_TOPIC_BROADCAST_INIT                      "$broadcast/init"
 
-#define FASTYBIRD_TOPIC_THING_PROPERTY                      "{property}"
-#define FASTYBIRD_TOPIC_THING_PROPERTY_NAME                 "{property}/$name"
-#define FASTYBIRD_TOPIC_THING_PROPERTY_SETTABLE             "{property}/$settable"
-#define FASTYBIRD_TOPIC_THING_PROPERTY_QUERYABLE            "{property}/$queryable"
-#define FASTYBIRD_TOPIC_THING_PROPERTY_DATA_TYPE            "{property}/$data-type"
-#define FASTYBIRD_TOPIC_THING_PROPERTY_FORMAT               "{property}/$format"
-#define FASTYBIRD_TOPIC_THING_PROPERTY_RECEIVE              "{property}/set"
-#define FASTYBIRD_TOPIC_THING_PROPERTY_QUERY                "{property}/query"
+// =============================================================================
+// DEVICE TOPICS
+// =============================================================================
 
-#define FASTYBIRD_TOPIC_THING_CONTROL                       "$control"
-#define FASTYBIRD_TOPIC_THING_CONTROL_DATA                  "$control/{control}"
-#define FASTYBIRD_TOPIC_THING_CONTROL_SCHEMA                "$control/{control}/schema"
-#define FASTYBIRD_TOPIC_THING_CONTROL_RECEIVE               "$control/{control}/set"
+#define FASTYBIRD_TOPIC_DEVICE_NAME                         "$name"
+#define FASTYBIRD_TOPIC_DEVICE_PROPERTIES_STRUCTURE         "$properties"
+#define FASTYBIRD_TOPIC_DEVICE_HW_INFO                      "$hw/{hw}"
+#define FASTYBIRD_TOPIC_DEVICE_FW_INFO                      "$fw/{fw}"
+#define FASTYBIRD_TOPIC_DEVICE_CHANNELS                     "$channels"
+
+#define FASTYBIRD_TOPIC_DEVICE_PROPERTY                     "{property}"
+#define FASTYBIRD_TOPIC_DEVICE_PROPERTY_NAME                "{property}/$name"
+#define FASTYBIRD_TOPIC_DEVICE_PROPERTY_SETTABLE            "{property}/$settable"
+#define FASTYBIRD_TOPIC_DEVICE_PROPERTY_QUERYABLE           "{property}/$queryable"
+#define FASTYBIRD_TOPIC_DEVICE_PROPERTY_DATA_TYPE           "{property}/$data-type"
+#define FASTYBIRD_TOPIC_DEVICE_PROPERTY_FORMAT              "{property}/$format"
+#define FASTYBIRD_TOPIC_DEVICE_PROPERTY_RECEIVE             "{property}/set"
+#define FASTYBIRD_TOPIC_DEVICE_PROPERTY_QUERY               "{property}/query"
+
+#define FASTYBIRD_TOPIC_DEVICE_CONTROL                      "$control"
+#define FASTYBIRD_TOPIC_DEVICE_CONTROL_DATA                 "$control/{control}"
+#define FASTYBIRD_TOPIC_DEVICE_CONTROL_SCHEMA               "$control/{control}/schema"
+#define FASTYBIRD_TOPIC_DEVICE_CONTROL_RECEIVE              "$control/{control}/set"
 
 // =============================================================================
 // CHANNEL TOPICS
 // =============================================================================
 
 #define FASTYBIRD_TOPIC_CHANNEL_NAME		                "{channel}/$name"
-#define FASTYBIRD_TOPIC_CHANNEL_TYPE                        "{channel}/$type"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTIES		            "{channel}/$properties"
 #define FASTYBIRD_TOPIC_CHANNEL_ARRAY                       "{channel}/$array"
 
@@ -99,24 +109,24 @@
 
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY                    "{channel}/{property}"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_NAME               "{channel}/{property}/$name"
+#define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_TYPE               "{channel}/{property}/$type"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_SETTABLE           "{channel}/{property}/$settable"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERYABLE          "{channel}/{property}/$queryable"
-#define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_DATA_TYPE          "{channel}/{property}/$data-type"
-#define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_UNITS              "{channel}/{property}/$units"
+#define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_DATA_TYPE          "{channel}/{property}/$datatype"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_FORMAT             "{channel}/{property}/$format"
-#define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_UNIT               "{channel}/{property}/$units"
+#define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_UNIT               "{channel}/{property}/$unit"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_RECEIVE            "{channel}/{property}/set"
 #define FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERY              "{channel}/{property}/query"
 
 #define FASTYBIRD_CHANNEL_ARRAY_SUFFIX                      "_%d"
 
 // =============================================================================
-// THING INITIALIZE SEQUENTIONS
+// DEVICE INITIALIZE SEQUENTIONS
 // =============================================================================
 
 #define FASTYBIRD_PUB_CONNECTION                            0
 #define FASTYBIRD_PUB_NAME                                  1
-#define FASTYBIRD_PUB_THING_PROPERTIES                      2
+#define FASTYBIRD_PUB_DEVICE_PROPERTIES                     2
 #define FASTYBIRD_PUB_HARDWARE                              3
 #define FASTYBIRD_PUB_FIRMWARE                              4
 #define FASTYBIRD_PUB_CHANNELS                              5
@@ -126,53 +136,50 @@
 #define FASTYBIRD_PUB_READY                                 9
 #define FASTYBIRD_PUB_CONFIGURATION                         10
 #define FASTYBIRD_PUB_CHANNELS_CONFIGURATION                11
-#define FASTYBIRD_PUB_CHANNELS_SCHEDULE                     12
-#define FASTYBIRD_PUB_HEARTBEAT                             13
+#define FASTYBIRD_PUB_HEARTBEAT                             12
 
 // =============================================================================
 // CHANNEL INITIALIZE SEQUENTIONS
 // =============================================================================
 
 #define FASTYBIRD_PUB_CHANNEL_NAME                          0
-#define FASTYBIRD_PUB_CHANNEL_TYPE                          1
-#define FASTYBIRD_PUB_CHANNEL_PROPERTIES                    2
-#define FASTYBIRD_PUB_CHANNEL_ARRAY                         3
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY                      4
-#define FASTYBIRD_PUB_CHANNEL_CONTROL_STRUCTURE             5
-#define FASTYBIRD_PUB_CHANNEL_CONFIGURATION_SCHEMA          6
-#define FASTYBIRD_PUB_CHANNEL_SCHEDULE                      7
-#define FASTYBIRD_PUB_CHANNEL_DONE                          8
+#define FASTYBIRD_PUB_CHANNEL_PROPERTIES                    1
+#define FASTYBIRD_PUB_CHANNEL_ARRAY                         2
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY                      3
+#define FASTYBIRD_PUB_CHANNEL_CONTROL_STRUCTURE             4
+#define FASTYBIRD_PUB_CHANNEL_CONFIGURATION_SCHEMA          5
+#define FASTYBIRD_PUB_CHANNEL_DONE                          6
 
 // =============================================================================
 // CHANNEL PROPERTY INITIALIZE SEQUENTIONS
 // =============================================================================
 
 #define FASTYBIRD_PUB_CHANNEL_PROPERTY_NAME                 0
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_SETABLE              1
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_QUERYABLE            2
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_DATA_TYPE            3
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_UNITS                4
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_FORMAT               5
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_UNIT                 6
-#define FASTYBIRD_PUB_CHANNEL_PROPERTY_DONE                 7
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_TYPE                 1
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_SETABLE              2
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_QUERYABLE            3
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_DATA_TYPE            4
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_UNITS                5
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_FORMAT               6
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_UNIT                 7
+#define FASTYBIRD_PUB_CHANNEL_PROPERTY_DONE                 8
 
 // =============================================================================
-// THING CONTROLS
+// DEVICE CONTROLS
 // =============================================================================
 
-#define FASTYBIRD_THING_CONTROL_CONFIGURE                   "configure"
-#define FASTYBIRD_THING_CONTROL_REBOOT                      "reboot"
-#define FASTYBIRD_THING_CONTROL_FACTORY_RESET               "factory-reset"
-#define FASTYBIRD_THING_CONTROL_RECONNECT                   "reconnect"
-#define FASTYBIRD_THING_CONTROL_SEARCH_FOR_NODES            "search-nodes"
-#define FASTYBIRD_THING_CONTROL_DISCONNECT_NODE             "node-disconnect"
+#define FASTYBIRD_DEVICE_CONTROL_CONFIGURE                   "configure"
+#define FASTYBIRD_DEVICE_CONTROL_REBOOT                      "reboot"
+#define FASTYBIRD_DEVICE_CONTROL_FACTORY_RESET               "factory-reset"
+#define FASTYBIRD_DEVICE_CONTROL_RECONNECT                   "reconnect"
+#define FASTYBIRD_DEVICE_CONTROL_SEARCH_FOR_NODES            "search-nodes"
+#define FASTYBIRD_DEVICE_CONTROL_DISCONNECT_NODE             "node-disconnect"
 
 // =============================================================================
 // CHANNEL CONTROLS
 // =============================================================================
 
 #define FASTYBIRD_CHANNEL_CONTROL_CONFIGURE                 "configure"
-#define FASTYBIRD_CHANNEL_CONTROL_SCHEDULE                  "schedule"
 
 // =============================================================================
 // CHANNELS NAMES
@@ -182,11 +189,4 @@
 #define FASTYBIRD_CHANNEL_ANALOG_ACTOR                      "analog_actor"
 #define FASTYBIRD_CHANNEL_BINARY_SENSOR                     "digital_sensor"
 #define FASTYBIRD_CHANNEL_BINARY_ACTOR                      "digital_actor"
-#define FASTYBIRD_CHANNEL_BUTTON                            "button"
-#define FASTYBIRD_CHANNEL_ENERGY                            "energy"
-#define FASTYBIRD_CHANNEL_ENVIRONMENT                       "environment"
-#define FASTYBIRD_CHANNEL_LED                               "led"
-#define FASTYBIRD_CHANNEL_LIGHT                             "light"
-#define FASTYBIRD_CHANNEL_SWITCH                            "switch"
 #define FASTYBIRD_CHANNEL_EVENT                             "event"
-#define FASTYBIRD_CHANNEL_SENSOR                            "sensor"

@@ -51,10 +51,6 @@ double _sensor_lux_correction = SENSOR_LUX_CORRECTION;
 
 String _sensor_energy_reset_ts = String();
 
-#if FASTYBIRD_SUPPORT
-    uint8_t _sensor_fastybird_channel_index[SENSOR_TYPES_MAX];
-#endif
-
 #define FILLARRAY(a, n) a[0] = n, memcpy(((char *) a) + sizeof(a[0]), a, sizeof(a) - sizeof(a[0]));
 
 // -----------------------------------------------------------------------------
@@ -213,8 +209,6 @@ bool _sensorHasMagnitude(
         }
 
         delSetting("eneTotal");
-
-        _sensorResetTS();
 
         // Reload & cache settings
         firmwareReload();
@@ -684,10 +678,6 @@ bool _sensorHasMagnitude(
             channel["name"] = sensorMagnitudeName(magnitude.type);
 
             if (magnitude.type == MAGNITUDE_ENERGY) {
-                if (_sensor_energy_reset_ts.length() == 0) {
-                    _sensorResetTS();
-                }
-
                 channel["description"] = magnitude.sensor->slot(magnitude.local) + String(" (since ") + _sensor_energy_reset_ts + String(")");
 
             } else {
@@ -844,23 +834,27 @@ bool _sensorHasMagnitude(
 // -----------------------------------------------------------------------------
 
 #if FASTYBIRD_SUPPORT
-    fastybird_channel_property_t _sensorFastybirdGetChannelStatePropertyStructure(
+    void _sensorFastybirdRegisterSensorMagnitude(
         uint8_t sensorIndex,
-        uint8_t sensorMagnitudeIndex
+        uint8_t magnitudeIndex
     ) {
+        // Get sensor info from register
         BaseSensor * sensor = _sensors[sensorIndex];
 
+        // Create magnitude property structure
         fastybird_channel_property_t property = {
-            sensorMagnitudeName(sensor->type(sensorMagnitudeIndex)),
-            sensorMagnitudeName(sensor->type(sensorMagnitudeIndex)),
+            sensorMagnitudeName(sensor->type(magnitudeIndex)),
+            sensorMagnitudeType(sensor->type(magnitudeIndex)),
             false,
             true,
             FASTYBIRD_PROPERTY_DATA_TYPE_FLOAT,
-            sensorMagnitudeUnits(sensor->type(sensorMagnitudeIndex)),
+            sensorMagnitudeUnits(sensor->type(magnitudeIndex)),
         };
 
-        property.queryCallback = ([sensorIndex, sensorMagnitudeIndex](uint8_t id, const char * payload) {
-            sensor_magnitude_t magnitude = _magnitudes[sensorMagnitudeIndex];
+        property.queryCallback = ([sensorIndex, magnitudeIndex](uint8_t channel, const char * payload) {
+            BaseSensor * sensor = _sensors[sensorIndex];
+
+            sensor_magnitude_t magnitude = _magnitudes[magnitudeIndex];
 
             double value = magnitude.filter->result();
             value = _sensorMagnitudeProcess(magnitude.type, magnitude.decimals, value);
@@ -871,68 +865,33 @@ bool _sensorHasMagnitude(
 
             dtostrf(value, 1 - sizeof(buffer), decimals, buffer);
 
-            fastybirdReportChannelValue(
-                _sensor_fastybird_channel_index[sensorIndex],
-                sensorMagnitudeIndex,
+            fastybirdReportChannelPropertyValue(
+                SENSOR1_CHANNEL,
+                sensorMagnitudeName(sensor->type(magnitudeIndex)),
                 buffer
             );
         });
 
-        return property;
+        // Register magnitude property into fastybird
+        uint8_t propertyIndex = fastybirdRegisterChannelProperty(property);
+
+        // Register magnitude property into channel container
+        // TODO: now only one sensor per device supported
+        fastybirdRegisterPropertyToChannel(SENSOR1_CHANNEL, propertyIndex);
     }
 
 // -----------------------------------------------------------------------------
 
-    fastybird_channel_t _sensorFastybirdGetChannelStructure(
-        uint8_t index
+    void _sensorFastybirdRegisterSensor(
+        uint8_t sensorIndex
     ) {
-        BaseSensor * sensor = _sensors[index];
+        // Get sensor info from register
+        BaseSensor * sensor = _sensors[sensorIndex];
 
-        char channel_base_name[20];
-        strcpy(channel_base_name, FASTYBIRD_CHANNEL_SENSOR);
-        strcat(channel_base_name, "-%d");
-
-        char channel_name[strlen(channel_base_name) + 3];
-        sprintf(channel_name, channel_base_name, (index + 1));
-        
-        String sensor_type;
-
-        switch (sensor->type())
-        {
-            case SENSOR_TYPE_ENERGY:
-                sensor_type = FASTYBIRD_CHANNEL_ENERGY;
-                break;
-
-            case SENSOR_TYPE_ENVIRONMENT:
-                sensor_type = FASTYBIRD_CHANNEL_ENVIRONMENT;
-                break;
-
-            case SENSOR_TYPE_ANALOG:
-                sensor_type = FASTYBIRD_CHANNEL_ANALOG_SENSOR;
-                break;
-        
-            default:
-                sensor_type = FASTYBIRD_CHANNEL_SENSOR;
-                break;
-        }
-
-        fastybird_channel_t channel = {
-            String(channel_name),
-            sensor_type,
-            1,              // Each registered sensor is separate channel
-            false,
-            false,
-            false
-        };
-       
         // Process all sensor magnitudes
         for (uint8_t i = 0; i < sensor->count(); i++) {
-            fastybird_channel_property_t property = _sensorFastybirdGetChannelStatePropertyStructure(index, i);
-
-            channel.properties.push_back(property);
+            _sensorFastybirdRegisterSensorMagnitude(sensorIndex, i);
         }
-
-        return channel;
     }
 #endif
 
@@ -965,26 +924,6 @@ void _sensorPost() {
     for (uint8_t i = 0; i < _sensors.size(); i++) {
         _sensors[i]->post();
     }
-}
-
-// -----------------------------------------------------------------------------
-
-void _sensorResetTS() {
-    #if NTP_SUPPORT
-        if (ntpSynced()) {
-            if (_sensor_energy_reset_ts.length() == 0) {
-                _sensor_energy_reset_ts = ntpDateTime(now() - millis() / 1000);
-
-            } else {
-                _sensor_energy_reset_ts = ntpDateTime(now());
-            }
-
-        } else {
-            _sensor_energy_reset_ts = String();
-        }
-
-        setSetting("snsResetTS", _sensor_energy_reset_ts);
-    #endif
 }
 
 // -----------------------------------------------------------------------------
@@ -1356,9 +1295,9 @@ void _sensorReport(
     dtostrf(value, 1 - sizeof(buffer), decimals, buffer);
 
     #if FASTYBIRD_SUPPORT
-        fastybirdReportChannelValue(
-            _sensor_fastybird_channel_index[magnitude.sensorIndex],
-            index,
+        fastybirdReportChannelPropertyValue(
+            SENSOR1_CHANNEL,
+            sensorMagnitudeName(magnitude.type),
             buffer
         );
     #endif
@@ -1394,14 +1333,16 @@ String sensorMagnitudeName(
 
 // -----------------------------------------------------------------------------
 
-uint8_t sensorMagnitudeType(
-    uint8_t index
+String sensorMagnitudeType(
+    uint8_t type
 ) {
-    if (index < _magnitudes.size()) {
-        return int(_magnitudes[index].type);
+    char buffer[16] = {0};
+
+    if (type < MAGNITUDE_MAX) {
+        strncpy_P(buffer, magnitude_types[type], sizeof(buffer));
     }
 
-    return MAGNITUDE_NONE;
+    return String(buffer);
 }
 
 // -----------------------------------------------------------------------------
@@ -1493,8 +1434,6 @@ void sensorSetup() {
     #endif
 
     #if FASTYBIRD_SUPPORT
-        FILLARRAY(_sensor_fastybird_channel_index, 0xFF);
-
         // Module schema report
         fastybirdReportConfigurationSchemaRegister(_sensorReportConfigurationSchema);
         fastybirdReportConfigurationRegister(_sensorReportConfiguration);
@@ -1502,9 +1441,30 @@ void sensorSetup() {
 
         // Channels registration
         if (sensorCount() > 0) {
+            // Process all device sensors
             for (uint8_t i = 0; i < sensorCount(); i++) {
-                _sensor_fastybird_channel_index[i] = fastybirdRegisterChannel(_sensorFastybirdGetChannelStructure(i));
+                // Register device structure
+                _sensorFastybirdRegisterSensor(i);
             }
+
+            fastybirdOnConnectRegister([](){
+                for (uint8_t i = 0; i < _magnitudes.size(); i++) {
+                    double value = _magnitudes[i].filter->result();
+                    value = _sensorMagnitudeProcess(_magnitudes[i].type, _magnitudes[i].decimals, value);
+                    
+                    uint8_t decimals = _magnitudes[i].decimals;
+
+                    char buffer[10];
+
+                    dtostrf(value, 1 - sizeof(buffer), decimals, buffer);
+
+                    fastybirdReportChannelPropertyValue(
+                        SENSOR1_CHANNEL,
+                        sensorMagnitudeName(_magnitudes[i].type),
+                        buffer
+                    );
+                }
+            });
         }
     #endif
 
