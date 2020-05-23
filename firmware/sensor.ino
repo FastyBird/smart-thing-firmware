@@ -2,21 +2,18 @@
 
 SENSOR MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
 #if SENSOR_SUPPORT
 
-#include <vector>
 #include <float.h>
 
 #include "filters/LastFilter.h"
 #include "filters/MaxFilter.h"
 #include "filters/MedianFilter.h"
 #include "filters/MovingAverageFilter.h"
-
-#include "sensors/base/BaseSensor.h"
 
 typedef struct {
     BaseSensor * sensor;        // Sensor object
@@ -63,7 +60,7 @@ uint8_t _sensorMagnitudeDecimals(
     // Hardcoded decimals (these should be linked to the unit, instead of the magnitude)
 
     if (type == MAGNITUDE_ANALOG) {
-        return ANALOG_DECIMALS;
+        return SENSOR_ANALOG_DECIMALS;
     }
 
     if (
@@ -72,7 +69,7 @@ uint8_t _sensorMagnitudeDecimals(
     ) {
         _sensor_energy_units = getSetting("eneUnits", SENSOR_ENERGY_UNITS).toInt();
 
-        if (_sensor_energy_units == ENERGY_KWH) {
+        if (_sensor_energy_units == SENSOR_ENERGY_KWH) {
             return 3;
         }
     }
@@ -82,7 +79,7 @@ uint8_t _sensorMagnitudeDecimals(
         || type == MAGNITUDE_POWER_APPARENT
         || type == MAGNITUDE_POWER_REACTIVE
     ) {
-        if (_sensor_power_units == POWER_KILOWATTS) {
+        if (_sensor_power_units == SENSOR_POWER_KILOWATTS) {
             return 3;
         }
     }
@@ -104,7 +101,7 @@ double _sensorMagnitudeProcess(
     // Hardcoded conversions (these should be linked to the unit, instead of the magnitude)
 
     if (type == MAGNITUDE_TEMPERATURE) {
-        if (_sensor_temperature_units == TMP_FAHRENHEIT) {
+        if (_sensor_temperature_units == SENSOR_TMP_FAHRENHEIT) {
             value = value * 1.8 + 32;
         }
 
@@ -123,7 +120,7 @@ double _sensorMagnitudeProcess(
         type == MAGNITUDE_ENERGY
         || type == MAGNITUDE_ENERGY_DELTA
     ) {
-        if (_sensor_energy_units == ENERGY_KWH) {
+        if (_sensor_energy_units == SENSOR_ENERGY_KWH) {
             value = value  / 3600000;
         }
     }
@@ -133,7 +130,7 @@ double _sensorMagnitudeProcess(
         || type == MAGNITUDE_POWER_APPARENT
         || type == MAGNITUDE_POWER_REACTIVE
     ) {
-        if (_sensor_power_units == POWER_KILOWATTS) {
+        if (_sensor_power_units == SENSOR_POWER_KILOWATTS) {
             value = value  / 1000;
         }
     }
@@ -160,7 +157,8 @@ bool _sensorHasMagnitude(
 // -----------------------------------------------------------------------------
 
 #if FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
-    void _sensorResetPowerCalibration() {
+    void _sensorResetPowerCalibration()
+    {
         for (uint8_t i = 0; i < _sensors.size(); i++) {
             #if HLW8012_SUPPORT
                 if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
@@ -189,7 +187,8 @@ bool _sensorHasMagnitude(
 
 // -----------------------------------------------------------------------------
 
-    void _sensorResetEnergyCalibration() {
+    void _sensorResetEnergyCalibration()
+    {
         for (uint8_t i = 0; i < _sensors.size(); i++) {
             #if HLW8012_SUPPORT
                 if (_sensors[i]->getID() == SENSOR_HLW8012_ID) {
@@ -329,11 +328,11 @@ bool _sensorHasMagnitude(
             JsonArray& power_units_values = power_units.createNestedArray("values");
 
             JsonObject& power_units_values_value1 = power_units_values.createNestedObject();
-            power_units_values_value1["value"] = POWER_WATTS;
+            power_units_values_value1["value"] = SENSOR_POWER_WATTS;
             power_units_values_value1["name"] = "watts";
 
             JsonObject& power_units_values_value2 = power_units_values.createNestedObject();
-            power_units_values_value2["value"] = POWER_KILOWATTS;
+            power_units_values_value2["value"] = SENSOR_POWER_KILOWATTS;
             power_units_values_value2["name"] = "kilowatts";
 
             // ENERGY METER
@@ -346,11 +345,11 @@ bool _sensorHasMagnitude(
             JsonArray& energy_units_values = energy_units.createNestedArray("values");
 
             JsonObject& energy_units_values_value1 = energy_units_values.createNestedObject();
-            energy_units_values_value1["value"] = ENERGY_JOULES;
+            energy_units_values_value1["value"] = SENSOR_ENERGY_JOULES;
             energy_units_values_value1["name"] = "joules";
 
             JsonObject& energy_units_values_value2 = energy_units_values.createNestedObject();
-            energy_units_values_value2["value"] = ENERGY_KWH;
+            energy_units_values_value2["value"] = SENSOR_ENERGY_KWH;
             energy_units_values_value2["name"] = "kilowatts_hours";
         }
 
@@ -365,11 +364,11 @@ bool _sensorHasMagnitude(
             JsonArray& temperature_units_values = temperature_units.createNestedArray("values");
 
             JsonObject& temperature_units_values_value1 = temperature_units_values.createNestedObject();
-            temperature_units_values_value1["value"] = TMP_CELSIUS;
+            temperature_units_values_value1["value"] = SENSOR_TMP_CELSIUS;
             temperature_units_values_value1["name"] = "celsius";
 
             JsonObject& temperature_units_values_value2 = temperature_units_values.createNestedObject();
-            temperature_units_values_value2["value"] = TMP_FAHRENHEIT;
+            temperature_units_values_value2["value"] = SENSOR_TMP_FAHRENHEIT;
             temperature_units_values_value2["name"] = "fahrenheit";
 
             JsonObject& temperature_correction = configuration.createNestedObject();
@@ -529,7 +528,7 @@ bool _sensorHasMagnitude(
     bool _sensorUpdateConfiguration(
         JsonObject& configuration
     ) {
-        DEBUG_MSG(PSTR("[SENSOR] Updating module\n"));
+        DEBUG_MSG(PSTR("[INFO][SENSOR] Updating module\n"));
 
         bool is_updated = false;
 
@@ -539,7 +538,7 @@ bool _sensorHasMagnitude(
             && configuration["sensor_read_interval"].as<uint16_t>() <= SENSOR_READ_MAX_INTERVAL
             && configuration["sensor_read_interval"].as<uint16_t>() != getSetting("snsRead").toInt()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_read_interval\" to: %d\n"), configuration["sensor_read_interval"].as<uint16_t>());
+            DEBUG_MSG(PSTR("[INFO][SENSOR] Setting: \"sensor_read_interval\" to: %d\n"), configuration["sensor_read_interval"].as<uint16_t>());
 
             setSetting("snsRead", configuration["sensor_read_interval"].as<uint16_t>());
 
@@ -552,7 +551,7 @@ bool _sensorHasMagnitude(
             && configuration["sensor_report_interval"].as<uint8_t>() <= SENSOR_REPORT_MAX_EVERY
             && configuration["sensor_report_interval"].as<uint8_t>() != getSetting("snsReport").toInt()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_report_interval\" to: %d\n"), configuration["sensor_report_interval"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[INFO][SENSOR] Setting: \"sensor_report_interval\" to: %d\n"), configuration["sensor_report_interval"].as<uint8_t>());
 
             setSetting("snsReport", configuration["sensor_report_interval"].as<uint8_t>());
 
@@ -565,7 +564,7 @@ bool _sensorHasMagnitude(
             && configuration["sensor_save_interval"].as<uint8_t>() <= 200
             && configuration["sensor_save_interval"].as<uint8_t>() != getSetting("snsSave").toInt()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_save_interval\" to: %d\n"), configuration["sensor_save_interval"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[INFO][SENSOR] Setting: \"sensor_save_interval\" to: %d\n"), configuration["sensor_save_interval"].as<uint8_t>());
 
             setSetting("snsSave", configuration["sensor_save_interval"].as<uint8_t>());
 
@@ -575,12 +574,12 @@ bool _sensorHasMagnitude(
         if (
             configuration.containsKey("sensor_power_units")
             && (
-                configuration["sensor_power_units"].as<uint8_t>() == POWER_WATTS
-                || configuration["sensor_power_units"].as<uint8_t>() == POWER_KILOWATTS
+                configuration["sensor_power_units"].as<uint8_t>() == SENSOR_POWER_WATTS
+                || configuration["sensor_power_units"].as<uint8_t>() == SENSOR_POWER_KILOWATTS
             )
             && configuration["sensor_power_units"].as<uint8_t>() != getSetting("pwrUnits").toInt()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_power_units\" to: %d\n"), configuration["sensor_power_units"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[INFO][SENSOR] Setting: \"sensor_power_units\" to: %d\n"), configuration["sensor_power_units"].as<uint8_t>());
 
             setSetting("pwrUnits", configuration["sensor_power_units"].as<uint8_t>());
 
@@ -590,12 +589,12 @@ bool _sensorHasMagnitude(
         if (
             configuration.containsKey("sensor_energy_units")
             && (
-                configuration["sensor_energy_units"].as<uint8_t>() == ENERGY_JOULES
-                || configuration["sensor_energy_units"].as<uint8_t>() == ENERGY_KWH
+                configuration["sensor_energy_units"].as<uint8_t>() == SENSOR_ENERGY_JOULES
+                || configuration["sensor_energy_units"].as<uint8_t>() == SENSOR_ENERGY_KWH
             )
             && configuration["sensor_energy_units"].as<uint8_t>() != getSetting("eneUnits").toInt()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_energy_units\" to: %d\n"), configuration["sensor_energy_units"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[INFO][SENSOR] Setting: \"sensor_energy_units\" to: %d\n"), configuration["sensor_energy_units"].as<uint8_t>());
 
             setSetting("eneUnits", configuration["sensor_energy_units"].as<uint8_t>());
 
@@ -605,12 +604,12 @@ bool _sensorHasMagnitude(
         if (
             configuration.containsKey("sensor_temperature_units")
             && (
-                configuration["sensor_temperature_units"].as<uint8_t>() == TMP_CELSIUS
-                || configuration["sensor_temperature_units"].as<uint8_t>() == TMP_FAHRENHEIT
+                configuration["sensor_temperature_units"].as<uint8_t>() == SENSOR_TMP_CELSIUS
+                || configuration["sensor_temperature_units"].as<uint8_t>() == SENSOR_TMP_FAHRENHEIT
             )
             && configuration["sensor_temperature_units"].as<uint8_t>() != getSetting("tmpUnits").toInt()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_temperature_units\" to: %d\n"), configuration["sensor_temperature_units"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[INFO][SENSOR] Setting: \"sensor_temperature_units\" to: %d\n"), configuration["sensor_temperature_units"].as<uint8_t>());
 
             setSetting("tmpUnits", configuration["sensor_temperature_units"].as<uint8_t>());
 
@@ -623,7 +622,7 @@ bool _sensorHasMagnitude(
             && configuration["sensor_temperature_correction"].as<float>() <= 100
             && configuration["sensor_temperature_correction"].as<float>() != getSetting("tmpCorrection").toFloat()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_temperature_correction\" to: %d\n"), configuration["sensor_temperature_correction"].as<float>());
+            DEBUG_MSG(PSTR("[INFO][SENSOR] Setting: \"sensor_temperature_correction\" to: %d\n"), configuration["sensor_temperature_correction"].as<float>());
 
             setSetting("tmpCorrection", configuration["sensor_temperature_correction"].as<float>());
 
@@ -636,7 +635,7 @@ bool _sensorHasMagnitude(
             && configuration["sensor_humidity_correction"].as<float>() <= 100
             && configuration["sensor_humidity_correction"].as<float>() != getSetting("humCorrection").toFloat()
         )  {
-            DEBUG_MSG(PSTR("[SENSOR] Setting: \"sensor_humidity_correction\" to: %d\n"), configuration["sensor_humidity_correction"].as<float>());
+            DEBUG_MSG(PSTR("[INFO][SENSOR] Setting: \"sensor_humidity_correction\" to: %d\n"), configuration["sensor_humidity_correction"].as<float>());
 
             setSetting("humCorrection", configuration["sensor_humidity_correction"].as<float>());
 
@@ -834,55 +833,62 @@ bool _sensorHasMagnitude(
 // -----------------------------------------------------------------------------
 
 #if FASTYBIRD_SUPPORT
-    void _sensorFastybirdRegisterSensorMagnitude(
-        uint8_t sensorIndex,
-        uint8_t magnitudeIndex
+    void _sensorFastyBirdProperyQuery(
+        const uint8_t channelIndex,
+        const uint8_t propertyIndex
+    ) {
+        fastybird_property_t property = fastybirdGetProperty(propertyIndex);
+
+        for (uint8_t i = 0; i < _sensors.size(); i++) {
+            // Get sensor info from register
+            BaseSensor * sensor = _sensors[i];
+
+            for (uint8_t j = 0; j < sensor->count(); j++) {
+                if (sensorMagnitudeName(sensor->type(j)).equals(property.name)) {
+                    sensor_magnitude_t magnitude = _magnitudes[j];
+
+                    double value = magnitude.filter->result();
+                    value = _sensorMagnitudeProcess(magnitude.type, magnitude.decimals, value);
+                    
+                    uint8_t decimals = magnitude.decimals;
+
+                    char buffer[10];
+
+                    dtostrf(value, 1 - sizeof(buffer), decimals, buffer);
+
+                    fastybirdReportChannelPropertyValue(
+                        FASTYBIRD_SENSOR1_CHANNEL_INDEX,
+                        fastybirdFindChannelPropertyIndex(FASTYBIRD_SENSOR1_CHANNEL_INDEX, sensorMagnitudeName(sensor->type(j))),
+                        buffer
+                    );
+                }
+            }
+        }
+    }
+
+// -----------------------------------------------------------------------------
+
+    void _sensorFastyBirdRegisterSensorMagnitude(
+        const uint8_t sensorIndex,
+        const uint8_t magnitudeIndex
     ) {
         // Get sensor info from register
         BaseSensor * sensor = _sensors[sensorIndex];
 
         // Create magnitude property structure
-        fastybird_channel_property_t property = {
-            sensorMagnitudeName(sensor->type(magnitudeIndex)),
-            sensorMagnitudeType(sensor->type(magnitudeIndex)),
-            false,
-            true,
+        uint8_t propertyIndex = fastybirdRegisterProperty(
+            sensorMagnitudeName(sensor->type(magnitudeIndex)).c_str(),
             FASTYBIRD_PROPERTY_DATA_TYPE_FLOAT,
-            sensorMagnitudeUnits(sensor->type(magnitudeIndex)),
-        };
+            sensorMagnitudeUnits(sensor->type(magnitudeIndex)).c_str(),
+            "",
+            _sensorFastyBirdProperyQuery
+        );
 
-        property.queryCallback = ([sensorIndex, magnitudeIndex](uint8_t channel, const char * payload) {
-            BaseSensor * sensor = _sensors[sensorIndex];
-
-            sensor_magnitude_t magnitude = _magnitudes[magnitudeIndex];
-
-            double value = magnitude.filter->result();
-            value = _sensorMagnitudeProcess(magnitude.type, magnitude.decimals, value);
-            
-            uint8_t decimals = magnitude.decimals;
-
-            char buffer[10];
-
-            dtostrf(value, 1 - sizeof(buffer), decimals, buffer);
-
-            fastybirdReportChannelPropertyValue(
-                SENSOR1_CHANNEL,
-                sensorMagnitudeName(sensor->type(magnitudeIndex)),
-                buffer
-            );
-        });
-
-        // Register magnitude property into fastybird
-        uint8_t propertyIndex = fastybirdRegisterChannelProperty(property);
-
-        // Register magnitude property into channel container
-        // TODO: now only one sensor per device supported
-        fastybirdRegisterPropertyToChannel(SENSOR1_CHANNEL, propertyIndex);
+        // Register property to channel
+        fastybirdMapPropertyToChannel(FASTYBIRD_SENSOR1_CHANNEL_INDEX, propertyIndex);
     }
 
-// -----------------------------------------------------------------------------
-
-    void _sensorFastybirdRegisterSensor(
+    void _sensorFastyBirdRegisterSensor(
         uint8_t sensorIndex
     ) {
         // Get sensor info from register
@@ -890,14 +896,15 @@ bool _sensorHasMagnitude(
 
         // Process all sensor magnitudes
         for (uint8_t i = 0; i < sensor->count(); i++) {
-            _sensorFastybirdRegisterSensorMagnitude(sensorIndex, i);
+            _sensorFastyBirdRegisterSensorMagnitude(sensorIndex, i);
         }
     }
 #endif
 
 // -----------------------------------------------------------------------------
 
-void _sensorTick() {
+void _sensorTick()
+{
     for (uint8_t i = 0; i < _sensors.size(); i++) {
         _sensors[i]->tick();
     }
@@ -905,12 +912,13 @@ void _sensorTick() {
 
 // -----------------------------------------------------------------------------
 
-void _sensorPreRead() {
+void _sensorPreRead()
+{
     for (uint8_t i = 0; i < _sensors.size(); i++) {
         _sensors[i]->pre();
 
         if (!_sensors[i]->status()) {
-            DEBUG_MSG(PSTR("[SENSOR] Error reading data from %s (error: %d)\n"),
+            DEBUG_MSG(PSTR("[INFO][SENSOR] Error reading data from %s (error: %d)\n"),
                 _sensors[i]->description().c_str(),
                 _sensors[i]->error()
             );
@@ -920,7 +928,8 @@ void _sensorPreRead() {
 
 // -----------------------------------------------------------------------------
 
-void _sensorPost() {
+void _sensorPost()
+{
     for (uint8_t i = 0; i < _sensors.size(); i++) {
         _sensors[i]->post();
     }
@@ -928,7 +937,8 @@ void _sensorPost() {
 
 // -----------------------------------------------------------------------------
 
-double _sensorEnergyTotal() {
+double _sensorEnergyTotal()
+{
     double value = 0;
 
     if (rtcmemStatus()) {
@@ -966,7 +976,8 @@ void _sensorEnergyTotal(
 // Sensor initialization
 // -----------------------------------------------------------------------------
 
-void _sensorLoad() {
+void _sensorLoad()
+{
     /*
 
     This is temporal, in the future sensors will be initialized based on
@@ -1018,7 +1029,7 @@ void _sensorCallback(
     uint8_t type,
     double value
 ) {
-    DEBUG_MSG(PSTR("[SENSOR] Sensor #%u callback, type %u, payload: '%s'\n"), i, type, String(value).c_str());
+    DEBUG_MSG(PSTR("[INFO][SENSOR] Sensor #%u callback, type %u, payload: '%s'\n"), i, type, String(value).c_str());
 
     for (uint8_t k = 0; k < _magnitudes.size(); k++) {
         if ((_sensors[i] == _magnitudes[k].sensor) && (type == _magnitudes[k].type)) {
@@ -1030,7 +1041,8 @@ void _sensorCallback(
 
 // -----------------------------------------------------------------------------
 
-void _sensorInit() {
+void _sensorInit()
+{
     _sensor_ready = true;
     _sensor_save_every = getSetting("snsSave", 0).toInt();
 
@@ -1040,14 +1052,14 @@ void _sensorInit() {
             continue;
         }
 
-        DEBUG_MSG(PSTR("[SENSOR] Initializing %s\n"), _sensors[i]->description().c_str());
+        DEBUG_MSG(PSTR("[INFO][SENSOR] Initializing %s\n"), _sensors[i]->description().c_str());
 
         // Force sensor to reload config
         _sensors[i]->begin();
 
         if (!_sensors[i]->ready()) {
             if (_sensors[i]->error() != 0) {
-                DEBUG_MSG(PSTR("[SENSOR]  -> ERROR %d\n"), _sensors[i]->error());
+                DEBUG_MSG(PSTR("[INFO][SENSOR]  -> ERROR %d\n"), _sensors[i]->error());
             }
 
             _sensor_ready = false;
@@ -1080,13 +1092,13 @@ void _sensorInit() {
 
             // TODO: find a proper way to extend this to min/max of any magnitude
             if (type == MAGNITUDE_ENERGY) {
-                new_magnitude.max_change = getSetting("eneMaxDelta", ENERGY_MAX_CHANGE).toFloat();
+                new_magnitude.max_change = getSetting("eneMaxDelta", SENSOR_ENERGY_MAX_CHANGE).toFloat();
 
             } else if (type == MAGNITUDE_TEMPERATURE) {
-                new_magnitude.min_change = getSetting("tmpMinDelta", TEMPERATURE_MIN_CHANGE).toFloat();
+                new_magnitude.min_change = getSetting("tmpMinDelta", SENSOR_TEMPERATURE_MIN_CHANGE).toFloat();
 
             } else if (type == MAGNITUDE_HUMIDITY) {
-                new_magnitude.min_change = getSetting("humMinDelta", HUMIDITY_MIN_CHANGE).toFloat();
+                new_magnitude.min_change = getSetting("humMinDelta", SENSOR_HUMIDITY_MIN_CHANGE).toFloat();
             }
 
             if (type == MAGNITUDE_ENERGY) {
@@ -1109,7 +1121,7 @@ void _sensorInit() {
 
             _magnitudes.push_back(new_magnitude);
 
-            DEBUG_MSG(PSTR("[SENSOR]  -> %s:%d\n"), sensorMagnitudeName(new_magnitude.type).c_str(), _sensor_magnitudes_count[type]);
+            DEBUG_MSG(PSTR("[INFO][SENSOR]  -> %s:%d\n"), sensorMagnitudeName(new_magnitude.type).c_str(), _sensor_magnitudes_count[type]);
 
             // Magnitudes counter
             _sensor_magnitudes_count[type] = _sensor_magnitudes_count[type] + 1;
@@ -1193,7 +1205,8 @@ void _sensorInit() {
 
 // -----------------------------------------------------------------------------
 
-void _sensorConfigure() {
+void _sensorConfigure()
+{
     // General sensor settings
     _sensor_read_interval = 1000 * constrain(getSetting("snsRead", SENSOR_READ_INTERVAL).toInt(), SENSOR_READ_MIN_INTERVAL, SENSOR_READ_MAX_INTERVAL);
     _sensor_report_every = constrain(getSetting("snsReport", SENSOR_REPORT_EVERY).toInt(), SENSOR_REPORT_MIN_EVERY, SENSOR_REPORT_MAX_EVERY);
@@ -1296,8 +1309,8 @@ void _sensorReport(
 
     #if FASTYBIRD_SUPPORT
         fastybirdReportChannelPropertyValue(
-            SENSOR1_CHANNEL,
-            sensorMagnitudeName(magnitude.type),
+            FASTYBIRD_SENSOR1_CHANNEL_INDEX,
+            fastybirdFindChannelPropertyIndex(FASTYBIRD_SENSOR1_CHANNEL_INDEX, sensorMagnitudeName(magnitude.type)),
             buffer
         );
     #endif
@@ -1307,20 +1320,22 @@ void _sensorReport(
 // MODULE API
 // -----------------------------------------------------------------------------
 
-uint8_t sensorCount() {
+uint8_t sensorCount()
+{
     return _sensors.size();
 }
 
 // -----------------------------------------------------------------------------
 
-uint8_t sensorMagnitudeCount() {
+uint8_t sensorMagnitudeCount()
+{
     return _magnitudes.size();
 }
 
 // -----------------------------------------------------------------------------
 
 String sensorMagnitudeName(
-    uint8_t type
+    const uint8_t type
 ) {
     char buffer[16] = {0};
 
@@ -1379,7 +1394,7 @@ String sensorMagnitudeUnits(
     if (type < MAGNITUDE_MAX) {
         if (
             type == MAGNITUDE_TEMPERATURE
-            && _sensor_temperature_units == TMP_FAHRENHEIT
+            && _sensor_temperature_units == SENSOR_TMP_FAHRENHEIT
         ) {
             strncpy_P(buffer, magnitude_fahrenheit, sizeof(buffer));
 
@@ -1388,7 +1403,7 @@ String sensorMagnitudeUnits(
                 type == MAGNITUDE_ENERGY
                 || type == MAGNITUDE_ENERGY_DELTA
             )
-            && _sensor_energy_units == ENERGY_KWH
+            && _sensor_energy_units == SENSOR_ENERGY_KWH
         ) {
             strncpy_P(buffer, magnitude_kwh, sizeof(buffer));
 
@@ -1398,7 +1413,7 @@ String sensorMagnitudeUnits(
                 || type == MAGNITUDE_POWER_APPARENT
                 || type == MAGNITUDE_POWER_REACTIVE
             )
-            && _sensor_power_units == POWER_KILOWATTS
+            && _sensor_power_units == SENSOR_POWER_KILOWATTS
         ) {
             strncpy_P(buffer, magnitude_kw, sizeof(buffer));
 
@@ -1414,7 +1429,8 @@ String sensorMagnitudeUnits(
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void sensorSetup() {
+void sensorSetup()
+{
     // Load sensors
     _sensorLoad();
     _sensorInit();
@@ -1444,7 +1460,7 @@ void sensorSetup() {
             // Process all device sensors
             for (uint8_t i = 0; i < sensorCount(); i++) {
                 // Register device structure
-                _sensorFastybirdRegisterSensor(i);
+                _sensorFastyBirdRegisterSensor(i);
             }
 
             fastybirdOnConnectRegister([](){
@@ -1459,8 +1475,8 @@ void sensorSetup() {
                     dtostrf(value, 1 - sizeof(buffer), decimals, buffer);
 
                     fastybirdReportChannelPropertyValue(
-                        SENSOR1_CHANNEL,
-                        sensorMagnitudeName(_magnitudes[i].type),
+                        FASTYBIRD_SENSOR1_CHANNEL_INDEX,
+                        fastybirdFindChannelPropertyIndex(FASTYBIRD_SENSOR1_CHANNEL_INDEX, sensorMagnitudeName(_magnitudes[i].type)),
                         buffer
                     );
                 }
@@ -1468,12 +1484,13 @@ void sensorSetup() {
         }
     #endif
 
-    DEBUG_MSG(PSTR("[SENSOR] Number of sensors: %d and magnitudes: %d\n"), sensorCount(), sensorMagnitudeCount());
+    DEBUG_MSG(PSTR("[INFO][SENSOR] Number of sensors: %d and magnitudes: %d\n"), sensorCount(), sensorMagnitudeCount());
 }
 
 // -----------------------------------------------------------------------------
 
-void sensorLoop() {
+void sensorLoop()
+{
     // Check if we still have uninitialized sensors
     static uint32_t last_init = 0;
 
@@ -1571,7 +1588,7 @@ void sensorLoop() {
 
                     dtostrf(value_show, 1 - sizeof(buffer), magnitude.decimals, buffer);
 
-                    DEBUG_MSG(PSTR("[SENSOR] %s - %s: %s%s\n"),
+                    DEBUG_MSG(PSTR("[INFO][SENSOR] %s - %s: %s%s\n"),
                         magnitude.sensor->slot(magnitude.local).c_str(),
                         sensorMagnitudeName(magnitude.type).c_str(),
                         buffer,

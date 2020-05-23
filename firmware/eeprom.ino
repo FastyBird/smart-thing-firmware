@@ -2,13 +2,9 @@
 
 EEPROM MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
-
-#include <EEPROM_Rotate.h>
-
-// =============================================================================
 
 bool _eeprom_commit = false;
 bool _eeprom_last_commit_result = false;
@@ -18,7 +14,8 @@ uint32_t _eeprom_commit_count = 0;
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-bool _eepromCommit() {
+bool _eepromCommit()
+{
     _eeprom_commit_count++;
     _eeprom_last_commit_result = EEPROMr.commit();
 
@@ -34,10 +31,10 @@ void eepromRotate(bool value) {
     // reserved by the memory layout
     if (EEPROMr.size() > EEPROMr.reserved()) {
         if (value) {
-            DEBUG_MSG(PSTR("[EEPROM] Reenabling EEPROM rotation\n"));
+            DEBUG_MSG(PSTR("[INFO][EEPROM] Reenabling EEPROM rotation\n"));
 
         } else {
-            DEBUG_MSG(PSTR("[EEPROM] Disabling EEPROM rotation\n"));
+            DEBUG_MSG(PSTR("[INFO][EEPROM] Disabling EEPROM rotation\n"));
         }
 
         EEPROMr.rotate(value);
@@ -46,13 +43,15 @@ void eepromRotate(bool value) {
 
 // -----------------------------------------------------------------------------
 
-uint32_t eepromCurrent() {
+uint32_t eepromCurrent()
+{
     return EEPROMr.current();
 }
 
 // -----------------------------------------------------------------------------
 
-String eepromSectors() {
+String eepromSectors()
+{
     String response;
 
     for (uint32_t i = 0; i < EEPROMr.size(); i++) {
@@ -65,14 +64,16 @@ String eepromSectors() {
 
 // -----------------------------------------------------------------------------
 
-void eepromSectorsDebug() {
-    DEBUG_MSG(PSTR("[MAIN] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
-    DEBUG_MSG(PSTR("[MAIN] EEPROM current: %lu\n"), eepromCurrent());
+void eepromSectorsDebug()
+{
+    DEBUG_MSG(PSTR("[INFO][EEPROM] EEPROM sectors: %s\n"), (char *) eepromSectors().c_str());
+    DEBUG_MSG(PSTR("[INFO][EEPROM] EEPROM current: %lu\n"), eepromCurrent());
 }
 
 // -----------------------------------------------------------------------------
 
-void eepromCommit() {
+void eepromCommit()
+{
     _eeprom_commit = true;
 }
 
@@ -80,7 +81,8 @@ void eepromCommit() {
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void eepromSetup() {
+void eepromSetup()
+{
     #ifdef EEPROM_ROTATE_SECTORS
         EEPROMr.size(EEPROM_ROTATE_SECTORS);
     #else
@@ -104,7 +106,8 @@ void eepromSetup() {
 
 // -----------------------------------------------------------------------------
 
-void eepromLoop() {
+void eepromLoop()
+{
     if (_eeprom_commit) {
         _eepromCommit();
         _eeprom_commit = false;

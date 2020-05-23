@@ -2,12 +2,9 @@
 
 RESET MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
-
-#include <Ticker.h>
-#include <EEPROM_Rotate.h>
 
 Ticker _defer_reset;
 
@@ -25,7 +22,8 @@ union reset_rtcmem_t {
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-uint8_t _resetReason() {
+uint8_t _resetReason()
+{
     reset_rtcmem_t data;
 
     data.value = Rtcmem->sys;
@@ -51,13 +49,15 @@ void _resetReason(
 // -----------------------------------------------------------------------------
 
 // system_get_rst_info() result is cached by the Core init for internal use
-uint32_t resetReasonSystem() {
+uint32_t resetReasonSystem()
+{
     return resetInfo.reason;
 }
 
 // -----------------------------------------------------------------------------
 
-uint8_t resetReason() {
+uint8_t resetReason()
+{
     static uint8_t status = 255;
 
     if (status == 255) {
@@ -89,7 +89,8 @@ void resetReason(
 
 // -----------------------------------------------------------------------------
 
-void reset() {
+void reset()
+{
     ESP.restart();
 }
 
@@ -104,6 +105,7 @@ void deferredReset(
 
 // -----------------------------------------------------------------------------
 
-bool checkNeedsReset() {
+bool checkNeedsReset()
+{
     return _reset_reason > 0;
 }

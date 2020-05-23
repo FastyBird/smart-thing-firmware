@@ -2,7 +2,7 @@
 
 LED MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
@@ -17,7 +17,8 @@ uint8_t _system_led_mode = STATUS_LED_MODE;
 /**
  * Get status of given LED
  */
-bool _ledStatus() {
+bool _ledStatus()
+{
     bool status = digitalRead(STATUS_LED_PIN);
 
     return STATUS_LED_PIN_INVERSE ? !status : status;
@@ -41,7 +42,8 @@ bool _ledStatus(
 /**
  * Toggle status of given LED
  */
-bool _ledToggle() {
+bool _ledToggle()
+{
     return _ledStatus(!_ledStatus());
 }
 
@@ -50,7 +52,8 @@ bool _ledToggle() {
 /**
  * Get mode of given LED
  */
-uint8_t _ledMode() {
+uint8_t _ledMode()
+{
     return _system_led_mode;
 }
 
@@ -134,7 +137,7 @@ void _ledBlink(
     bool _ledUpdateConfiguration(
         JsonObject& configuration
     ) {
-        DEBUG_MSG(PSTR("[LED] Updating module\n"));
+        DEBUG_MSG(PSTR("[INFO][LED] Updating module\n"));
 
         bool is_updated = false;
 
@@ -147,7 +150,7 @@ void _ledBlink(
             )
             && configuration["led_mode"].as<uint8_t>() != getSetting("ledMode").toInt()
         )  {
-            DEBUG_MSG(PSTR("[LED] Setting: \"led_mode\" to: %d\n"), configuration["led_mode"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[INFO][LED] Setting: \"led_mode\" to: %d\n"), configuration["led_mode"].as<uint8_t>());
 
             setSetting("ledMode", configuration["led_mode"].as<uint8_t>());
 
@@ -221,7 +224,8 @@ void _ledBlink(
 /**
  * Initialize all configured LEDs
  */
-void _ledInitialize() {
+void _ledInitialize()
+{
     _ledMode(getSetting("ledMode", STATUS_LED_MODE).toInt());
 }
 
@@ -229,7 +233,8 @@ void _ledInitialize() {
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void ledSetup() {
+void ledSetup()
+{
     _system_led_mode = STATUS_LED_MODE;
 
     if (!hasSetting("ledMode")) {
@@ -261,7 +266,8 @@ void ledSetup() {
 
 // -----------------------------------------------------------------------------
 
-void ledLoop() {
+void ledLoop()
+{
     #if WIFI_SUPPORT
         if (_ledMode() == LED_MODE_WIFI) {
             if (wifiState() & WIFI_STATE_STA) {

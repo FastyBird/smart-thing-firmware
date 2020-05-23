@@ -2,24 +2,20 @@
 
 RELAY MODULE
 
-Copyright (C) 2017 - 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2017 - 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
 #if RELAY_PROVIDER != RELAY_PROVIDER_NONE
 
 #include <EEPROM.h>
-#include <Ticker.h>
-#include <ArduinoJson.h>
-#include <vector>
-#include <functional>
 
 typedef struct {
     // Configuration variables
     uint8_t pin;            // GPIO pin for the relay
     uint8_t type;           // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
     uint8_t reset_pin;      // GPIO to reset the relay if RELAY_TYPE_LATCHED
-    uint8_t channel;        // Communication channel number
+    uint8_t channel_index;  // Communication channel number
     uint32_t delay_on;      // Delay to turn relay ON
     uint32_t delay_off;     // Delay to turn relay OFF
     uint8_t pulse;          // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
@@ -40,7 +36,7 @@ typedef struct {
 
 std::vector<relay_t> _relays;
 
-bool _relayRecursive = false;
+bool _relay_recursive = false;
 
 Ticker _relay_save_ticker;
 
@@ -48,7 +44,8 @@ Ticker _relay_save_ticker;
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-void _relayConfigure() {
+void _relayConfigure()
+{
     for (uint8_t i = 0; i < _relays.size(); i++) {
         _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
         _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_TIME).toFloat();
@@ -72,8 +69,9 @@ void _relayConfigure() {
 
 // -----------------------------------------------------------------------------
 
-void _relayBoot() {
-    _relayRecursive = true;
+void _relayBoot()
+{
+    _relay_recursive = true;
 
     uint8_t bit = 1;
     bool trigger_save = false;
@@ -86,7 +84,7 @@ void _relayBoot() {
         stored_mask = EEPROMr.read(EEPROM_RELAY_STATUS);
     }
 
-    DEBUG_MSG(PSTR("[RELAY] Retrieving mask: %d\n"), stored_mask);
+    DEBUG_MSG(PSTR("[INFO][RELAY] Retrieving mask: %d\n"), stored_mask);
 
     auto mask = std::bitset<RELAY_SAVE_MASK_MAX>(stored_mask);
 
@@ -96,7 +94,7 @@ void _relayBoot() {
     for (uint8_t i = 0; i < _relays.size(); i++) {
         uint8_t boot_mode = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
 
-        DEBUG_MSG(PSTR("[RELAY] Relay #%d boot mode %d\n"), i, boot_mode);
+        DEBUG_MSG(PSTR("[INFO][RELAY] Relay #%d boot mode %d\n"), i, boot_mode);
 
         status = false;
 
@@ -144,7 +142,7 @@ void _relayBoot() {
         eepromCommit();
     }
 
-    _relayRecursive = false;
+    _relay_recursive = false;
 }
 
 // -----------------------------------------------------------------------------
@@ -250,7 +248,7 @@ uint8_t _relayParsePayload(
     bool _relayUpdateConfiguration(
         JsonObject& configuration
     ) {
-        DEBUG_MSG(PSTR("[RELAY] Updating module\n"));
+        DEBUG_MSG(PSTR("[INFO][RELAY] Updating module\n"));
 
         if (relayCount() > 1) {
             if (
@@ -273,7 +271,7 @@ uint8_t _relayParsePayload(
 
 // -----------------------------------------------------------------------------
 
-    void _relayReportChannelConfigurationSchema(
+    void _relayReportRelayConfigurationSchema(
         JsonArray& container
     ) {
         JsonObject& relayMode = container.createNestedObject();
@@ -358,7 +356,7 @@ uint8_t _relayParsePayload(
 
 // -----------------------------------------------------------------------------
 
-    void _relayReportChannelConfiguration(
+    void _relayReportRelayConfiguration(
         const uint8_t id,
         JsonObject& configuration
     ) {
@@ -370,16 +368,16 @@ uint8_t _relayParsePayload(
 
 // -----------------------------------------------------------------------------
 
-    bool _relayConfigureChannel(
+    bool _relayRelayConfigure(
         const uint8_t id,
         JsonObject& configuration
     ) {
-        DEBUG_MSG(PSTR("[RELAY] Updating channel: %d\n"), id);
+        DEBUG_MSG(PSTR("[INFO][RELAY] Updating channel: %d\n"), id);
 
         bool is_updated = false;
 
         if (configuration.containsKey("relay_boot"))  {
-            DEBUG_MSG(PSTR("[RELAY] Setting: \"relay_boot\" to: %d\n"), configuration["relay_boot"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[INFO][RELAY] Setting: \"relay_boot\" to: %d\n"), configuration["relay_boot"].as<uint8_t>());
 
             setSetting("relayBoot", id, configuration["relay_boot"].as<uint8_t>());
 
@@ -387,7 +385,7 @@ uint8_t _relayParsePayload(
         }
 
         if (configuration.containsKey("pulse_mode"))  {
-            DEBUG_MSG(PSTR("[RELAY] Setting: \"pulse_mode\" to: %d\n"), configuration["pulse_mode"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[INFO][RELAY] Setting: \"pulse_mode\" to: %d\n"), configuration["pulse_mode"].as<uint8_t>());
 
             setSetting("relayPulseMode", id, configuration["pulse_mode"].as<uint8_t>());
 
@@ -399,7 +397,7 @@ uint8_t _relayParsePayload(
             && configuration["pulse_time"].as<float>() >= 1.0
             && configuration["pulse_time"].as<float>() <= 60.0
         )  {
-            DEBUG_MSG(PSTR("[RELAY] Setting: \"pulse_time\" to: %d\n"), configuration["pulse_time"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[INFO][RELAY] Setting: \"pulse_time\" to: %d\n"), configuration["pulse_time"].as<uint8_t>());
 
             setSetting("relayPulseTime", id, configuration["pulse_time"].as<float>());
 
@@ -407,7 +405,7 @@ uint8_t _relayParsePayload(
         }
 
         if (configuration.containsKey("on_disconnect"))  {
-            DEBUG_MSG(PSTR("[RELAY] Setting: \"on_disconnect\" to: %d\n"), configuration["on_disconnect"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[INFO][RELAY] Setting: \"on_disconnect\" to: %d\n"), configuration["on_disconnect"].as<uint8_t>());
 
             setSetting("relayOnDisc", id, configuration["on_disconnect"].as<uint8_t>());
 
@@ -489,7 +487,7 @@ uint8_t _relayParsePayload(
         // Channels configuration schema container
         JsonArray& channels_configuration_schema = channels_configuration.createNestedArray("schema");
 
-        _relayReportChannelConfigurationSchema(channels_configuration_schema);
+        _relayReportRelayConfigurationSchema(channels_configuration_schema);
 
         // Channels configuration values container
         JsonArray& channels_configuration_values = channels_configuration.createNestedArray("values");
@@ -497,7 +495,7 @@ uint8_t _relayParsePayload(
         for (uint8_t i = 0; i < relayCount(); i++) {
             JsonObject& channel_configuration_value = channels_configuration_values.createNestedObject();
 
-            _relayReportChannelConfiguration(i, channel_configuration_value);
+            _relayReportRelayConfiguration(i, channel_configuration_value);
             channel_configuration_value["gpio"] = _relays[i].pin;
         }
     }
@@ -511,7 +509,7 @@ uint8_t _relayParsePayload(
     ) {
         if (module.containsKey("module") && module["module"] == "relay") {
             if (module.containsKey("config")) {
-                DEBUG_MSG(PSTR("[RELAY] Found configuration for module\n"));
+                DEBUG_MSG(PSTR("[INFO][RELAY] Found configuration for module\n"));
 
                 bool is_configuration_updated = false;
 
@@ -527,8 +525,22 @@ uint8_t _relayParsePayload(
 
                     if (channels_configuration.containsKey("values")) {
                         for (uint8_t i = 0; i < channels_configuration["values"].size(); i++) {
-                            if (_relayConfigureChannel(i, channels_configuration["values"][i])) {
+                            if (_relayRelayConfigure(i, channels_configuration["values"][i])) {
                                 is_configuration_updated = true;
+
+                                #if FASTYBIRD_SUPPORT
+                                    DynamicJsonBuffer jsonBuffer;
+
+                                    JsonObject& configuration = jsonBuffer.createObject();
+
+                                    fastybirdCallReportChannelConfiguration(_relays[i].channel_index, configuration);
+
+                                    fastybird_channel_t channel = fastybirdGetChannel(_relays[i].channel_index);
+
+                                    if (configuration.size() > 0) {
+                                        fastybirdApiPropagateChannelConfiguration(channel.name.c_str(), configuration);
+                                    }
+                                #endif
                             }
                         }
                     }
@@ -598,90 +610,139 @@ uint8_t _relayParsePayload(
 
 // -----------------------------------------------------------------------------
 
-#if FASTYBIRD_SUPPORT
-    void _relayFastybirdRegisterRealy(
-        const uint8_t id
+#if FASTYBIRD_SUPPORT && FASTYBIRD_MAX_CHANNELS > 0
+    void _relayFastyBirdProperyPayload(
+        const uint8_t channelIndex,
+        const uint8_t propertyIndex,
+        const char * payload
     ) {
-        // Check relay ID
-        if (id >= _relays.size()) {
-            return;
-        }
-        
-        fastybird_channel_property_t property = {
-            FASTYBIRD_PROPERTY_SWITCH,
-            FASTYBIRD_PROPERTY_SWITCH,
-            true,
-            true,
-            FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
-            FASTYBIRD_EMPTY_VALUE,
-        };
+        for (uint8_t i = 0; i < _relays.size(); i++) {
+            if (_relays[i].channel_index == channelIndex) {
+                // Toggle relay status
+                if (strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE) == 0) {
+                    relayToggle(i);
 
-        char format[30];
-
-        strcpy(format, FASTYBIRD_SWITCH_PAYLOAD_ON);
-        strcat(format, ",");
-        strcat(format, FASTYBIRD_SWITCH_PAYLOAD_OFF);
-        strcat(format, ",");
-        strcat(format, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE);
-
-        property.format = String(format);
-
-        property.payloadCallback = ([id](uint8_t channel, const char * payload) {
-            // Toggle relay status
-            if (strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE) == 0) {
-                relayToggle(id);
-
-            // Set relay status
-            } else {
-                relayStatus(id, strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_ON) == 0);
+                // Set relay status
+                } else {
+                    relayStatus(i, strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_ON) == 0);
+                }
             }
-        });
-
-        property.queryCallback = ([id](uint8_t channel, const char * payload) {
-            fastybirdReportChannelPropertyValue(
-                _relays[id].channel,
-                FASTYBIRD_PROPERTY_SWITCH,
-                relayStatus(id) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
-            );
-        });
-
-        // Register channel property into fastybird
-        uint8_t propertyIndex = fastybirdRegisterChannelProperty(property);
-
-        // Process all relays
-        if (_relays[id].channel != INDEX_NONE) {
-            fastybirdRegisterPropertyToChannel(_relays[id].channel, propertyIndex);
-            fastybirdRegisterConfigurationSchemaToChannel(_relays[id].channel, _relayReportChannelConfigurationSchema);
-            fastybirdRegisterConfigurationToChannel(_relays[id].channel, [id](JsonObject& configuration){
-                _relayReportChannelConfiguration(id, configuration);
-            });
-            fastybirdRegisterConfigureActionToChannel(_relays[id].channel, [id](JsonObject& configuration){
-                _relayConfigureChannel(id, configuration);
-
-                DEBUG_MSG(PSTR("[RELAY] Configuration changes were saved\n"));
-            });
         }
     }
 
 // -----------------------------------------------------------------------------
 
-    void _relayFastybirdRegisterRealys() {
+    void _relayFastyBirdProperyQuery(
+        const uint8_t channelIndex,
+        const uint8_t propertyIndex
+    ) {
         for (uint8_t i = 0; i < _relays.size(); i++) {
-            _relayFastybirdRegisterRealy(i);
+            if (_relays[i].channel_index == channelIndex) {
+                fastybirdReportChannelPropertyValue(
+                    channelIndex,
+                    fastybirdFindChannelPropertyIndex(channelIndex, FASTYBIRD_PROPERTY_SWITCH),
+                    relayStatus(i) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
+                );
+            }
         }
     }
-#endif // FASTYBIRD_SUPPORT
+
+// -----------------------------------------------------------------------------
+
+    void _relayFastyBirdChannelReportConfigurationSchema(
+        const uint8_t channelIndex,
+        JsonArray& schema
+    ) {
+        for (uint8_t i = 0; i < _relays.size(); i++) {
+            if (_relays[i].channel_index == channelIndex) {
+                _relayReportRelayConfigurationSchema(schema);
+            }
+        }
+    }
+
+// -----------------------------------------------------------------------------
+
+    void _relayFastyBirdChannelReportConfiguration(
+        const uint8_t channelIndex,
+        JsonObject& configuration
+    ) {
+        for (uint8_t i = 0; i < _relays.size(); i++) {
+            if (_relays[i].channel_index == channelIndex) {
+                _relayReportRelayConfiguration(i, configuration);
+            }
+        }
+    }
+
+// -----------------------------------------------------------------------------
+
+    void _relayFastyBirdChannelConfigure(
+        const uint8_t channelIndex,
+        JsonObject& configuration
+    ) {
+        for (uint8_t i = 0; i < _relays.size(); i++) {
+            if (_relays[i].channel_index == channelIndex) {
+                _relayRelayConfigure(i, configuration);
+
+                DEBUG_MSG(PSTR("[INFO][RELAY] Configuration changes were saved\n"));
+            }
+        }
+    }
+
+// -----------------------------------------------------------------------------
+
+    void _relayFastyBirdRegisterRealys()
+    {
+        bool has_channel = false;
+
+        for (uint8_t i = 0; i < _relays.size(); i++) {
+            if (_relays[i].channel_index != INDEX_NONE) {
+                has_channel = true;
+            }
+        }
+
+        if (has_channel) {
+            char format[30];
+
+            strcpy(format, FASTYBIRD_SWITCH_PAYLOAD_ON);
+            strcat(format, ",");
+            strcat(format, FASTYBIRD_SWITCH_PAYLOAD_OFF);
+            strcat(format, ",");
+            strcat(format, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE);
+
+            // Create relay property structure
+            uint8_t propertyIndex = fastybirdRegisterProperty(
+                FASTYBIRD_PROPERTY_SWITCH,
+                FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
+                "",
+                format,
+                _relayFastyBirdProperyPayload,
+                _relayFastyBirdProperyQuery
+            );
+
+            for (uint8_t i = 0; i < _relays.size(); i++) {
+                // Register property to channel
+                fastybirdMapPropertyToChannel(_relays[i].channel_index, propertyIndex);
+
+                fastybirdReportChannelConfigurationSchemaRegister(_relays[i].channel_index, _relayFastyBirdChannelReportConfigurationSchema);
+                fastybirdReportChannelConfigurationRegister(_relays[i].channel_index, _relayFastyBirdChannelReportConfiguration);
+                fastybirdOnChannelConfigureRegister(_relays[i].channel_index, _relayFastyBirdChannelConfigure);
+            }
+        }
+    }
+#endif // FASTYBIRD_SUPPORT && FASTYBIRD_MAX_CHANNELS > 0
 
 // -----------------------------------------------------------------------------
 
 #if MQTT_SUPPORT
-    void _relayMQTTOnConnect() {
+    void _relayMQTTOnConnect()
+    {
         // TODO: implement functionality
     }
 
 // -----------------------------------------------------------------------------
 
-    void _relayMQTTOnDisconnect() {
+    void _relayMQTTOnDisconnect()
+    {
         // TODO: implement functionality
     }
 #endif // MQTT_SUPPORT
@@ -698,7 +759,8 @@ void _relayMaskRtcmem(
 
 // -----------------------------------------------------------------------------
 
-uint32_t _relayMaskRtcmem() {
+uint32_t _relayMaskRtcmem()
+{
     return Rtcmem->relay;
 }
 
@@ -849,21 +911,21 @@ void _relayProcess(
             continue;
         }
 
-        DEBUG_MSG(PSTR("[RELAY] #%d set to %s\n"), id, target ? "ON" : "OFF");
+        DEBUG_MSG(PSTR("[INFO][RELAY] #%d set to %s\n"), id, target ? "ON" : "OFF");
 
         // Call the provider to perform the action
         _relayProviderStatus(id, target);
 
         // Send to Broker
-        #if FASTYBIRD_SUPPORT
+        #if FASTYBIRD_SUPPORT && FASTYBIRD_MAX_CHANNELS > 0
             fastybirdReportChannelPropertyValue(
-                _relays[id].channel,
-                FASTYBIRD_PROPERTY_SWITCH,
+                _relays[id].channel_index,
+                fastybirdFindChannelPropertyIndex(_relays[id].channel_index, FASTYBIRD_PROPERTY_SWITCH),
                 target ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
             );
         #endif
 
-        if (!_relayRecursive) {
+        if (!_relay_recursive) {
             relayPulse(id);
 
             // We will trigger a commit only if
@@ -907,7 +969,7 @@ void relayPulse(
     bool pulseStatus = (mode == RELAY_PULSE_ON);
 
     if (pulseStatus != status) {
-        DEBUG_MSG(PSTR("[RELAY] Scheduling relay #%d back in %lums (pulse)\n"), id, ms);
+        DEBUG_MSG(PSTR("[INFO][RELAY] Scheduling relay #%d back in %lums (pulse)\n"), id, ms);
 
         _relays[id].pulseTicker.once_ms(ms, relayToggle, id);
 
@@ -932,7 +994,7 @@ bool relayStatus(
 
     if (_relays[id].current_status == status) {
         if (_relays[id].target_status != status) {
-            DEBUG_MSG(PSTR("[RELAY] #%d scheduled change cancelled\n"), id);
+            DEBUG_MSG(PSTR("[INFO][RELAY] #%d scheduled change cancelled\n"), id);
 
             _relays[id].target_status = status;
             _relays[id].report = false;
@@ -979,7 +1041,7 @@ bool relayStatus(
 
         relaySync(id);
 
-        DEBUG_MSG(PSTR("[RELAY] #%d scheduled %s in %u ms\n"),
+        DEBUG_MSG(PSTR("[INFO][RELAY] #%d scheduled %s in %u ms\n"),
                 id, status ? "ON" : "OFF",
                 (_relays[id].change_time - current_time));
 
@@ -1000,12 +1062,12 @@ void relaySync(
     }
 
     // Do not go on if we are comming from a previous sync
-    if (_relayRecursive) {
+    if (_relay_recursive) {
         return;
     }
 
     // Flag sync mode
-    _relayRecursive = true;
+    _relay_recursive = true;
 
     byte relaySync = getSetting("relaySync", RELAY_SYNC).toInt();
     bool status = _relays[id].target_status;
@@ -1037,12 +1099,13 @@ void relaySync(
     }
 
     // Unflag sync mode
-    _relayRecursive = false;
+    _relay_recursive = false;
 }
 
 // -----------------------------------------------------------------------------
 
-uint8_t relayCount() {
+uint8_t relayCount()
+{
     return _relays.size();
 }
 
@@ -1065,7 +1128,7 @@ void relaySave(
 
     const uint32_t mask_value = mask.to_ulong();
 
-    DEBUG_MSG(PSTR("[RELAY] Setting relay mask: %d\n"), mask);
+    DEBUG_MSG(PSTR("[INFO][RELAY] Setting relay mask: %d\n"), mask);
 
     // Persist only to rtcmem, unless requested to save to the eeprom
     _relayMaskRtcmem(mask_value);
@@ -1085,7 +1148,8 @@ void relaySave(
 
 // -----------------------------------------------------------------------------
 
-void relaySave() {
+void relaySave()
+{
     relaySave(false);
 }
 
@@ -1137,119 +1201,120 @@ bool relayStatus(
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void relaySetup() {
+void relaySetup()
+{
     // Ad-hoc relays
     #if RELAY1_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_CHANNEL, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, FASTYBIRD_RELAY1_CHANNEL_INDEX, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
     #endif
     #if RELAY2_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_CHANNEL, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, FASTYBIRD_RELAY2_CHANNEL_INDEX, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
     #endif
     #if RELAY3_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_CHANNEL, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, FASTYBIRD_RELAY3_CHANNEL_INDEX, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
     #endif
     #if RELAY4_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_CHANNEL, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, FASTYBIRD_RELAY4_CHANNEL_INDEX, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
     #endif
     #if RELAY5_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_CHANNEL, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, FASTYBIRD_RELAY5_CHANNEL_INDEX, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
     #endif
     #if RELAY6_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_CHANNEL, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, FASTYBIRD_RELAY6_CHANNEL_INDEX, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
     #endif
     #if RELAY7_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_CHANNEL, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, FASTYBIRD_RELAY7_CHANNEL_INDEX, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
     #endif
     #if RELAY8_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_CHANNEL, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, FASTYBIRD_RELAY8_CHANNEL_INDEX, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
     #endif
 
     #if BUTTON_SUPPORT
-        #if RELAY1_BTN != INDEX_NONE
+        #if RELAY1_BTN_INDEX != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY1_BTN_EVENT) {
                         relayToggle(0);
                     }
                 },
-                (uint8_t) (RELAY1_BTN - 1)
+                (uint8_t) RELAY1_BTN_INDEX
             );
         #endif
 
-        #if RELAY2_BTN != INDEX_NONE
+        #if RELAY2_BTN_INDEX != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY2_BTN_EVENT) {
                         relayToggle(1);
                     }
                 },
-                (uint8_t) (RELAY2_BTN - 1)
+                (uint8_t) RELAY2_BTN_INDEX
             );
         #endif
 
-        #if RELAY3_BTN != INDEX_NONE
+        #if RELAY3_BTN_INDEX != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY3_BTN_EVENT) {
                         relayToggle(2);
                     }
                 },
-                (uint8_t) (RELAY3_BTN - 1)
+                (uint8_t) RELAY3_BTN_INDEX
             );
         #endif
 
-        #if RELAY4_BTN != INDEX_NONE
+        #if RELAY4_BTN_INDEX != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY4_BTN_EVENT) {
                         relayToggle(3);
                     }
                 },
-                (uint8_t) (RELAY4_BTN - 1)
+                (uint8_t) RELAY4_BTN_INDEX
             );
         #endif
 
-        #if RELAY5_BTN != INDEX_NONE
+        #if RELAY5_BTN_INDEX != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY5_BTN_EVENT) {
                         relayToggle(4);
                     }
                 },
-                (uint8_t) (RELAY5_BTN - 1)
+                (uint8_t) RELAY5_BTN_INDEX
             );
         #endif
 
-        #if RELAY6_BTN != INDEX_NONE
+        #if RELAY6_BTN_INDEX != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY6_BTN_EVENT) {
                         relayToggle(5);
                     }
                 },
-                (uint8_t) (RELAY6_BTN - 1)
+                (uint8_t) RELAY6_BTN_INDEX
             );
         #endif
 
-        #if RELAY7_BTN != INDEX_NONE
+        #if RELAY7_BTN_INDEX != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY7_BTN_EVENT) {
                         relayToggle(6);
                     }
                 },
-                (uint8_t) (RELAY7_BTN - 1)
+                (uint8_t) RELAY7_BTN_INDEX
             );
         #endif
 
-        #if RELAY8_BTN != INDEX_NONE
+        #if RELAY8_BTN_INDEX != INDEX_NONE
             buttonOnEventRegister(
                 [](uint8_t event) {
                     if (event == RELAY8_BTN_EVENT) {
                         relayToggle(7);
                     }
                 },
-                (uint8_t) (RELAY8_BTN - 1)
+                (uint8_t) RELAY8_BTN_INDEX
             );
         #endif
     #endif
@@ -1283,20 +1348,21 @@ void relaySetup() {
         fastybirdReportConfigurationRegister(_relayReportConfiguration);
         fastybirdOnConfigureRegister(_relayUpdateConfiguration);
 
-        // Channels registration
-        if (relayCount() > 0) {
-            _relayFastybirdRegisterRealys();
+        #if FASTYBIRD_MAX_CHANNELS > 0
+            if (relayCount() > 0) {
+                _relayFastyBirdRegisterRealys();
 
-            fastybirdOnConnectRegister([](){
-                for (uint8_t i = 0; i < relayCount(); i++) {
-                    fastybirdReportChannelPropertyValue(
-                        _relays[i].channel,
-                        FASTYBIRD_PROPERTY_SWITCH,
-                        relayStatus(i) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
-                    );
-                }
-            });
-        }
+                fastybirdOnConnectRegister([](){
+                    for (uint8_t i = 0; i < relayCount(); i++) {
+                        fastybirdReportChannelPropertyValue(
+                            _relays[i].channel_index,
+                            fastybirdFindChannelPropertyIndex(_relays[i].channel_index, FASTYBIRD_PROPERTY_SWITCH),
+                            relayStatus(i) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
+                        );
+                    }
+                });
+            }
+        #endif
     #endif
 
     #if MQTT_SUPPORT
@@ -1304,12 +1370,13 @@ void relaySetup() {
         mqttOnDisconnectRegister(_relayMQTTOnDisconnect);
     #endif
 
-    DEBUG_MSG(PSTR("[RELAY] Number of relays: %d\n"), relayCount());
+    DEBUG_MSG(PSTR("[INFO][RELAY] Number of relays: %d\n"), relayCount());
 }
 
 //------------------------------------------------------------------------------
 
-void relayLoop() {
+void relayLoop()
+{
     _relayProcess(false);
     _relayProcess(true);
 }

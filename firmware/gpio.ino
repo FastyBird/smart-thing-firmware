@@ -2,7 +2,7 @@
 
 GPIO MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
@@ -37,13 +37,13 @@ bool gpioGetLock(
         if ((_gpio_locked & mask) == 0) {
             _gpio_locked |= mask;
 
-            DEBUG_MSG(PSTR("[GPIO] GPIO%u locked\n"), gpio);
+            DEBUG_MSG(PSTR("[INFO][GPIO] GPIO%u locked\n"), gpio);
 
             return true;
         }
     }
 
-    DEBUG_MSG(PSTR("[GPIO] Failed getting lock for GPIO%u\n"), gpio);
+    DEBUG_MSG(PSTR("[INFO][GPIO] Failed getting lock for GPIO%u\n"), gpio);
 
     return false;
 }
@@ -58,12 +58,12 @@ bool gpioReleaseLock(
 
         _gpio_locked &= ~mask;
 
-        DEBUG_MSG(PSTR("[GPIO] GPIO%u lock released\n"), gpio);
+        DEBUG_MSG(PSTR("[INFO][GPIO] GPIO%u lock released\n"), gpio);
 
         return true;
     }
 
-    DEBUG_MSG(PSTR("[GPIO] Failed releasing lock for GPIO%u\n"), gpio);
+    DEBUG_MSG(PSTR("[INFO][GPIO] Failed releasing lock for GPIO%u\n"), gpio);
 
     return false;
 }

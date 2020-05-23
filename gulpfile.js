@@ -122,6 +122,7 @@ var buildWebUI = function() {
             'rules': {
                 'id-class-style': false,
                 'label-req-for': false,
+                'line-no-trailing-whitespace': false,
                 'raw-ignore-regex': '/<svg[^>]*?>[\\S\\s]*?<\/svg>/',
             }
         }, htmllintReporter)).

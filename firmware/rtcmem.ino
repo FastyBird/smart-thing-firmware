@@ -2,7 +2,7 @@
 
 RTCMEM MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
@@ -12,11 +12,12 @@ bool _rtcmem_status = false;
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-void _rtcmemErase() {
+void _rtcmemErase()
+{
     auto ptr = reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR);
     const auto end = ptr + RTCMEM_BLOCKS;
 
-    DEBUG_MSG(PSTR("[RTCMEM] Erasing start=%p end=%p\n"), ptr, end);
+    DEBUG_MSG(PSTR("[INFO][RTCMEM] Erasing start=%p end=%p\n"), ptr, end);
 
     do {
         *ptr = 0;
@@ -25,7 +26,8 @@ void _rtcmemErase() {
 
 // -----------------------------------------------------------------------------
 
-void _rtcmemInit() {
+void _rtcmemInit()
+{
     _rtcmemErase();
 
     Rtcmem->magic = RTCMEM_MAGIC;
@@ -34,7 +36,8 @@ void _rtcmemInit() {
 // -----------------------------------------------------------------------------
 
 // Treat memory as dirty on cold boot, hardware wdt reset and rst pin
-bool _rtcmemStatus() {
+bool _rtcmemStatus()
+{
     bool readable;
 
     switch (resetReasonSystem()) {
@@ -57,7 +60,8 @@ bool _rtcmemStatus() {
 // MODULE API
 // -----------------------------------------------------------------------------
 
-bool rtcmemStatus() {
+bool rtcmemStatus()
+{
     return _rtcmem_status;
 }
 
@@ -65,7 +69,8 @@ bool rtcmemStatus() {
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void rtcmemSetup() {
+void rtcmemSetup()
+{
     _rtcmem_status = _rtcmemStatus();
 
     if (!_rtcmem_status) {

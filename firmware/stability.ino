@@ -2,13 +2,11 @@
 
 STABILTY MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
 #if STABILTY_CHECK_ENABLED
-
-#include <EEPROM_Rotate.h>
 
 bool _stability_system_stable = true;
 
@@ -20,7 +18,8 @@ union stabilty_rtcmem_t {
     uint32_t value;
 };
 
-uint8_t _stabilityCounter() {
+uint8_t _stabilityCounter()
+{
     stabilty_rtcmem_t data;
 
     data.value = Rtcmem->sys;
@@ -58,7 +57,7 @@ void stabiltyCheck(
     if (stable) {
         value = 0;
 
-        DEBUG_MSG(PSTR("[STABILTY] System OK\n"));
+        DEBUG_MSG(PSTR("[INFO][STABILTY] System OK\n"));
 
     } else {
         if (!rtcmemStatus()) {
@@ -73,7 +72,7 @@ void stabiltyCheck(
             _stability_system_stable = false;
             value = 0;
 
-            DEBUG_MSG(PSTR("[STABILTY] System UNSTABLE\n"));
+            DEBUG_MSG(PSTR("[INFO][STABILTY] System UNSTABLE\n"));
         }
     }
 
@@ -82,7 +81,8 @@ void stabiltyCheck(
 
 // -----------------------------------------------------------------------------
 
-bool stabiltyCheck() {
+bool stabiltyCheck()
+{
     return _stability_system_stable;
 }
 
@@ -90,14 +90,16 @@ bool stabiltyCheck() {
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void stabilitySetup() {
+void stabilitySetup()
+{
     // Register loop
     firmwareRegisterLoop(stabiltyLoop);
 }
 
 // -----------------------------------------------------------------------------
 
-void stabiltyLoop() {
+void stabiltyLoop()
+{
     static bool checked = false;
 
     if (!checked && millis() > STABILTY_CHECK_TIME) {

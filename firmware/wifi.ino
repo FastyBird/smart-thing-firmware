@@ -2,14 +2,11 @@
 
 WIFI MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
 #if WIFI_SUPPORT
-
-#include <JustWifi.h>
-#include <Ticker.h>
 
 uint32_t _wifi_scan_client_id = 0;
 
@@ -19,7 +16,8 @@ Ticker _wifi_defer;
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-void _wifiCheckAP() {
+void _wifiCheckAP()
+{
     if (
         jw.connected()
         && (WiFi.getMode() & WIFI_AP) > 0
@@ -31,7 +29,8 @@ void _wifiCheckAP() {
 
 // -----------------------------------------------------------------------------
 
-void _wifiConfigure() {
+void _wifiConfigure()
+{
     jw.setHostname(getIdentifier().c_str());
 
     if (getSetting("wifiPass", WIFI_PASSWORD).length() == 0) {
@@ -63,7 +62,7 @@ void _wifiConfigure() {
             break;
         }
 
-        DEBUG_MSG(PSTR("[WIFI] Wifi configured, trying to connect\n"));
+        DEBUG_MSG(PSTR("[INFO][WIFI] Wifi configured, trying to connect\n"));
 
         if (getSetting("ip", i, "").length() == 0) {
             jw.addNetwork(
@@ -91,7 +90,7 @@ void _wifiConfigure() {
 void _wifiScan(
     const uint32_t clientId = 0
 ) {
-    DEBUG_MSG(PSTR("[WIFI] Start scanning\n"));
+    DEBUG_MSG(PSTR("[INFO][WIFI] Start scanning\n"));
 
     #if WEB_SUPPORT && WS_SUPPORT
         DynamicJsonBuffer jsonBuffer;
@@ -132,21 +131,21 @@ void _wifiScan(
     uint8_t result = WiFi.scanNetworks();
 
     if (result == WIFI_SCAN_FAILED) {
-        DEBUG_MSG(PSTR("[WIFI] Scan failed\n"));
+        DEBUG_MSG(PSTR("[INFO][WIFI] Scan failed\n"));
 
         #if WEB_SUPPORT && WS_SUPPORT
             scanResult["result"] = String("Failed scan");
         #endif
 
     } else if (result == 0) {
-        DEBUG_MSG(PSTR("[WIFI] No networks found\n"));
+        DEBUG_MSG(PSTR("[INFO][WIFI] No networks found\n"));
 
         #if WEB_SUPPORT && WS_SUPPORT
             scanResult["result"] = String("No networks found");
         #endif
 
     } else {
-        DEBUG_MSG(PSTR("[WIFI] %d networks found:\n"), result);
+        DEBUG_MSG(PSTR("[INFO][WIFI] %d networks found:\n"), result);
 
         // Populate defined networks with scan data
         for (uint8_t i = 0; i < result; ++i) {
@@ -169,7 +168,7 @@ void _wifiScan(
                 (char *) ssid_scan.c_str()
             );
 
-            DEBUG_MSG(PSTR("[WIFI] > %s\n"), buffer);
+            DEBUG_MSG(PSTR("[INFO][WIFI] > %s\n"), buffer);
 
             #if WEB_SUPPORT && WS_SUPPORT
                 if (clientId > 0) {
@@ -257,27 +256,27 @@ bool _wifiClean(
         char * parameter
     ) {
         if (code == MESSAGE_SCANNING) {
-            DEBUG_MSG(PSTR("[WIFI] Scanning\n"));
+            DEBUG_MSG(PSTR("[INFO][WIFI] Scanning\n"));
         }
 
         if (code == MESSAGE_SCAN_FAILED) {
-            DEBUG_MSG(PSTR("[WIFI] Scan failed\n"));
+            DEBUG_MSG(PSTR("[INFO][WIFI] Scan failed\n"));
         }
 
         if (code == MESSAGE_NO_NETWORKS) {
-            DEBUG_MSG(PSTR("[WIFI] No networks found\n"));
+            DEBUG_MSG(PSTR("[INFO][WIFI] No networks found\n"));
         }
 
         if (code == MESSAGE_NO_KNOWN_NETWORKS) {
-            DEBUG_MSG(PSTR("[WIFI] No known networks found\n"));
+            DEBUG_MSG(PSTR("[INFO][WIFI] No known networks found\n"));
         }
 
         if (code == MESSAGE_FOUND_NETWORK) {
-            DEBUG_MSG(PSTR("[WIFI] %s\n"), parameter);
+            DEBUG_MSG(PSTR("[INFO][WIFI] %s\n"), parameter);
         }
 
         if (code == MESSAGE_CONNECTING) {
-            DEBUG_MSG(PSTR("[WIFI] Connecting to %s\n"), parameter);
+            DEBUG_MSG(PSTR("[INFO][WIFI] Connecting to %s\n"), parameter);
         }
 
         if (code == MESSAGE_CONNECT_WAITING) {
@@ -285,7 +284,7 @@ bool _wifiClean(
         }
 
         if (code == MESSAGE_CONNECT_FAILED) {
-            DEBUG_MSG(PSTR("[WIFI] Could not connect to %s\n"), parameter);
+            DEBUG_MSG(PSTR("[INFO][WIFI] Could not connect to %s\n"), parameter);
         }
 
         if (code == MESSAGE_CONNECTED) {
@@ -297,15 +296,15 @@ bool _wifiClean(
         }
 
         if (code == MESSAGE_DISCONNECTED) {
-            DEBUG_MSG(PSTR("[WIFI] Disconnected\n"));
+            DEBUG_MSG(PSTR("[INFO][WIFI] Disconnected\n"));
         }
 
         if (code == MESSAGE_ACCESSPOINT_CREATING) {
-            DEBUG_MSG(PSTR("[WIFI] Creating access point\n"));
+            DEBUG_MSG(PSTR("[INFO][WIFI] Creating access point\n"));
         }
 
         if (code == MESSAGE_ACCESSPOINT_FAILED) {
-            DEBUG_MSG(PSTR("[WIFI] Could not create access point\n"));
+            DEBUG_MSG(PSTR("[INFO][WIFI] Could not create access point\n"));
         }
     }
 #endif // DEBUG_SUPPORT
@@ -324,7 +323,7 @@ bool _wifiClean(
 
         request->send(201);
 
-        DEBUG_MSG(PSTR("[WIFI] Requested reconnect action\n"));
+        DEBUG_MSG(PSTR("[INFO][WIFI] Requested reconnect action\n"));
 
         #if WEB_SUPPORT && WS_SUPPORT
             // Send notification to all clients
@@ -387,7 +386,7 @@ bool _wifiClean(
     bool _wifiUpdateConfiguration(
         JsonObject& configuration
     ) {
-        DEBUG_MSG(PSTR("[WIFI] Updating module\n"));
+        DEBUG_MSG(PSTR("[INFO][WIFI] Updating module\n"));
 
         bool is_updated = false;
 
@@ -395,7 +394,7 @@ bool _wifiClean(
             configuration.containsKey("wifi_scan")
             && configuration["wifi_scan"].as<bool>() != ((getSetting("wifiScan").toInt() == 1))
         )  {
-            DEBUG_MSG(PSTR("[WIFI] Setting: \"wifi_scan\" to: %d\n"), configuration["wifi_scan"].as<bool>() ? 1 : 0);
+            DEBUG_MSG(PSTR("[INFO][WIFI] Setting: \"wifi_scan\" to: %d\n"), configuration["wifi_scan"].as<bool>() ? 1 : 0);
 
             setSetting("wifiScan", configuration["wifi_scan"].as<bool>() ? 1 : 0);
 
@@ -533,7 +532,8 @@ bool _wifiClean(
 // MODULE API
 // -----------------------------------------------------------------------------
 
-String getIP() {
+String getIP()
+{
     if (WiFi.getMode() == WIFI_AP) {
         return WiFi.softAPIP().toString();
     }
@@ -543,7 +543,8 @@ String getIP() {
 
 // -----------------------------------------------------------------------------
 
-String getNetwork() {
+String getNetwork()
+{
     if (WiFi.getMode() == WIFI_AP) {
         return jw.getAPSSID();
     }
@@ -553,13 +554,15 @@ String getNetwork() {
 
 // -----------------------------------------------------------------------------
 
-bool wifiIsConnected() {
+bool wifiIsConnected()
+{
     return jw.connected();
 }
 
 // -----------------------------------------------------------------------------
 
-void wifiDisconnect() {
+void wifiDisconnect()
+{
     jw.disconnect();
 }
 
@@ -579,13 +582,15 @@ void wifiStartAP(
 
 // -----------------------------------------------------------------------------
 
-void wifiStartAP() {
+void wifiStartAP()
+{
     wifiStartAP(true);
 }
 
 // -----------------------------------------------------------------------------
 
-void wifiReconnectCheck() {
+void wifiReconnectCheck()
+{
     bool connected = false;
 
     #if WS_SUPPORT
@@ -599,48 +604,50 @@ void wifiReconnectCheck() {
 
 // -----------------------------------------------------------------------------
 
-void wifiStatus() {
+void wifiStatus()
+{
     if (WiFi.getMode() == WIFI_AP_STA) {
-        DEBUG_MSG(PSTR("[WIFI] MODE AP + STA --------------------------------\n"));
+        DEBUG_MSG(PSTR("[INFO][WIFI] MODE AP + STA --------------------------------\n"));
 
     } else if (WiFi.getMode() == WIFI_AP) {
-        DEBUG_MSG(PSTR("[WIFI] MODE AP --------------------------------------\n"));
+        DEBUG_MSG(PSTR("[INFO][WIFI] MODE AP --------------------------------------\n"));
 
     } else if (WiFi.getMode() == WIFI_STA) {
-        DEBUG_MSG(PSTR("[WIFI] MODE STA -------------------------------------\n"));
+        DEBUG_MSG(PSTR("[INFO][WIFI] MODE STA -------------------------------------\n"));
 
     } else {
-        DEBUG_MSG(PSTR("[WIFI] MODE OFF -------------------------------------\n"));
-        DEBUG_MSG(PSTR("[WIFI] No connection\n"));
+        DEBUG_MSG(PSTR("[INFO][WIFI] MODE OFF -------------------------------------\n"));
+        DEBUG_MSG(PSTR("[INFO][WIFI] No connection\n"));
     }
 
     if ((WiFi.getMode() & WIFI_AP) == WIFI_AP) {
-        DEBUG_MSG(PSTR("[WIFI] SSID  %s\n"), jw.getAPSSID().c_str());
-        DEBUG_MSG(PSTR("[WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
-        DEBUG_MSG(PSTR("[WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());
+        DEBUG_MSG(PSTR("[INFO][WIFI] SSID  %s\n"), jw.getAPSSID().c_str());
+        DEBUG_MSG(PSTR("[INFO][WIFI] IP    %s\n"), WiFi.softAPIP().toString().c_str());
+        DEBUG_MSG(PSTR("[INFO][WIFI] MAC   %s\n"), WiFi.softAPmacAddress().c_str());
 
     } else if ((WiFi.getMode() & WIFI_STA) == WIFI_STA) {
         uint8_t * bssid = WiFi.BSSID();
 
-        DEBUG_MSG(PSTR("[WIFI] SSID  %s\n"), WiFi.SSID().c_str());
-        DEBUG_MSG(PSTR("[WIFI] IP    %s\n"), WiFi.localIP().toString().c_str());
-        DEBUG_MSG(PSTR("[WIFI] MAC   %s\n"), WiFi.macAddress().c_str());
-        DEBUG_MSG(PSTR("[WIFI] GW    %s\n"), WiFi.gatewayIP().toString().c_str());
-        DEBUG_MSG(PSTR("[WIFI] DNS   %s\n"), WiFi.dnsIP().toString().c_str());
-        DEBUG_MSG(PSTR("[WIFI] MASK  %s\n"), WiFi.subnetMask().toString().c_str());
-        DEBUG_MSG(PSTR("[WIFI] BSSID %02X:%02X:%02X:%02X:%02X:%02X\n"),
+        DEBUG_MSG(PSTR("[INFO][WIFI] SSID  %s\n"), WiFi.SSID().c_str());
+        DEBUG_MSG(PSTR("[INFO][WIFI] IP    %s\n"), WiFi.localIP().toString().c_str());
+        DEBUG_MSG(PSTR("[INFO][WIFI] MAC   %s\n"), WiFi.macAddress().c_str());
+        DEBUG_MSG(PSTR("[INFO][WIFI] GW    %s\n"), WiFi.gatewayIP().toString().c_str());
+        DEBUG_MSG(PSTR("[INFO][WIFI] DNS   %s\n"), WiFi.dnsIP().toString().c_str());
+        DEBUG_MSG(PSTR("[INFO][WIFI] MASK  %s\n"), WiFi.subnetMask().toString().c_str());
+        DEBUG_MSG(PSTR("[INFO][WIFI] BSSID %02X:%02X:%02X:%02X:%02X:%02X\n"),
             bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5], bssid[6]
         );
-        DEBUG_MSG(PSTR("[WIFI] CH    %d\n"), WiFi.channel());
-        DEBUG_MSG(PSTR("[WIFI] RSSI  %d\n"), WiFi.RSSI());
+        DEBUG_MSG(PSTR("[INFO][WIFI] CH    %d\n"), WiFi.channel());
+        DEBUG_MSG(PSTR("[INFO][WIFI] RSSI  %d\n"), WiFi.RSSI());
     }
 
-    DEBUG_MSG(PSTR("[WIFI] ----------------------------------------------\n"));
+    DEBUG_MSG(PSTR("[INFO][WIFI] ----------------------------------------------\n"));
 }
 
 // -----------------------------------------------------------------------------
 
-uint8_t wifiState() {
+uint8_t wifiState()
+{
     uint8_t state = 0;
 
     if (jw.connected()) {
@@ -666,7 +673,8 @@ void wifiRegister(
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void wifiSetup() {
+void wifiSetup()
+{
     WiFi.setSleepMode(WIFI_SLEEP_MODE);
 
     _wifiConfigure();
@@ -688,21 +696,21 @@ void wifiSetup() {
         #endif
     #endif
 
-    #if BUTTON_SUPPORT && WIFI_AP_BTN > 0
+    #if BUTTON_SUPPORT && WIFI_AP_BTN != INDEX_NONE
         buttonOnEventRegister(
             [](uint8_t event) {
                 if (event == WIFI_AP_BTN_EVENT) {
                     wifiStartAP();
                 }
             },
-            (uint8_t) (WIFI_AP_BTN - 1)
+            (uint8_t) WIFI_AP_BTN
         );
     #endif
 
     #if FASTYBIRD_SUPPORT
         fastybirdOnControlRegister(
             [](const char * payload) {
-                DEBUG_MSG(PSTR("[WIFI] Requested reconnect action\n"));
+                DEBUG_MSG(PSTR("[INFO][WIFI] Requested reconnect action\n"));
 
                 #if WEB_SUPPORT && WS_SUPPORT
                     // Send notification to all clients
@@ -721,7 +729,8 @@ void wifiSetup() {
 
 // -----------------------------------------------------------------------------
 
-void wifiLoop() {
+void wifiLoop()
+{
     jw.loop();
 
     // Request for available networks scan

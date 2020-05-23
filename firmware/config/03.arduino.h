@@ -9,6 +9,7 @@
 
 //#define FASTYBIRD_CORE
 //#define FASTYBIRD_WIFI_GATEWAY
+//#define FASTYBIRD_3CH_POWER_STRIP_R1
 
 //#define ITEAD_SONOFF_BASIC
 //#define ITEAD_SONOFF_DUAL
@@ -28,7 +29,6 @@
 //#define DEBUG_SERIAL_SUPPORT          0
 //#define DEBUG_WEB_SUPPORT             0
 //#define DEBUG_MQTT_SUPPORT            0
-//#define DEBUG_NODES_SUPPORT           0
 //#define FASTYBIRD_SUPPORT             1
 //#define I2C_SUPPORT                   1
 //#define LED_SUPPORT                   0
@@ -38,7 +38,7 @@
 //#define WIFI_SUPPORT                  1
 //#define WEB_SUPPORT                   0
 //#define WS_SUPPORT                    0
-//#define NODES_GATEWAY_SUPPORT         0
+//#define FB_GATEWAY_SUPPORT            0
 //#define VIRTUAL_BTN                   0
 
 //--------------------------------------------------------------------------------

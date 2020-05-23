@@ -2,16 +2,13 @@
 
 CORE MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
 #include "config/all.h"
 
-#include <Arduino.h>
 #include <Hash.h>
-#include <Ticker.h>
-#include <vector>
 
 std::vector<void (*)()> _firmware_loop_callbacks;
 std::vector<void (*)()> _firmware_reload_callbacks;
@@ -38,7 +35,8 @@ void firmwareRegisterReload(
 
 // -----------------------------------------------------------------------------
 
-void firmwareReload() {
+void firmwareReload()
+{
     for (uint8_t i = 0; i < _firmware_reload_callbacks.size(); i++) {
         (_firmware_reload_callbacks[i])();
     }
@@ -48,8 +46,8 @@ void firmwareReload() {
 // BOOTING
 // -----------------------------------------------------------------------------
 
-void setup() {
-
+void setup()
+{
     // -------------------------------------------------------------------------
     // Basic modules, will always run
     // -------------------------------------------------------------------------
@@ -122,23 +120,23 @@ void setup() {
         ledSetup();
     #endif
 
-    #if RELAY_PROVIDER != RELAY_PROVIDER_NONE
-        relaySetup();
-    #endif
-
     #if MQTT_SUPPORT
         mqttSetup();
-    #endif
-
-    #if VIRTUAL_BTN_SUPPORT
-        virtualButtonSetup();
     #endif
     
     #if FASTYBIRD_SUPPORT
         fastybirdSetup();
     #endif
 
-    #if NODES_GATEWAY_SUPPORT
+    #if RELAY_PROVIDER != RELAY_PROVIDER_NONE
+        relaySetup();
+    #endif
+
+    #if VIRTUAL_BTN_SUPPORT
+        virtualButtonSetup();
+    #endif
+
+    #if FB_GATEWAY_SUPPORT
         gatewaySetup();
     #endif
 
@@ -147,7 +145,8 @@ void setup() {
     #endif
 }
 
-void loop() {
+void loop()
+{
     // Call registered loop callbacks
     for (uint8_t i = 0; i < _firmware_loop_callbacks.size(); i++) {
         (_firmware_loop_callbacks[i])();

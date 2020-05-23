@@ -2,7 +2,7 @@
 
 VIRTUAL BUTTON MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
@@ -12,11 +12,12 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-void _virtualButtonLoop() {
+void _virtualButtonLoop()
+{
     uint8_t counter = getSetting("virtualBtnCounter", 0).toInt();
 
     if (counter == VIRTUAL_BTN_COUNT && millis() > VIRTUAL_BTN_WAIT_INTERVAL) {
-        DEBUG_MSG(PSTR("[VIRTUAL_BUTTON] Requested factory reset action\n"));
+        DEBUG_MSG(PSTR("[INFO][VIRTUAL_BUTTON] Requested factory reset action\n"));
         DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
 
         resetSettings();
@@ -40,7 +41,8 @@ void _virtualButtonLoop() {
 // MODULE API
 // -----------------------------------------------------------------------------
 
-void virtualButtonSetup() {
+void virtualButtonSetup()
+{
     uint8_t counter = getSetting("virtualBtnCounter", 0).toInt();
 
     setSetting("virtualBtnCounter", counter + 1);

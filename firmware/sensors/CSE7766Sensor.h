@@ -2,7 +2,7 @@
 
 CSE7766 SENSOR - Power monitor sensor
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
@@ -10,7 +10,6 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 #pragma once
 
-#include <Arduino.h>
 #include <SoftwareSerial.h>
 
 #include "base/BaseSensor.h"

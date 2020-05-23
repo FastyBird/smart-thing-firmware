@@ -2,7 +2,7 @@
   "name": "fastybird-filesystem-builder",
   "description": "Gulp based build system for ESP8266 file system files",
   "main": "gulpfile.js",
-  "author": "FastyBird s.r.o. <info@fastybird.com>",
+  "author": "FastyBird Ltd. <info@fastybird.com>",
   "license": "GPL-3.0",
   "devDependencies": {
     "gulp": "^4.0.2",

@@ -2,22 +2,21 @@
 
 SETTINGS MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
-#include <EEPROM_Rotate.h>
-#include <vector>
-
 bool _settings_save = false;
 bool _web_config_success = false;
+
 std::vector<uint8_t> * _web_config_buffer;
 
 // -----------------------------------------------------------------------------
 // Reverse engineering EEPROM storage format
 // -----------------------------------------------------------------------------
 
-uint32_t settingsSize() {
+uint32_t settingsSize()
+{
     uint32_t pos = SPI_FLASH_SEC_SIZE - 1;
 
     while (size_t len = EEPROMr.read(pos)) {
@@ -33,7 +32,8 @@ uint32_t settingsSize() {
 
 // -----------------------------------------------------------------------------
 
-uint32_t settingsKeyCount() {
+uint32_t settingsKeyCount()
+{
     uint32_t count = 0;
     uint32_t pos = SPI_FLASH_SEC_SIZE - 1;
 
@@ -92,7 +92,8 @@ String settingsKeyName(
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-std::vector<String> _settingsKeys() {
+std::vector<String> _settingsKeys()
+{
     // Get sorted list of keys
     std::vector<String> keys;
 
@@ -159,7 +160,7 @@ bool _settingsRestoreJson(
 
     saveSettings();
 
-    DEBUG_MSG(PSTR("[SETTINGS] Settings restored successfully\n"));
+    DEBUG_MSG(PSTR("[INFO][SETTINGS] Settings restored successfully\n"));
 
     return true;
 }
@@ -305,7 +306,7 @@ bool _settingsRestoreJson(
             JsonObject& data
         ) {
             if (strcmp(action, "factory_reset") == 0) {
-                DEBUG_MSG(PSTR("[SETTINGS] Requested factory reset action\n"));
+                DEBUG_MSG(PSTR("[INFO][SETTINGS] Requested factory reset action\n"));
                 DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
 
                 resetSettings();
@@ -337,13 +338,15 @@ bool _settingsRestoreJson(
 // MODULE API
 // -----------------------------------------------------------------------------
 
-bool isSavingRequired() {
+bool isSavingRequired()
+{
     return _settings_save;
 }
 
 // -----------------------------------------------------------------------------
 
-void saveSettings() {
+void saveSettings()
+{
     #if not SETTINGS_AUTOSAVE
         _settings_save = true;
     #endif
@@ -351,7 +354,8 @@ void saveSettings() {
 
 // -----------------------------------------------------------------------------
 
-void resetSettings() {
+void resetSettings()
+{
     for (unsigned int i = 0; i < SPI_FLASH_SEC_SIZE; i++) {
         EEPROMr.write(i, 0xFF);
     }
@@ -361,7 +365,8 @@ void resetSettings() {
 
 // -----------------------------------------------------------------------------
 
-size_t settingsMaxSize() {
+size_t settingsMaxSize()
+{
     size_t size = EEPROM_SIZE;
 
     if (size > SPI_FLASH_SEC_SIZE) {
@@ -465,7 +470,8 @@ bool hasSetting(
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void settingsSetup() {
+void settingsSetup()
+{
     EEPROMr.begin(SPI_FLASH_SEC_SIZE);
 
     Embedis::dictionary(F("EEPROM"),
@@ -490,11 +496,11 @@ void settingsSetup() {
         #endif
     #endif
 
-    #if BUTTON_SUPPORT && SETTINGS_FACTORY_BTN > 0
+    #if BUTTON_SUPPORT && SETTINGS_FACTORY_BTN != INDEX_NONE
         buttonOnEventRegister(
             [](uint8_t event) {
                 if (event == SETTINGS_FACTORY_BTN_EVENT) {
-                    DEBUG_MSG(PSTR("[SETTINGS] Requested factory reset action\n"));
+                    DEBUG_MSG(PSTR("[INFO][SETTINGS] Requested factory reset action\n"));
                     DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
 
                     resetSettings();
@@ -507,15 +513,15 @@ void settingsSetup() {
                     deferredReset(250, CUSTOM_FACTORY_BUTTON);
                 }
             },
-            (uint8_t) (SETTINGS_FACTORY_BTN - 1)
+            (uint8_t) SETTINGS_FACTORY_BTN
         );
     #endif
 
-    #if BUTTON_SUPPORT && SYSTEM_RESET_BTN > 0
+    #if BUTTON_SUPPORT && SYSTEM_RESET_BTN != INDEX_NONE
         buttonOnEventRegister(
             [](uint8_t event) {
                 if (event == SYSTEM_RESET_BTN_EVENT) {
-                    DEBUG_MSG(PSTR("[SETTINGS] Requested reset action\n"));
+                    DEBUG_MSG(PSTR("[INFO][SETTINGS] Requested reset action\n"));
 
                     #if WEB_SUPPORT && WS_SUPPORT
                         // Send notification to all clients
@@ -525,14 +531,14 @@ void settingsSetup() {
                     deferredReset(250, CUSTOM_RESET_BUTTON);
                 }
             },
-            (uint8_t) (SYSTEM_RESET_BTN - 1)
+            (uint8_t) SYSTEM_RESET_BTN
         );
     #endif
 
     #if FASTYBIRD_SUPPORT
         fastybirdOnControlRegister(
             [](const char * payload) {
-                DEBUG_MSG(PSTR("[SETTINGS] Requested factory reset action\n"));
+                DEBUG_MSG(PSTR("[INFO][SETTINGS] Requested factory reset action\n"));
                 DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
 
                 resetSettings();
@@ -554,7 +560,8 @@ void settingsSetup() {
 
 // -----------------------------------------------------------------------------
 
-void settingsLoop() {
+void settingsLoop()
+{
     if (_settings_save) {
         EEPROMr.commit();
         _settings_save = false;

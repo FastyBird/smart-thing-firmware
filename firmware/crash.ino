@@ -2,7 +2,7 @@
 
 CRASH REPORT MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 Taken from krzychb EspSaveCrash [https://github.com/krzychb/EspSaveCrash]
 
@@ -10,7 +10,6 @@ Taken from krzychb EspSaveCrash [https://github.com/krzychb/EspSaveCrash]
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <EEPROM_Rotate.h>
 
 extern "C" {
     #include "user_interface.h"
@@ -211,7 +210,8 @@ extern "C" void custom_crash_callback(
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void crashSetup() {
+void crashSetup()
+{
     #if WEB_SUPPORT
         webServer()->on(WEB_API_REPORT_CRASH, HTTP_GET, _crashOnGetReport);
         webServer()->on(WEB_API_REPORT_CRASH, HTTP_DELETE, _crashOnDeleteReport);

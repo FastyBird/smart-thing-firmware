@@ -2,25 +2,22 @@
 
 WEB MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
 #if WEB_SUPPORT
 
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
 #include <Hash.h>
 #include <FS.h>
 #include <AsyncJson.h>
-#include <ArduinoJson.h>
 #include <libb64/cencode.h>
 
 #if WEB_EMBEDDED
     #include "static/index.html.gz.h"
 #endif
 
-#if NETWORK_ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+#if NETWORK_SSL_ENABLED & WEB_SSL_ENABLED
     #include "static/server.cer.h"
     #include "static/server.key.h"
 #endif
@@ -63,7 +60,7 @@ void _onFactory(
         return request->requestAuthentication(getIdentifier().c_str());
     }
 
-    DEBUG_MSG(PSTR("[WEB] Requested factory reset action\n"));
+    DEBUG_MSG(PSTR("[INFO][WEB] Requested factory reset action\n"));
     DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
 
     request->send(201);
@@ -91,10 +88,16 @@ void _onDiscover(
 
     JsonObject &root = jsonBuffer.createObject();
 
+    char buffer[20];
+
+    snprintf_P(buffer, sizeof(buffer), PSTR("%08X"), ESP.getChipId());
+
+    String serial_no = String(buffer);
+
     root["manufacturer"] = FIRMWARE_MANUFACTURER;
     root["version"] = FIRMWARE_VERSION;
     root["hostname"] = getIdentifier();
-    root["device"] = DEVICE_NAME;
+    root["device"] = serial_no;
 
     root.printTo(*response);
 
@@ -217,7 +220,7 @@ void _onUpgradeData(
         // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
         eepromRotate(false);
 
-        DEBUG_MSG(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
+        DEBUG_MSG(PSTR("[INFO][WEB] Upgrade start: %s\n"), filename.c_str());
 
         Update.runAsync(true);
 
@@ -238,7 +241,7 @@ void _onUpgradeData(
 
     if (final) {
         if (Update.end(true)){
-            DEBUG_MSG(PSTR("[UPGRADE] Success:  %u bytes\n"), index + len);
+            DEBUG_MSG(PSTR("[INFO][WEB] Upgrade success:  %u bytes\n"), index + len);
 
         } else {
             #ifdef DEBUG_PORT
@@ -247,7 +250,7 @@ void _onUpgradeData(
         }
 
     } else {
-        DEBUG_MSG(PSTR("[UPGRADE] Progress: %u bytes\r"), index + len);
+        DEBUG_MSG(PSTR("[INFO][WEB] Upgrade progress: %u bytes\r"), index + len);
     }
 }
 
@@ -266,7 +269,7 @@ void _onUpgradeData(
             #if ASYNC_TCP_SSL_ENABLED
                 // Chunked response, we calculate the chunks based on free heap (in multiples of 32)
                 // This is necessary when a TLS connection is open since it sucks too much memory
-                DEBUG_MSG(PSTR("[MAIN] Free heap: %d bytes\n"), getFreeHeap());
+                DEBUG_MSG(PSTR("[INFO][WEB] Free heap: %d bytes\n"), getFreeHeap());
 
                 size_t max = (getFreeHeap() / 3) & 0xFFE0;
 
@@ -286,7 +289,7 @@ void _onUpgradeData(
                         memcpy_P(buffer, webui_image + index, len);
                     }
 
-                    DEBUG_MSG(PSTR("[WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / webui_image_len), max);
+                    DEBUG_MSG(PSTR("[INFO][WEB] Sending %d%%%% (max chunk size: %4d)\r"), int(100 * index / webui_image_len), max);
 
                     if (len == 0) {
                         DEBUG_MSG(PSTR("\n"));
@@ -328,7 +331,7 @@ void _onRequest(
 
 // -----------------------------------------------------------------------------
 
-#if NETWORK_ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+#if NETWORK_SSL_ENABLED & WEB_SSL_ENABLED
     int _onCertificate(
         void * arg,
         const char * filename,
@@ -339,7 +342,7 @@ void _onRequest(
                 uint8_t * nbuf = (uint8_t*) malloc(server_cer_len);
                 memcpy_P(nbuf, server_cer, server_cer_len);
                 *buf = nbuf;
-                DEBUG_MSG(PSTR("[WEB] SSL File: %s - OK\n"), filename);
+                DEBUG_MSG(PSTR("[INFO][WEB] SSL File: %s - OK\n"), filename);
 
                 return server_cer_len;
             }
@@ -348,12 +351,12 @@ void _onRequest(
                 uint8_t * nbuf = (uint8_t*) malloc(server_key_len);
                 memcpy_P(nbuf, server_key, server_key_len);
                 *buf = nbuf;
-                DEBUG_MSG(PSTR("[WEB] SSL File: %s - OK\n"), filename);
+                DEBUG_MSG(PSTR("[INFO][WEB] SSL File: %s - OK\n"), filename);
 
                 return server_key_len;
             }
 
-            DEBUG_MSG(PSTR("[WEB] SSL File: %s - ERROR\n"), filename);
+            DEBUG_MSG(PSTR("[INFO][WEB] SSL File: %s - ERROR\n"), filename);
             *buf = 0;
 
             return 0;
@@ -368,7 +371,7 @@ void _onRequest(
                     size = file.read(nbuf, size);
                     file.close();
                     *buf = nbuf;
-                    DEBUG_MSG(PSTR("[WEB] SSL File: %s - OK\n"), filename);
+                    DEBUG_MSG(PSTR("[INFO][WEB] SSL File: %s - OK\n"), filename);
 
                     return size;
                 }
@@ -376,7 +379,7 @@ void _onRequest(
                 file.close();
             }
 
-            DEBUG_MSG(PSTR("[WEB] SSL File: %s - ERROR\n"), filename);
+            DEBUG_MSG(PSTR("[INFO][WEB] SSL File: %s - ERROR\n"), filename);
             *buf = 0;
 
             return 0;
@@ -388,14 +391,16 @@ void _onRequest(
 // MODULE API
 // -----------------------------------------------------------------------------
 
-AsyncWebServer * webServer() {
+AsyncWebServer * webServer()
+{
     return _web_server;
 }
 
 // -----------------------------------------------------------------------------
 
-uint8_t webPort() {
-    #if NETWORK_ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+uint8_t webPort()
+{
+    #if NETWORK_SSL_ENABLED & WEB_SSL_ENABLED
         return 443;
     #else
         return getSetting("webPort", WEB_PORT).toInt();
@@ -407,7 +412,7 @@ uint8_t webPort() {
 void webLog(
     AsyncWebServerRequest * request
 ) {
-    DEBUG_MSG(PSTR("[WEBSERVER] Request: %s %s\n"), request->methodToString(), request->url().c_str());
+    DEBUG_MSG(PSTR("[INFO][WEB] Request: %s %s\n"), request->methodToString(), request->url().c_str());
 }
 
 // -----------------------------------------------------------------------------
@@ -440,7 +445,8 @@ void webEventsRegister(
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void webSetup() {
+void webSetup()
+{
     // Cache the Last-Modifier header value
     snprintf_P(_web_last_modified, sizeof(_web_last_modified), PSTR("%s %s GMT"), __DATE__, __TIME__);
 
@@ -490,14 +496,14 @@ void webSetup() {
     DefaultHeaders::Instance().addHeader("Access-Control-Expose-Headers", "X-Suggested-Filename");
 
     // Run server
-    #if NETWORK_ASYNC_TCP_SSL_ENABLED & WEB_SSL_ENABLED
+    #if NETWORK_SSL_ENABLED & WEB_SSL_ENABLED
         _web_server->onSslFileRequest(_onCertificate, NULL);
         _web_server->beginSecure("server.cer", "server.key", NULL);
     #else
         _web_server->begin();
     #endif
 
-    DEBUG_MSG(PSTR("[WEBSERVER] Webserver running on port %u\n"), port);
+    DEBUG_MSG(PSTR("[INFO][WEB] Webserver running on port %u\n"), port);
 }
 
 #endif // WEB_SUPPORT

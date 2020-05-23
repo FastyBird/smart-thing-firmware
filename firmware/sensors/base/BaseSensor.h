@@ -2,16 +2,13 @@
 
 SENSORS BASE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
-#if SENSOR_SUPPORT
-
 #pragma once
 
-#include <Arduino.h>
-#include <ArduinoJson.h>
+#if SENSOR_SUPPORT
 
 #define SENSOR_ERROR_OK             0       // No error
 #define SENSOR_ERROR_OUT_OF_RANGE   1       // Result out of sensor range

@@ -2,7 +2,7 @@
 
 DEBUG MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
@@ -99,7 +99,8 @@ void debugSend(
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void debugSetup() {
+void debugSetup()
+{
     #if DEBUG_SERIAL_SUPPORT
         DEBUG_PORT.begin(SERIAL_BAUDRATE);
 

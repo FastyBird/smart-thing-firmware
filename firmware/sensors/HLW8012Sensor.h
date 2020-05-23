@@ -2,7 +2,7 @@
 
 HLW8012 SENSOR - Energy meter sensor
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
@@ -10,7 +10,6 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 #pragma once
 
-#include <Arduino.h>
 #include <HLW8012.h>
 
 #include "base/BaseSensor.h"

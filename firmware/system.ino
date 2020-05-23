@@ -2,11 +2,9 @@
 
 SYSTEM MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
-
-#include <EEPROM_Rotate.h>
 
 uint32_t _system_loop_delay = 0;
 
@@ -24,21 +22,23 @@ std::vector<system_on_heartbeat_callback_f> _system_on_heartbeat_callbacks;
 // MODULE PRIVATE
 // -----------------------------------------------------------------------------
 
-uint8_t _systemBytes2Sectors(
+uint32_t _systemBytes2Sectors(
     size_t size
 ) {
-    return (uint8_t) (size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
+    return (uint32_t) (size + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
 }
 
 // -----------------------------------------------------------------------------
 
-uint32_t _systemFilesystemSpace() {
+uint32_t _systemFilesystemSpace()
+{
     return ((uint32_t)&_SPIFFS_end - (uint32_t)&_SPIFFS_start);
 }
 
 // -----------------------------------------------------------------------------
 
-uint32_t _systemEepromSpace() {
+uint32_t _systemEepromSpace()
+{
     return EEPROMr.reserved() * SPI_FLASH_SEC_SIZE;
 }
 
@@ -59,9 +59,9 @@ void _systemPrintMemoryLayoutLine(
         return;
     }
 
-    uint8_t _sectors = _systemBytes2Sectors(bytes);
+    uint32_t _sectors = _systemBytes2Sectors(bytes);
 
-    DEBUG_MSG(PSTR("[SYSTEM] %-20s: %8lu bytes / %4d sectors (%4d to %4d)\n"), name, bytes, _sectors, index, index + _sectors - 1);
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] %-20s: %8lu bytes / %4d sectors (%4d to %4d)\n"), name, bytes, _sectors, index, index + _sectors - 1);
 
     index += _sectors;
 }
@@ -77,7 +77,8 @@ void _systemPrintMemoryLayoutLine(
 
 // -----------------------------------------------------------------------------
 
-void _systemHeartbeat() {
+void _systemHeartbeat()
+{
     // Callbacks
     for (uint8_t i = 0; i < _system_on_heartbeat_callbacks.size(); i++) {
         (_system_on_heartbeat_callbacks[i])();
@@ -86,15 +87,16 @@ void _systemHeartbeat() {
 
 // -----------------------------------------------------------------------------
 
-void _systemInfoOnHeartbeat() {
+void _systemInfoOnHeartbeat()
+{
     uint32_t uptime_seconds = getUptime();
     uint8_t free_heap = getFreeHeap();
 
-    DEBUG_MSG(PSTR("[SYSTEM] Uptime: %lu seconds\n"), uptime_seconds);
-    DEBUG_MSG(PSTR("[SYSTEM] Free heap: %lu bytes\n"), free_heap);
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Uptime: %lu seconds\n"), uptime_seconds);
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Free heap: %lu bytes\n"), free_heap);
 
     #if ADC_MODE_VALUE == ADC_VCC
-        DEBUG_MSG(PSTR("[SYSTEM] Power: %lu mV\n"), ESP.getVcc());
+        DEBUG_MSG(PSTR("[INFO][SYSTEM] Power: %lu mV\n"), ESP.getVcc());
     #endif
 }
 
@@ -211,7 +213,8 @@ void _systemInfoOnHeartbeat() {
 
 // -----------------------------------------------------------------------------
 
-void _systemSetupSpecificHardware() {
+void _systemSetupSpecificHardware()
+{
     // These devices use the hardware UART
     // to communicate to secondary microcontrollers
     #if defined(ITEAD_SONOFF_RFBRIDGE) || defined(ITEAD_SONOFF_DUAL) || defined(ITEAD_SONOFF_SC) || defined(ITEAD_SONOFF_SC_PRO) || (RELAY_PROVIDER == RELAY_PROVIDER_STM)
@@ -221,27 +224,28 @@ void _systemSetupSpecificHardware() {
 
 // -----------------------------------------------------------------------------
 
-void _systemInfo() {
+void _systemInfo()
+{
     DEBUG_MSG(PSTR("\n\n---8<-------\n\n"));
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG(PSTR("[SYSTEM] " FIRMWARE_MANUFACTURER " " FIRMWARE_VERSION "\n"));
-    DEBUG_MSG(PSTR("[SYSTEM] " MANUFACTURER_WEBSITE "\n"));
-    DEBUG_MSG(PSTR("[SYSTEM] " MANUFACTURER_CONTACT "\n\n"));
-    DEBUG_MSG(PSTR("[SYSTEM] CPU chip ID: 0x%06X\n"), ESP.getChipId());
-    DEBUG_MSG(PSTR("[SYSTEM] CPU frequency: %u MHz\n"), ESP.getCpuFreqMHz());
-    DEBUG_MSG(PSTR("[SYSTEM] SDK version: %s\n"), ESP.getSdkVersion());
-    DEBUG_MSG(PSTR("[SYSTEM] Core version: %s\n"), getCoreVersion().c_str());
-    DEBUG_MSG(PSTR("[SYSTEM] Core revision: %s\n"), getCoreRevision().c_str());
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] " FIRMWARE_MANUFACTURER " " FIRMWARE_VERSION "\n"));
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] " MANUFACTURER_WEBSITE "\n"));
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] " MANUFACTURER_CONTACT "\n\n"));
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] CPU chip ID: 0x%06X\n"), ESP.getChipId());
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] CPU frequency: %u MHz\n"), ESP.getCpuFreqMHz());
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] SDK version: %s\n"), ESP.getSdkVersion());
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Core version: %s\n"), getCoreVersion().c_str());
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Core revision: %s\n"), getCoreRevision().c_str());
     DEBUG_MSG(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
     FlashMode_t mode = ESP.getFlashChipMode();
-    DEBUG_MSG(PSTR("[SYSTEM] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
-    DEBUG_MSG(PSTR("[SYSTEM] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
-    DEBUG_MSG(PSTR("[SYSTEM] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Flash speed: %u Hz\n"), ESP.getFlashChipSpeed());
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Flash mode: %s\n"), mode == FM_QIO ? "QIO" : mode == FM_QOUT ? "QOUT" : mode == FM_DIO ? "DIO" : mode == FM_DOUT ? "DOUT" : "UNKNOWN");
     DEBUG_MSG(PSTR("\n"));
 
     // -------------------------------------------------------------------------
@@ -262,14 +266,14 @@ void _systemInfo() {
         FSInfo fs_info;
         bool fs = SPIFFS.info(fs_info);
         if (fs) {
-            DEBUG_MSG(PSTR("[SYSTEM] SPIFFS total size   : %8u bytes / %4d sectors\n"), fs_info.totalBytes, _systemBytes2Sectors(fs_info.totalBytes));
-            DEBUG_MSG(PSTR("[SYSTEM]        used size    : %8u bytes\n"), fs_info.usedBytes);
-            DEBUG_MSG(PSTR("[SYSTEM]        block size   : %8u bytes\n"), fs_info.blockSize);
-            DEBUG_MSG(PSTR("[SYSTEM]        page size    : %8u bytes\n"), fs_info.pageSize);
-            DEBUG_MSG(PSTR("[SYSTEM]        max files    : %8u\n"), fs_info.maxOpenFiles);
-            DEBUG_MSG(PSTR("[SYSTEM]        max length   : %8u\n"), fs_info.maxPathLength);
+            DEBUG_MSG(PSTR("[INFO][SYSTEM] SPIFFS total size   : %8u bytes / %4d sectors\n"), fs_info.totalBytes, _systemBytes2Sectors(fs_info.totalBytes));
+            DEBUG_MSG(PSTR("[INFO][SYSTEM]        used size    : %8u bytes\n"), fs_info.usedBytes);
+            DEBUG_MSG(PSTR("[INFO][SYSTEM]        block size   : %8u bytes\n"), fs_info.blockSize);
+            DEBUG_MSG(PSTR("[INFO][SYSTEM]        page size    : %8u bytes\n"), fs_info.pageSize);
+            DEBUG_MSG(PSTR("[INFO][SYSTEM]        max files    : %8u\n"), fs_info.maxOpenFiles);
+            DEBUG_MSG(PSTR("[INFO][SYSTEM]        max length   : %8u\n"), fs_info.maxPathLength);
         } else {
-            DEBUG_MSG(PSTR("[SYSTEM] No SPIFFS partition\n"));
+            DEBUG_MSG(PSTR("[INFO][SYSTEM] No SPIFFS partition\n"));
         }
         DEBUG_MSG(PSTR("\n"));
     #endif
@@ -290,8 +294,8 @@ void _systemInfo() {
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG(PSTR("[SYSTEM] Boot version: %d\n"), ESP.getBootVersion());
-    DEBUG_MSG(PSTR("[SYSTEM] Boot mode: %d\n"), ESP.getBootMode());
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Boot version: %d\n"), ESP.getBootVersion());
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Boot mode: %d\n"), ESP.getBootMode());
 
     uint8_t reason = resetReason();
 
@@ -299,42 +303,42 @@ void _systemInfo() {
         char buffer[32];
         strcpy_P(buffer, custom_reset_string[reason - 1]);
 
-        DEBUG_MSG(PSTR("[SYSTEM] Last reset reason: %s\n"), buffer);
+        DEBUG_MSG(PSTR("[INFO][SYSTEM] Last reset reason: %s\n"), buffer);
 
     } else {
-        DEBUG_MSG(PSTR("[SYSTEM] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
-        DEBUG_MSG(PSTR("[SYSTEM] Last reset info: %s\n"), (char *) ESP.getResetInfo().c_str());
+        DEBUG_MSG(PSTR("[INFO][SYSTEM] Last reset reason: %s\n"), (char *) ESP.getResetReason().c_str());
+        DEBUG_MSG(PSTR("[INFO][SYSTEM] Last reset info: %s\n"), (char *) ESP.getResetInfo().c_str());
     }
 
     DEBUG_MSG(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG(PSTR("[SYSTEM] Board: %s\n"), DEVICE);
-    DEBUG_MSG(PSTR("[SYSTEM] Support: %s\n"), getFirmwareModules().c_str());
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Board: %s\n"), DEVICE);
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Support: %s\n"), getFirmwareModules().c_str());
 
     #if SENSOR_SUPPORT
-        DEBUG_MSG(PSTR("[SYSTEM] Sensors: %s\n"), getFirmwareSensors().c_str());
+        DEBUG_MSG(PSTR("[INFO][SYSTEM] Sensors: %s\n"), getFirmwareSensors().c_str());
     #endif
 
     DEBUG_MSG(PSTR("\n"));
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG(PSTR("[SYSTEM] Firmware MD5: %s\n"), (char *) ESP.getSketchMD5().c_str());
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Firmware MD5: %s\n"), (char *) ESP.getSketchMD5().c_str());
 
     #if ADC_MODE_VALUE == ADC_VCC
-        DEBUG_MSG(PSTR("[SYSTEM] Power: %u mV\n"), ESP.getVcc());
+        DEBUG_MSG(PSTR("[INFO][SYSTEM] Power: %u mV\n"), ESP.getVcc());
     #endif
 
-    DEBUG_MSG(PSTR("[SYSTEM] Power saving delay value: %lu ms\n"), systemLoopDelay());
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Power saving delay value: %lu ms\n"), systemLoopDelay());
 
     // -------------------------------------------------------------------------
 
     #if STABILTY_CHECK_ENABLED
         if (!stabiltyCheck()) {
             DEBUG_MSG(PSTR("\n"));
-            DEBUG_MSG(PSTR("[SYSTEM] Device is in SAFE MODE\n"));
+            DEBUG_MSG(PSTR("[INFO][SYSTEM] Device is in SAFE MODE\n"));
         }
     #endif
 
@@ -355,7 +359,8 @@ void systemOnHeartbeatRegister(
 
 // -----------------------------------------------------------------------------
 
-void systemSendHeartbeat() {
+void systemSendHeartbeat()
+{
     _system_send_heartbeat = true;
 }
 
@@ -367,7 +372,7 @@ void systemMemory(
     unsigned int free_memory
 ) {
     DEBUG_MSG(
-        PSTR("[SYSTEM] %-6s: %5u bytes initially | %5u bytes used (%2u%%) | %5u bytes free (%2u%%)\n"),
+        PSTR("[INFO][SYSTEM] %-6s: %5u bytes initially | %5u bytes used (%2u%%) | %5u bytes free (%2u%%)\n"),
         name,
         total_memory,
         total_memory - free_memory,
@@ -379,13 +384,15 @@ void systemMemory(
 
 // -----------------------------------------------------------------------------
 
-uint32_t systemLoopDelay() {
+uint32_t systemLoopDelay()
+{
     return _system_loop_delay;
 }
 
 // -----------------------------------------------------------------------------
 
-uint32_t systemLoadAverage() {
+uint32_t systemLoadAverage()
+{
     return _system_load_average;
 }
 
@@ -393,7 +400,8 @@ uint32_t systemLoadAverage() {
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void systemSetup() {
+void systemSetup()
+{
     #if SPIFFS_SUPPORT
         SPIFFS.begin();
     #endif
@@ -429,7 +437,8 @@ void systemSetup() {
 
 // -----------------------------------------------------------------------------
 
-void systemLoop() {
+void systemLoop()
+{
     // -------------------------------------------------------------------------
     // User requested reset
     // -------------------------------------------------------------------------

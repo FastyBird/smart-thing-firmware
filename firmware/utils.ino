@@ -2,11 +2,12 @@
 
 UTILS MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
-String getIdentifier() {
+String getIdentifier()
+{
     char buffer[20];
 
     snprintf_P(buffer, sizeof(buffer), PSTR("FB_%08X"), ESP.getChipId());
@@ -16,7 +17,8 @@ String getIdentifier() {
 
 // -----------------------------------------------------------------------------
 
-String getCoreVersion() {
+String getCoreVersion()
+{
     String version = ESP.getCoreVersion();
 
     #ifdef ARDUINO_ESP8266_RELEASE
@@ -32,7 +34,8 @@ String getCoreVersion() {
 
 // -----------------------------------------------------------------------------
 
-String getCoreRevision() {
+String getCoreRevision()
+{
     #ifdef ARDUINO_ESP8266_GIT_VER
         return String(ARDUINO_ESP8266_GIT_VER);
     #else
@@ -45,7 +48,8 @@ String getCoreRevision() {
 // WTF
 // Calling ESP.getFreeHeap() is making the system crash on a specific
 // AiLight bulb, but anywhere else...
-uint16_t getFreeHeap() {
+uint16_t getFreeHeap()
+{
     if (getSetting("wtfHeap", 0).toInt() == 1) {
         return (uint16_t) 9999;
     }
@@ -55,7 +59,8 @@ uint16_t getFreeHeap() {
 
 // -----------------------------------------------------------------------------
 
-uint16_t getInitialFreeHeap() {
+uint16_t getInitialFreeHeap()
+{
     static uint16_t heap = 0;
 
     if (heap == 0) {
@@ -67,19 +72,22 @@ uint16_t getInitialFreeHeap() {
 
 // -----------------------------------------------------------------------------
 
-uint16_t getUsedHeap() {
+uint16_t getUsedHeap()
+{
     return getInitialFreeHeap() - getFreeHeap();
 }
 
 // -----------------------------------------------------------------------------
 
-String getFirmwareModules() {
+String getFirmwareModules()
+{
     return FPSTR(firmware_modules);
 }
 
 // -----------------------------------------------------------------------------
 
-String getFirmwareSensors() {
+String getFirmwareSensors()
+{
     #if SENSOR_SUPPORT
         return FPSTR(firmware_sensors);
     #else
@@ -89,7 +97,8 @@ String getFirmwareSensors() {
 
 // -----------------------------------------------------------------------------
 
-String getBuildTime() {
+String getBuildTime()
+{
     const char time_now[] = __TIME__;   // hh:mm:ss
     uint16_t hour = atoi(&time_now[0]);
     uint16_t minute = atoi(&time_now[3]);
@@ -122,7 +131,8 @@ String getBuildTime() {
 
 // -----------------------------------------------------------------------------
 
-uint32_t getUptime() {
+uint32_t getUptime()
+{
     static uint32_t last_uptime = 0;
     static uint32_t uptime_overflows = 0;
 
@@ -141,7 +151,7 @@ uint32_t getUptime() {
 // SSL
 // -----------------------------------------------------------------------------
 
-#if NETWORK_ASYNC_TCP_SSL_ENABLED
+#if NETWORK_SSL_ENABLED
     bool sslCheckFingerPrint(const char * fingerprint) {
         return (strlen(fingerprint) == 59);
     }
@@ -182,7 +192,7 @@ uint32_t getUptime() {
 
         return true;
     }
-#endif // NETWORK_ASYNC_TCP_SSL_ENABLED
+#endif // NETWORK_SSL_ENABLED
 
 // -----------------------------------------------------------------------------
 
@@ -253,6 +263,7 @@ bool isNumber(const char * s) {
 // -----------------------------------------------------------------------------
 
 // This method is called by the SDK to know where to connect the ADC
-int __get_adc_mode() {
+int __get_adc_mode()
+{
     return (int) (ADC_MODE_VALUE);
 }

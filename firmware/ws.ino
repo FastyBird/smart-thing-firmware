@@ -2,17 +2,11 @@
 
 WEBSOCKET MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
 #if WEB_SUPPORT && WS_SUPPORT
-
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <ArduinoJson.h>
-#include <Ticker.h>
-#include <vector>
 
 #include "libs/WebSocketIncommingBuffer.h"
 
@@ -93,7 +87,7 @@ ws_ticket_t _ws_ticket[WS_BUFFER_SIZE];
         }
 
         if (index == WS_BUFFER_SIZE) {
-            DEBUG_MSG(PSTR("[WEBSOCKET] Validation check failed\n"));
+            DEBUG_MSG(PSTR("[INFO][WS] Validation check failed\n"));
 
             wsSend_P(client->id(), PSTR("{\"message\": \"ws_authentication_failed\", \"level\": \"error\"}"));
 
@@ -120,7 +114,7 @@ void _wsParse(
     JsonObject& root = jsonBuffer.parseObject((char *) payload);
 
     if (!root.success()) {
-        DEBUG_MSG(PSTR("[WEBSOCKET] Error parsing data\n"));
+        DEBUG_MSG(PSTR("[INFO][WS] Error parsing data\n"));
 
         wsSend_P(client_id, PSTR("{\"message\": \"parsing_error\", \"level\": \"error\"}"));
 
@@ -132,7 +126,7 @@ void _wsParse(
     if (root.containsKey("action")) {
         const char * action = root["action"];
 
-        DEBUG_MSG(PSTR("[WEBSOCKET] Requested action: %s\n"), action);
+        DEBUG_MSG(PSTR("[INFO][WS] Requested action: %s\n"), action);
 
         if (strcmp(action, "reboot") == 0) {
             // Send notification to all clients
@@ -157,7 +151,7 @@ void _wsParse(
                 if (configuration.success()) {
                     // Multiple module configuration
                     if (root["config"].is<JsonArray>()) {
-                        DEBUG_MSG(PSTR("[WEBSOCKET] Parsing multi modules configuration\n"));
+                        DEBUG_MSG(PSTR("[INFO][WS] Parsing multi modules configuration\n"));
 
                         for (uint8_t i = 0; i < root["config"].size(); i++) {
                             for (uint8_t j = 0; j < _ws_on_configure_callbacks.size(); j++) {
@@ -167,7 +161,7 @@ void _wsParse(
 
                     // Single module configuration
                     } else {
-                        DEBUG_MSG(PSTR("[WEBSOCKET] Parsing single module configuration\n"));
+                        DEBUG_MSG(PSTR("[INFO][WS] Parsing single module configuration\n"));
 
                         for (uint8_t i = 0; i < _ws_on_configure_callbacks.size(); i++) {
                             (_ws_on_configure_callbacks[i])(client_id, configuration);
@@ -227,7 +221,7 @@ void _wsEvent(
         IPAddress ip = client->remoteIP();
 
         DEBUG_MSG(
-            PSTR("[WEBSOCKET] #%u connected, ip: %d.%d.%d.%d, url: %s\n"),
+            PSTR("[INFO][WS] #%u connected, ip: %d.%d.%d.%d, url: %s\n"),
             client->id(),
             ip[0],
             ip[1],
@@ -245,7 +239,7 @@ void _wsEvent(
         #endif
 
     } else if (type == WS_EVT_DISCONNECT) {
-        DEBUG_MSG(PSTR("[WEBSOCKET] #%u disconnected\n"), client->id());
+        DEBUG_MSG(PSTR("[INFO][WS] #%u disconnected\n"), client->id());
 
         if (client->_tempObject) {
             delete (WebSocketIncommingBuffer *) client->_tempObject;
@@ -256,10 +250,10 @@ void _wsEvent(
         #endif
 
     } else if (type == WS_EVT_ERROR) {
-        DEBUG_MSG(PSTR("[WEBSOCKET] #%u error(%u): %s\n"), client->id(), *((uint16_t*) arg), (char *) data);
+        DEBUG_MSG(PSTR("[INFO][WS] #%u error(%u): %s\n"), client->id(), *((uint16_t*) arg), (char *) data);
 
     } else if (type == WS_EVT_PONG) {
-        DEBUG_MSG(PSTR("[WEBSOCKET] #%u pong(%u): %s\n"), client->id(), len, len ? (char *) data : "");
+        DEBUG_MSG(PSTR("[INFO][WS] #%u pong(%u): %s\n"), client->id(), len, len ? (char *) data : "");
 
     } else if (type == WS_EVT_DATA) {
         WebSocketIncommingBuffer *buffer = (WebSocketIncommingBuffer *) client->_tempObject;
@@ -282,7 +276,8 @@ void wsSendStatusToClient(
 
 // -----------------------------------------------------------------------------
 
-void wsSendStatusToClients() {
+void wsSendStatusToClients()
+{
     for (uint8_t i = 0; i < _ws_on_connect_callbacks.size(); i++) {
         wsSend(_ws_on_connect_callbacks[i]);
     }
@@ -290,13 +285,15 @@ void wsSendStatusToClients() {
 
 // -----------------------------------------------------------------------------
 
-void wsReportConfiguration() {
+void wsReportConfiguration()
+{
     wsSendStatusToClients();
 }
 
 // -----------------------------------------------------------------------------
 
-bool wsConnected() {
+bool wsConnected()
+{
     return (_ws_client.count() > 0);
 }
 
@@ -433,7 +430,8 @@ void wsSend_P(
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void wsSetup() {
+void wsSetup()
+{
     _ws_client.onEvent(_wsEvent);
 
     webServer()->addHandler(&_ws_client);
@@ -447,7 +445,8 @@ void wsSetup() {
 
 // -----------------------------------------------------------------------------
 
-void wsLoop() {
+void wsLoop()
+{
     static uint32_t last = 0;
 
     if (!wsConnected()) {

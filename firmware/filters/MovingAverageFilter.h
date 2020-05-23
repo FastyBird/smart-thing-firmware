@@ -2,7 +2,7 @@
 
 MOVING AVERAGE FILTER
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
@@ -10,7 +10,6 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 #pragma once
 
-#include <vector>
 #include "BaseFilter.h"
 
 class MovingAverageFilter : public BaseFilter {

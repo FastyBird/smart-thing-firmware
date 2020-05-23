@@ -2,7 +2,7 @@
 
 SONOFF SC SENSOR - Environment monitor sensor
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
@@ -10,8 +10,6 @@ Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
 
 #pragma once
 
-#include <Arduino.h>
-#include <ArduinoJson.h>
 #include <SoftwareSerial.h>
 
 #include "base/BaseSensor.h"
@@ -79,7 +77,7 @@ class SonoffScSensor : public BaseSensor {
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        uint8_t type(uint8_t index) {
             _error = SENSOR_ERROR_OK;
 
             if (index == 0) return MAGNITUDE_TEMPERATURE;
@@ -94,7 +92,7 @@ class SonoffScSensor : public BaseSensor {
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(uint8_t index) {
             _error = SENSOR_ERROR_OK;
 
             if (index == 0) return _temperature;

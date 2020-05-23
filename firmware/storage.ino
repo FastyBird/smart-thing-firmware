@@ -2,7 +2,7 @@
 
 MEMORY STORAGE MODULE
 
-Copyright (C) 2018 FastyBird s.r.o. <info@fastybird.com>
+Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 */
 
@@ -21,13 +21,13 @@ String storageReadConfiguration(
         File file = SPIFFS.open(filename, "r");
 
         if (!file) {
-            DEBUG_MSG(PSTR("[STORAGE] Open file: %s for reading configuration failed\n"), filename);
+            DEBUG_MSG(PSTR("[INFO][STORAGE] Open file: %s for reading configuration failed\n"), filename);
 
             return String("");
         }
         
         if (!file.size()) {
-            DEBUG_MSG(PSTR("[STORAGE] Filesize of file: %s is invalid\n"), filename);
+            DEBUG_MSG(PSTR("[INFO][STORAGE] Filesize of file: %s is invalid\n"), filename);
 
             return String("");
         }
@@ -46,7 +46,7 @@ String storageReadConfiguration(
         return configuration;
 
     } else {
-        DEBUG_MSG(PSTR("[STORAGE] File: %s for reading configuration does not exists\n"), filename);
+        DEBUG_MSG(PSTR("[INFO][STORAGE] File: %s for reading configuration does not exists\n"), filename);
     }
 
     return String("");
@@ -61,7 +61,7 @@ bool storageWriteConfiguration(
     String saved_configuration = storageReadConfiguration(filename);
 
     if (strcmp(saved_configuration.c_str(), configuration.c_str()) == 0) {
-        DEBUG_MSG(PSTR("[STORAGE] Saved file: %s has same content\n"), filename);
+        DEBUG_MSG(PSTR("[INFO][STORAGE] Saved file: %s has same content\n"), filename);
 
         return true;
     }
@@ -69,18 +69,18 @@ bool storageWriteConfiguration(
     File file = SPIFFS.open(filename, "w");
 
     if (!file) {
-        DEBUG_MSG(PSTR("[STORAGE] Open file: %s for storing configuration failed\n"), filename);
+        DEBUG_MSG(PSTR("[INFO][STORAGE] Open file: %s for storing configuration failed\n"), filename);
 
         return false;
     }
 
-    DEBUG_MSG(PSTR("[STORAGE] WRITING: %s\n"), configuration.c_str());
+    DEBUG_MSG(PSTR("[INFO][STORAGE] WRITING: %s\n"), configuration.c_str());
 
     file.println(configuration.c_str());
 
     file.close();
 
-    DEBUG_MSG(PSTR("[STORAGE] Stored configuration to file: %s\n"), filename);
+    DEBUG_MSG(PSTR("[INFO][STORAGE] Stored configuration to file: %s\n"), filename);
 
     return true;
 }
@@ -89,7 +89,8 @@ bool storageWriteConfiguration(
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
-void storageSetup() {
+void storageSetup()
+{
     SPIFFS.begin();
 }
 
