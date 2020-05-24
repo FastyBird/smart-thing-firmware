@@ -10,8 +10,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #pragma once
 
-#include <SoftwareSerial.h>
-
 #include "base/BaseSensor.h"
 
 class SonoffScSensor : public BaseSensor {
@@ -28,9 +26,6 @@ class SonoffScSensor : public BaseSensor {
         }
 
         ~SonoffScSensor() {
-            if (_serial) {
-                delete _serial;
-            }
         }
 
         // ---------------------------------------------------------------------
@@ -39,9 +34,6 @@ class SonoffScSensor : public BaseSensor {
 
         // Initialization method, must be idempotent
         void begin() {
-            // Init communication
-            _send("AT+START");
-
             _temperature = 0;
             _humidity = 0;
             _light_level = 0;
@@ -50,6 +42,11 @@ class SonoffScSensor : public BaseSensor {
            
            // Sensor is ready to communicate
            _ready = true;
+
+            Serial.begin(SERIAL_BAUDRATE);
+
+            // Init communication
+            _send("AT+START");
         }
 
         // Descriptive name of the sensor
@@ -204,8 +201,6 @@ class SonoffScSensor : public BaseSensor {
         int _light_level;
         float _dust_level;
         int _noise_level;
-
-        SoftwareSerial * _serial = NULL;
 };
 
 #endif // SENSOR_SUPPORT && ITEAD_SONOFF_SC_SUPPORT

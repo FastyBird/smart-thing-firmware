@@ -12,7 +12,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 PJON<ThroughSerial> _gateway_bus(FB_GATEWAY_MASTER_ID);
 
-SoftwareSerial _gateway_serial_bus(FB_GATEWAY_TX_PIN, FB_GATEWAY_RX_PIN);
+SoftwareSerial * _gateway_serial_bus;
 
 uint8_t _gateway_reading_node_index = 0;
 
@@ -243,7 +243,7 @@ void _gatewayErrorHandler(
 
 bool gatewaySendPacket(
     const uint8_t address,
-    char * payload,
+    const char * payload,
     const uint8_t length
 ) {
     uint16_t result = _gateway_bus.send_packet(
@@ -279,7 +279,7 @@ bool gatewaySendPacket(
 // -----------------------------------------------------------------------------
 
 void gatewayBroadcastPacket(
-    char * payload,
+    const char * payload,
     const uint8_t length,
     const uint8_t waitingTime
 ) {
@@ -628,9 +628,10 @@ void gatewayResetNodeFlags(
 
 void gatewaySetup()
 {
-    _gateway_serial_bus.begin(SERIAL_BAUDRATE);
+    _gateway_serial_bus = new SoftwareSerial(FB_GATEWAY_TX_PIN, FB_GATEWAY_RX_PIN);
+    _gateway_serial_bus->begin(SERIAL_BAUDRATE);
 
-    _gateway_bus.strategy.set_serial(&_gateway_serial_bus);
+    _gateway_bus.strategy.set_serial(_gateway_serial_bus);
 
      // Communication callbacks
     _gateway_bus.set_receiver(_gatewayReceiveHandler);
