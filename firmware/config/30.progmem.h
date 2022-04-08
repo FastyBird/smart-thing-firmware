@@ -77,7 +77,4 @@ const char firmware_modules[] PROGMEM =
     #if FASTYBIRD_SUPPORT
         "FASTYBIRD "
     #endif
-    #if FB_GATEWAY_SUPPORT
-        "GATEWAY "
-    #endif
     "";

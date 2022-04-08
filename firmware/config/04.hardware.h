@@ -32,35 +32,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 // FastyBird devices
 // -----------------------------------------------------------------------------
 
-#elif defined(FASTYBIRD_WIFI_GATEWAY)
-
-    // Info
-    #define MANUFACTURER                    "FASTYBIRD"
-    #define DEVICE                          "FASTYBIRD_WIFI_GW"
-    #define HARWARE_VERSION                 "0.0.1"
-    #define FASTYBIRD_MAX_CHANNELS          0
-
-    // BUTTONs
-    #define BUTTON_SUPPORT                  1
-
-    #define BUTTON1_PIN                     0
-    #define BUTTON1_MODE                    BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-
-    // LEDs
-    #define STATUS_LED_PIN                  2
-    #define STATUS_LED_PIN_INVERSE          1
-
-    // I2C interface
-    #define I2C_SDA_PIN                     4  // D2
-    #define I2C_SCL_PIN                     5  // D1
-
-    #define FB_GATEWAY_SUPPORT              1
-    #define FB_GATEWAY_TX_PIN               12
-    #define FB_GATEWAY_RX_PIN               4
-
-    // FastyBird cloud with gateway support
-    #define FASTYBIRD_NODES_SUPPORT         1
-
 #elif defined(FASTYBIRD_3CH_POWER_STRIP_R1)
 
     // Info

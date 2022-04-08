@@ -136,10 +136,6 @@ void setup()
         virtualButtonSetup();
     #endif
 
-    #if FB_GATEWAY_SUPPORT
-        gatewaySetup();
-    #endif
-
     #if SENSOR_SUPPORT
         sensorSetup();
     #endif

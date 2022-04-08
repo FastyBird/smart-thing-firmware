@@ -20,8 +20,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 // Custom modules
 #include "20.fastybird.h"
-#include "21.gateway.h"
-#include "22.sensors.h"
+#include "21.sensors.h"
 
 #include "30.progmem.h"
 #include "31.debug.h"
