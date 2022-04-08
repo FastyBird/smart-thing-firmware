@@ -741,10 +741,6 @@ void fastybirdResetDeviceInitialization()
     _fastybird_channel_advertisement_progress = FASTYBIRD_PUB_CHANNEL_NAME;
     _fastybird_channel_property_advertisement_progress = FASTYBIRD_PUB_PROPERTY_NAME;
 
-    #if FASTYBIRD_NODES_SUPPORT
-        fastybirdNodesResetNodesInitialization();
-    #endif
-
     #if WEB_SUPPORT && WS_SUPPORT
         wsSend(_fastybirdWSOnUpdate);
     #endif
@@ -1094,10 +1090,6 @@ void fastybirdSetup()
     // Initialize API setup
     fastybirdApiSetup();
 
-    #if FASTYBIRD_NODES_SUPPORT
-        fastybirdNodesSetup();
-    #endif
-
     #if WEB_SUPPORT && WS_SUPPORT
         wsOnConnectRegister(_fastybirdWSOnConnect);
         wsOnUpdateRegister(_fastybirdWSOnUpdate);
@@ -1151,10 +1143,6 @@ void fastybirdSetup()
 
     // Register firmware callbacks
     firmwareRegisterLoop(fastybirdLoop);
-
-    #if FASTYBIRD_NODES_SUPPORT
-        firmwareRegisterLoop(fastybirdNodesLoop);
-    #endif
 }
 
 // -----------------------------------------------------------------------------

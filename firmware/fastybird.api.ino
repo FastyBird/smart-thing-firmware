@@ -238,73 +238,6 @@ void _fastybirdMqttApiPropertyTopicMatchCallback(
 
 // -----------------------------------------------------------------------------
 
-#if FASTYBIRD_NODES_SUPPORT
-    void _fastybirdMqttApiMqttHandleNodeChannelProperty(
-        String deviceName,
-        String channelName,
-        String propertyName,
-        String action,
-        const char * payload
-    ) {
-        uint8_t nodeIndex = fastybirdNodesFindNodeIndex(deviceName);
-
-        if (nodeIndex != INDEX_NONE) {
-            fastybird_node_t node = fastybirdNodesGetNode(nodeIndex);
-
-            if (node.initialized == false) {
-                DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Skipping - Node is not initialized yet\n"));
-
-                return;
-            }
-
-            if (node.disabled == true) {
-                DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Skipping - Node is disabled\n"));
-
-                return;
-            }
-
-            // Find channel index by name
-            uint8_t channelIndex = fastybirdNodesFindChannelIndex(nodeIndex, channelName);
-
-            if (channelIndex != INDEX_NONE) {
-                uint8_t propertyIndex = fastybirdNodesFindChannelPropertyIndex(channelIndex, propertyName);
-
-                if (propertyIndex != INDEX_NONE) {
-                    DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Node channel property was found\n"));
-
-                    fastybird_node_property_t property = fastybirdNodesGetProperty(propertyIndex);
-
-                    // Combination of channel & property was found
-
-                    if (
-                        action.equals(FASTYBIRD_TOPIC_PART_SET)
-                        && property.settable
-                    ) {
-                        property.payload_callback(nodeIndex, channelIndex, propertyIndex, payload);
-
-                    } else if (
-                        action.equals(FASTYBIRD_TOPIC_PART_QUERY)
-                        && property.queryable
-                    ) {
-                        property.query_callback(nodeIndex, channelIndex, propertyIndex);
-                    }
-
-                } else {
-                    DEBUG_MSG(PSTR("[ERR][FASTYBIRD][API] Node channel property was not found\n"));
-                }
-
-            } else {
-                DEBUG_MSG(PSTR("[ERR][FASTYBIRD][API] Node channel was not found\n"));
-            }
-
-        } else {
-            DEBUG_MSG(PSTR("[ERR][FASTYBIRD][API] Node was not found\n"));
-        }
-    }
-#endif
-
-// -----------------------------------------------------------------------------
-
 void _fastybirdMqttApiMqttOnConnect()
 {
     DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] MQTT connected event\n"));
@@ -328,29 +261,7 @@ void _fastybirdMqttApiMqttOnConnect()
 
     mqttSubscribe(topic.c_str());
 
-    #if FASTYBIRD_NODES_SUPPORT
-        // Control channel property request topic
-        topic = _fastybirdMqttApiCreateChannelTopicString(
-            "+",
-            "+",
-            FASTYBIRD_TOPIC_CHANNEL_PROPERTY_RECEIVE,
-            "property",
-            "+"
-        );
-
-        mqttSubscribe(topic.c_str());
-
-        // Control channel property query topic
-        topic = _fastybirdMqttApiCreateChannelTopicString(
-            "+",
-            "+",
-            FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERY,
-            "property",
-            "+"
-        );
-
-        mqttSubscribe(topic.c_str());
-    #elif FASTYBIRD_MAX_CHANNELS > 0
+    #if FASTYBIRD_MAX_CHANNELS > 0
         // Control channel property request topic
         topic = _fastybirdMqttApiCreateChannelTopicString(
             fastybirdDeviceIdentifier().c_str(),
@@ -533,27 +444,6 @@ void _fastybirdMqttApiMqttOnMessage(
                 );
         #endif
         }
-
-    #if FASTYBIRD_NODES_SUPPORT
-    } else if (
-        parts_count == FASTYBIRD_TOPIC_PART_COUNT_CHANNEL_PROPERTY
-        && _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_PREFIX].equals(FASTYBIRD_TOPIC_PART_CHANNEL)
-        && _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_PROPERTY_PREFIX].equals(FASTYBIRD_TOPIC_PART_PROPERTY)
-        && (
-            _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_PROPERTY_ACTION].equals(FASTYBIRD_TOPIC_PART_SET)
-            || _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_PROPERTY_ACTION].equals(FASTYBIRD_TOPIC_PART_QUERY)
-        )
-    ) {
-        DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Node channel property topic\n"));
-
-        _fastybirdMqttApiMqttHandleNodeChannelProperty(
-            _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_DEVICE],
-            _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_NAME],
-            _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_PROPERTY_NAME],
-            _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_PROPERTY_ACTION],
-            payload
-        );
-    #endif
     }
 }
 
@@ -609,29 +499,7 @@ void fastybirdApiReset()
 
         mqttUnsubscribe(topic.c_str());
 
-        #if FASTYBIRD_NODES_SUPPORT
-            // Control channel property request topic
-            topic = _fastybirdMqttApiCreateChannelTopicString(
-                "+",
-                "+",
-                FASTYBIRD_TOPIC_CHANNEL_PROPERTY_RECEIVE,
-                "property",
-                "+"
-            );
-
-            mqttUnsubscribe(topic.c_str());
-
-            // Control channel property query topic
-            topic = _fastybirdMqttApiCreateChannelTopicString(
-                "+",
-                "+",
-                FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERY,
-                "property",
-                "+"
-            );
-
-            mqttUnsubscribe(topic.c_str());
-        #elif FASTYBIRD_MAX_CHANNELS > 0
+        #if FASTYBIRD_MAX_CHANNELS > 0
             // Control channel property request topic
             topic = _fastybirdMqttApiCreateChannelTopicString(
                 fastybirdDeviceIdentifier().c_str(),

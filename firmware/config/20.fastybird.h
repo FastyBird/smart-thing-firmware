@@ -16,10 +16,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     #define FASTYBIRD_SUPPORT                               1                       // Enable FastyBird connection by default
 #endif
 
-#ifndef FASTYBIRD_NODES_SUPPORT
-    #define FASTYBIRD_NODES_SUPPORT                         0                       // Child nodes support dissabled by default
-#endif
-
 #ifndef FASTYBIRD_MAX_CHANNELS
     #define FASTYBIRD_MAX_CHANNELS                          0                       // Maximum device channels count
 #endif
@@ -143,8 +139,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 #define FASTYBIRD_DEVICE_CONTROL_REBOOT                      "reboot"
 #define FASTYBIRD_DEVICE_CONTROL_FACTORY_RESET               "factory-reset"
 #define FASTYBIRD_DEVICE_CONTROL_RECONNECT                   "reconnect"
-#define FASTYBIRD_DEVICE_CONTROL_SEARCH_FOR_NODES            "search-nodes"
-#define FASTYBIRD_DEVICE_CONTROL_DISCONNECT_NODE             "node-disconnect"
 
 //------------------------------------------------------------------------------
 // FASTYBIRD - Channel controls
@@ -450,78 +444,4 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     void fastybirdOnConfigureRegister(fastybird_on_configure_callback_f callback);
     void fastybirdOnControlRegister(fastybird_control_callback_f callback, String controlName);
 
-// -----------------------------------------------------------------------------
-
-    #if FASTYBIRD_NODES_SUPPORT
-        // PROPERTIES
-        typedef std::function<void(const uint8_t, const uint8_t, const uint8_t, const char *)> fastybird_node_properties_process_payload_f;
-        typedef std::function<void(const uint8_t, const uint8_t, const uint8_t)> fastybird_node_properties_process_query_f;
-
-        typedef struct {
-            String name;
-
-            bool settable;
-            bool queryable;
-
-            String datatype;
-            String unit;
-
-            String format;
-
-            fastybird_node_properties_process_payload_f payload_callback;
-            fastybird_node_properties_process_query_f query_callback;
-        } fastybird_node_property_t;
-
-// -----------------------------------------------------------------------------
-
-        // CHANNELS
-        typedef struct {
-            String name;
-
-            // Properties mapping via array indexes
-            std::vector<uint8_t> properties;
-        } fastybird_node_channel_t;
-        
-// -----------------------------------------------------------------------------
-
-        // HARDWARE INFO
-        typedef struct {
-            char model[20];
-            char version[20];
-            char manufacturer[20];
-        } fastybird_node_hardware_t;
-
-// -----------------------------------------------------------------------------
-
-        // FIRMWARE INFO
-        typedef struct {
-            char name[20];
-            char version[20];
-            char manufacturer[20];
-        } fastybird_node_firmware_t;
-
-// -----------------------------------------------------------------------------
-
-        // NODE STRUCTURE
-        typedef struct {
-            char id[15]; // Representing node serial number
-
-            fastybird_node_hardware_t hardware;
-            fastybird_node_firmware_t firmware;
-
-            bool initialized;
-            bool disabled;
-            bool ready;
-
-            // Node channels
-            std::vector<uint8_t> channels;
-        } fastybird_node_t;
-    #else
-        #define fastybird_node_t void *
-        #define fastybird_node_channel_t void *
-        #define fastybird_node_property_t void *
-
-        #define fastybird_node_properties_process_payload_f void *
-        #define fastybird_node_properties_process_query_f void *
-    #endif // FASTYBIRD_NODES_SUPPORT
 #endif
