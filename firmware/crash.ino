@@ -2,7 +2,7 @@
 
 CRASH REPORT MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 Taken from krzychb EspSaveCrash [https://github.com/krzychb/EspSaveCrash]
 
@@ -140,7 +140,7 @@ extern "C" void custom_crash_callback(
             return;
         }
 
-        response->printf("Latest crash was at %lu ms after boot\n", crash_time);
+        response->printf("Latest crash was at %lu ms after boot\n", (long unsigned int) crash_time);
         response->printf("Reason of restart: %u\n", EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON));
         response->printf("Exception cause: %u\n", EEPROMr.read(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE));
 

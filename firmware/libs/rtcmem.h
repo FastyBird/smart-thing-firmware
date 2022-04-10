@@ -32,7 +32,6 @@ struct RtcmemData {
     uint32_t sys;
     uint32_t relay;
     uint32_t mqtt;
-    uint32_t light;
     double energy;
 };
 

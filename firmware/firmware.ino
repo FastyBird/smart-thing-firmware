@@ -2,7 +2,7 @@
 
 CORE MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
@@ -71,8 +71,8 @@ void setup()
         stabilitySetup();
     #endif
 
-    #if BUTTON_SUPPORT
-        buttonSetup();
+    #if FASTYBIRD_SUPPORT
+        fastybirdSetup();
     #endif
 
     // Init Serial, SPIFFS
@@ -124,8 +124,8 @@ void setup()
         mqttSetup();
     #endif
     
-    #if FASTYBIRD_SUPPORT
-        fastybirdSetup();
+    #if BUTTON_SUPPORT
+        buttonSetup();
     #endif
 
     #if RELAY_PROVIDER != RELAY_PROVIDER_NONE

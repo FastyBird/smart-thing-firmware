@@ -2,7 +2,7 @@
 
 WIFI MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
@@ -664,7 +664,7 @@ uint8_t wifiState()
 // -----------------------------------------------------------------------------
 
 void wifiRegister(
-    wifi_callback_f callback
+    wifi_callback_t callback
 ) {
     jw.subscribe(callback);
 }
@@ -696,20 +696,20 @@ void wifiSetup()
         #endif
     #endif
 
-    #if BUTTON_SUPPORT && WIFI_AP_BTN != INDEX_NONE
+    #if BUTTON_SUPPORT && WIFI_AP_BTN_INDEX != INDEX_NONE
         buttonOnEventRegister(
             [](uint8_t event) {
                 if (event == WIFI_AP_BTN_EVENT) {
                     wifiStartAP();
                 }
             },
-            (uint8_t) WIFI_AP_BTN
+            (uint8_t) WIFI_AP_BTN_INDEX
         );
     #endif
 
     #if FASTYBIRD_SUPPORT
         fastybirdOnControlRegister(
-            [](const char * payload) {
+            [](const uint8_t controlIndex, const char * payload) {
                 DEBUG_MSG(PSTR("[INFO][WIFI] Requested reconnect action\n"));
 
                 #if WEB_SUPPORT && WS_SUPPORT

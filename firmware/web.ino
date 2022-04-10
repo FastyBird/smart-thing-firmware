@@ -2,7 +2,7 @@
 
 WEB MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
@@ -26,7 +26,7 @@ AsyncWebServer * _web_server;
 
 char _web_last_modified[50];
 
-std::vector<web_events_callback_f> _web_events_callbacks;
+std::vector<web_events_callback_t> _web_events_callbacks;
 
 // -----------------------------------------------------------------------------
 
@@ -140,7 +140,6 @@ void _onSignIn(
     }
 
     size_t toEncodeLen = strlen(username.c_str()) + strlen(password.c_str()) + 1;
-    size_t encodedLen = base64_encode_expected_len(toEncodeLen);
 
     char * toEncode = new char[toEncodeLen + 1];
     char * encoded = new char[base64_encode_expected_len(toEncodeLen) + 1];
@@ -426,17 +425,22 @@ bool webAuthenticate(
 
     String password = getSetting("adminPass", ADMIN_PASSWORD);
 
-    char httpPassword[password.length() + 1];
+    size_t toEncodeLen = strlen(WEB_USERNAME) + strlen(password.c_str()) + 1;
 
-    password.toCharArray(httpPassword, password.length() + 1);
+    char * toEncode = new char[toEncodeLen + 1];
+    char * encoded = new char[base64_encode_expected_len(toEncodeLen) + 1];
 
-    return request->authenticate(WEB_USERNAME, httpPassword);
+    sprintf(toEncode, "%s:%s", WEB_USERNAME, password.c_str());
+
+    base64_encode_chars(toEncode, toEncodeLen, encoded);
+
+    return request->authenticate(encoded);
 }
 
 // -----------------------------------------------------------------------------
 
 void webEventsRegister(
-    web_events_callback_f callback
+    web_events_callback_t callback
 ) {
     _web_events_callbacks.push_back(callback);
 }
@@ -465,7 +469,7 @@ void webSetup()
 
     // Other entry points
     _web_server->on(WEB_API_REBOOT, HTTP_PUT, _onReset);
-    _web_server->on(WEB_API_FACTORY, HTTP_PUT, _onFactory);
+    _web_server->on(WEB_API_FACTORY_RESET, HTTP_PUT, _onFactory);
     _web_server->on(WEB_API_FIRMWARE_UPGRADE, HTTP_POST, _onUpgrade, _onUpgradeData);
 
     _web_server->on(WEB_API_DISCOVER, HTTP_GET, _onDiscover);

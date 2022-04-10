@@ -2,7 +2,7 @@
 
 LED MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
@@ -84,7 +84,7 @@ void _ledBlink(
 
 // -----------------------------------------------------------------------------
 
-#if FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+#if WEB_SUPPORT && WS_SUPPORT
     /**
      * Provide module configuration schema
      */
@@ -162,7 +162,7 @@ void _ledBlink(
         return is_updated;
     }
 
-#endif // FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+#endif // WEB_SUPPORT && WS_SUPPORT
 
 // -----------------------------------------------------------------------------
 
@@ -250,13 +250,6 @@ void ledSetup()
     #if WEB_SUPPORT && WS_SUPPORT
         wsOnConnectRegister(_ledWSOnConnect);
         wsOnConfigureRegister(_ledWSOnConfigure);
-    #endif
-
-    #if FASTYBIRD_SUPPORT
-        // Module schema report
-        fastybirdReportConfigurationSchemaRegister(_ledReportConfigurationSchema);
-        fastybirdReportConfigurationRegister(_ledReportConfiguration);
-        fastybirdOnConfigureRegister(_ledUpdateConfiguration);
     #endif
 
     // Register firmware callbacks

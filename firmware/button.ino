@@ -2,17 +2,11 @@
 
 BUTTON MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
 #if BUTTON_SUPPORT
-
-typedef struct {
-    DebounceEvent * button;
-    uint8_t channel_index;
-    std::vector<button_on_event_callback_f> callbacks;
-} button_t;
 
 std::vector<button_t> _buttons;
 
@@ -55,7 +49,7 @@ uint8_t _buttonMapEvent(
 
 // -----------------------------------------------------------------------------
 
-#if FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+#if WEB_SUPPORT && WS_SUPPORT
     /**
      * Provide module configuration schema
      */
@@ -111,7 +105,7 @@ uint8_t _buttonMapEvent(
 
         return is_updated;
     }
-#endif // FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+#endif // WEB_SUPPORT && WS_SUPPORT
 
 // -----------------------------------------------------------------------------
 
@@ -153,7 +147,11 @@ uint8_t _buttonMapEvent(
             for (uint8_t i = 0; i < _buttons.size(); i++) {
                 if (_buttons[i].channel_index != INDEX_NONE) {
                     // Register property to channel
-                    fastybirdMapPropertyToChannel(_buttons[i].channel_index, propertyIndex);
+                    fastybirdMapPropertyToChannel(
+                        FASTYBIRD_MAIN_DEVICE_INDEX,
+                        _buttons[i].channel_index,
+                        propertyIndex
+                    );
                 }
             }
         }
@@ -232,48 +230,78 @@ void _buttonEvent(
         switch (event) {
             case BUTTON_EVENT_PRESSED:
                 fastybirdReportChannelPropertyValue(
+                    FASTYBIRD_MAIN_DEVICE_INDEX,
                     _buttons[id].channel_index,
-                    fastybirdFindChannelPropertyIndex(_buttons[id].channel_index, FASTYBIRD_PROPERTY_BUTTON),
+                    fastybirdFindChannelPropertyIndex(
+                        FASTYBIRD_MAIN_DEVICE_INDEX,
+                        _buttons[id].channel_index,
+                        FASTYBIRD_PROPERTY_BUTTON
+                    ),
                     FASTYBIRD_BTN_PAYLOAD_PRESS
                 );
                 break;
 
             case BUTTON_EVENT_CLICK:
                 fastybirdReportChannelPropertyValue(
+                    FASTYBIRD_MAIN_DEVICE_INDEX,
                     _buttons[id].channel_index,
-                    fastybirdFindChannelPropertyIndex(_buttons[id].channel_index, FASTYBIRD_PROPERTY_BUTTON),
+                    fastybirdFindChannelPropertyIndex(
+                        FASTYBIRD_MAIN_DEVICE_INDEX,
+                        _buttons[id].channel_index,
+                        FASTYBIRD_PROPERTY_BUTTON
+                    ),
                     FASTYBIRD_BTN_PAYLOAD_CLICK
                 );
                 break;
 
             case BUTTON_EVENT_DBL_CLICK:
                 fastybirdReportChannelPropertyValue(
+                    FASTYBIRD_MAIN_DEVICE_INDEX,
                     _buttons[id].channel_index,
-                    fastybirdFindChannelPropertyIndex(_buttons[id].channel_index, FASTYBIRD_PROPERTY_BUTTON),
+                    fastybirdFindChannelPropertyIndex(
+                        FASTYBIRD_MAIN_DEVICE_INDEX,
+                        _buttons[id].channel_index,
+                        FASTYBIRD_PROPERTY_BUTTON
+                    ),
                     FASTYBIRD_BTN_PAYLOAD_DBL_CLICK
                 );
                 break;
 
             case BUTTON_EVENT_TRIPLE_CLICK:
                 fastybirdReportChannelPropertyValue(
+                    FASTYBIRD_MAIN_DEVICE_INDEX,
                     _buttons[id].channel_index,
-                    fastybirdFindChannelPropertyIndex(_buttons[id].channel_index, FASTYBIRD_PROPERTY_BUTTON),
+                    fastybirdFindChannelPropertyIndex(
+                        FASTYBIRD_MAIN_DEVICE_INDEX,
+                        _buttons[id].channel_index,
+                        FASTYBIRD_PROPERTY_BUTTON
+                    ),
                     FASTYBIRD_BTN_PAYLOAD_TRIPLE_CLICK
                 );
                 break;
 
             case BUTTON_EVENT_LNG_CLICK:
                 fastybirdReportChannelPropertyValue(
+                    FASTYBIRD_MAIN_DEVICE_INDEX,
                     _buttons[id].channel_index,
-                    fastybirdFindChannelPropertyIndex(_buttons[id].channel_index, FASTYBIRD_PROPERTY_BUTTON),
+                    fastybirdFindChannelPropertyIndex(
+                        FASTYBIRD_MAIN_DEVICE_INDEX,
+                        _buttons[id].channel_index,
+                        FASTYBIRD_PROPERTY_BUTTON
+                    ),
                     FASTYBIRD_BTN_PAYLOAD_LNG_CLICK
                 );
                 break;
 
             case BUTTON_EVENT_LNG_LNG_CLICK:
                 fastybirdReportChannelPropertyValue(
+                    FASTYBIRD_MAIN_DEVICE_INDEX,
                     _buttons[id].channel_index,
-                    fastybirdFindChannelPropertyIndex(_buttons[id].channel_index, FASTYBIRD_PROPERTY_BUTTON),
+                    fastybirdFindChannelPropertyIndex(
+                        FASTYBIRD_MAIN_DEVICE_INDEX,
+                        _buttons[id].channel_index,
+                        FASTYBIRD_PROPERTY_BUTTON
+                    ),
                     FASTYBIRD_BTN_PAYLOAD_LNG_LNG_CLICK
                 );
                 break;
@@ -289,7 +317,7 @@ void _buttonEvent(
 // -----------------------------------------------------------------------------
 
 void buttonOnEventRegister(
-    button_on_event_callback_f callback,
+    button_on_event_callback_t callback,
     const uint8_t id
 ) {
     if (id >= _buttons.size()) {
@@ -362,18 +390,11 @@ void buttonSetup()
         wsOnConfigureRegister(_buttonWSOnConfigure);
     #endif
 
-    #if FASTYBIRD_SUPPORT
-        // Module schema report
-        fastybirdReportConfigurationSchemaRegister(_buttonReportConfigurationSchema);
-        fastybirdReportConfigurationRegister(_buttonReportConfiguration);
-        fastybirdOnConfigureRegister(_buttonUpdateConfiguration);
-
-        #if FASTYBIRD_MAX_CHANNELS > 0
-            // Channels registration
-            if (_buttons.size() > 0) {
-                _buttonFastyBirdRegister();
-            }
-        #endif
+    #if FASTYBIRD_SUPPORT && FASTYBIRD_MAX_CHANNELS > 0
+        // Channels registration
+        if (_buttons.size() > 0) {
+            _buttonFastyBirdRegister();
+        }
     #endif
 
     // Register loop

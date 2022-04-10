@@ -23,21 +23,20 @@
 // Features (values below are non-default values)
 //--------------------------------------------------------------------------------
 
-//#define ALEXA_SUPPORT                 0
-//#define BUTTON_SUPPORT                0
-//#define DEBUG_SERIAL_SUPPORT          0
-//#define DEBUG_WEB_SUPPORT             0
-//#define DEBUG_MQTT_SUPPORT            0
+//#define BUTTON_SUPPORT                1
+//#define DEBUG_SERIAL_SUPPORT          1
+//#define DEBUG_WEB_SUPPORT             1
+//#define DEBUG_MQTT_SUPPORT            1
 //#define FASTYBIRD_SUPPORT             1
 //#define I2C_SUPPORT                   1
-//#define LED_SUPPORT                   0
-//#define MQTT_SUPPORT                  0
+//#define LED_SUPPORT                   1
+//#define MQTT_SUPPORT                  1
 //#define SENSOR_SUPPORT                1
 //#define SPIFFS_SUPPORT                1
 //#define WIFI_SUPPORT                  1
-//#define WEB_SUPPORT                   0
-//#define WS_SUPPORT                    0
-//#define VIRTUAL_BTN                   0
+//#define WEB_SUPPORT                   1
+//#define WS_SUPPORT                    1
+//#define VIRTUAL_BTN_SUPPORT           1
 
 //--------------------------------------------------------------------------------
 // Sensors (values below are non-default values)

@@ -2,15 +2,24 @@
 
 SENSOR MODULE CONFIGURATION
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
 #pragma once
 
-// -----------------------------------------------------------------------------
-// SENSORS - General data
-// -----------------------------------------------------------------------------
+// =============================================================================
+// MODULE DEFAULTS
+// =============================================================================
+
+#ifndef SENSOR_SUPPORT
+    #define SENSOR_SUPPORT ( \
+        HLW8012_SUPPORT || \
+        CSE7766_SUPPORT || \
+        ITEAD_SONOFF_SC_SUPPORT || \
+        ITEAD_SONOFF_SC_PRO_SUPPORT \
+    )
+#endif
 
 #define SENSOR_DEBUG                            0                       // Debug sensors
 
@@ -76,23 +85,6 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     #define SENSOR_ANALOG_DECIMALS              2                       // Round to this number of decimals
 #endif
 
-// -----------------------------------------------------------------------------
-// SENSORS - Dependencies
-// -----------------------------------------------------------------------------
-
-#ifndef SENSOR_SUPPORT
-    #define SENSOR_SUPPORT ( \
-        HLW8012_SUPPORT || \
-        CSE7766_SUPPORT || \
-        ITEAD_SONOFF_SC_SUPPORT || \
-        ITEAD_SONOFF_SC_PRO_SUPPORT \
-    )
-#endif
-
-// -----------------------------------------------------------------------------
-// SENSORS - Specific data for each sensor
-// -----------------------------------------------------------------------------
-
 //------------------------------------------------------------------------------
 // HLW8012 Energy monitor IC
 // Enable support by passing HLW8012_SUPPORT=1 build flag
@@ -148,13 +140,13 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #ifndef HLW8012_WAIT_FOR_WIFI
     #define HLW8012_WAIT_FOR_WIFI               0                       // Weather to enable interrupts only after
-                                                                    // wifi connection has been stablished
+                                                                        // wifi connection has been stablished
 #endif
 
 #ifndef HLW8012_INTERRUPT_ON
     #define HLW8012_INTERRUPT_ON                CHANGE                  // When to trigger the interrupt
-                                                                    // Use CHANGE for HLW8012
-                                                                    // Use FALLING for BL0937 / HJL0
+                                                                        // Use CHANGE for HLW8012
+                                                                        // Use FALLING for BL0937 / HJL0
 #endif
 
 //------------------------------------------------------------------------------
@@ -193,9 +185,9 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
     #define ITEAD_SONOFF_SC_PRO_SUPPORT         0
 #endif
 
-// -----------------------------------------------------------------------------
-// SENSORS - Types
-// -----------------------------------------------------------------------------
+// =============================================================================
+// MODULE TYPES
+// =============================================================================
 
 #define SENSOR_TYPE_ENERGY                      0
 #define SENSOR_TYPE_ENVIRONMENT                 1
@@ -292,9 +284,9 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #define MAGNITUDE_MAX                           35
 
-// -----------------------------------------------------------------------------
-// SENSORS - Class loading
-// -----------------------------------------------------------------------------
+// =============================================================================
+// MODULE DEPENDENCIES LOADING
+// =============================================================================
 
 #if SENSOR_SUPPORT
     #include "../sensors/base/BaseSensor.h"
@@ -317,9 +309,9 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
 
 #endif // SENSOR_SUPPORT
 
-// -----------------------------------------------------------------------------
-// SENSORS - PROGMEM structures
-// -----------------------------------------------------------------------------
+// =============================================================================
+// MODULE PROGMEM
+// =============================================================================
 
 #if SENSOR_SUPPORT
 
@@ -439,7 +431,7 @@ Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
         magnitude_empty,                                            //
         magnitude_ppm, magnitude_ppm,                               // NO2 & CO2
         magnitude_resistance,
-        magnitude_empty,                                             // pH
+        magnitude_empty,                                            // pH
         magnitude_empty, magnitude_empty, magnitude_empty
     };
 

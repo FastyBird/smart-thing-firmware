@@ -2,7 +2,7 @@
 
 SYSTEM MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
@@ -16,7 +16,7 @@ extern "C" uint32_t _SPIFFS_end;
 
 bool _system_send_heartbeat = false;
 
-std::vector<system_on_heartbeat_callback_f> _system_on_heartbeat_callbacks;
+std::vector<system_on_heartbeat_callback_t> _system_on_heartbeat_callbacks;
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
@@ -170,8 +170,8 @@ void _systemInfoOnHeartbeat()
         // Device
         JsonObject& device = data.createNestedObject("device");
 
-        device["device"] = DEVICE;
-        device["manufacturer"] = MANUFACTURER;
+        device["device"] = HARDWARE_MODEL;
+        device["manufacturer"] = HARDWARE_MANUFACTURER;
         device["chipid"] = String(chipid);
         device["sdk"] = ESP.getSdkVersion();
         device["core"] = getCoreVersion();
@@ -314,7 +314,7 @@ void _systemInfo()
 
     // -------------------------------------------------------------------------
 
-    DEBUG_MSG(PSTR("[INFO][SYSTEM] Board: %s\n"), DEVICE);
+    DEBUG_MSG(PSTR("[INFO][SYSTEM] Board: %s\n"), HARDWARE_MODEL);
     DEBUG_MSG(PSTR("[INFO][SYSTEM] Support: %s\n"), getFirmwareModules().c_str());
 
     #if SENSOR_SUPPORT
@@ -352,7 +352,7 @@ void _systemInfo()
 // -----------------------------------------------------------------------------
 
 void systemOnHeartbeatRegister(
-    system_on_heartbeat_callback_f callback
+    system_on_heartbeat_callback_t callback
 ) {
     _system_on_heartbeat_callbacks.push_back(callback);
 }

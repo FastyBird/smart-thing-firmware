@@ -2,7 +2,7 @@
 
 SETTINGS MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
@@ -130,7 +130,7 @@ bool _settingsRestoreJson(
 ) {
     const char * _device = data["device"];
 
-    if (strcmp(_device, DEVICE) != 0) {
+    if (strcmp(_device, HARDWARE_MODEL) != 0) {
         return false;
     }
 
@@ -192,7 +192,7 @@ bool _settingsRestoreJson(
 
         response->addHeader("X-Suggested-Filename", buffer);
 
-        response->printf("{\n\"device\": \"%s\"", DEVICE);
+        response->printf("{\n\"device\": \"%s\"", HARDWARE_MODEL);
         response->printf(",\n\"manufacturer\": \"%s\"", FIRMWARE_MANUFACTURER);
         response->printf(",\n\"version\": \"%s\"", FIRMWARE_VERSION);
         response->printf(",\n\"backup\": \"1\"");
@@ -496,7 +496,7 @@ void settingsSetup()
         #endif
     #endif
 
-    #if BUTTON_SUPPORT && SETTINGS_FACTORY_BTN != INDEX_NONE
+    #if BUTTON_SUPPORT && SETTINGS_FACTORY_BTN_INDEX != INDEX_NONE
         buttonOnEventRegister(
             [](uint8_t event) {
                 if (event == SETTINGS_FACTORY_BTN_EVENT) {
@@ -513,11 +513,11 @@ void settingsSetup()
                     deferredReset(250, CUSTOM_FACTORY_BUTTON);
                 }
             },
-            (uint8_t) SETTINGS_FACTORY_BTN
+            (uint8_t) SETTINGS_FACTORY_BTN_INDEX
         );
     #endif
 
-    #if BUTTON_SUPPORT && SYSTEM_RESET_BTN != INDEX_NONE
+    #if BUTTON_SUPPORT && SYSTEM_RESET_BTN_INDEX != INDEX_NONE
         buttonOnEventRegister(
             [](uint8_t event) {
                 if (event == SYSTEM_RESET_BTN_EVENT) {
@@ -531,13 +531,13 @@ void settingsSetup()
                     deferredReset(250, CUSTOM_RESET_BUTTON);
                 }
             },
-            (uint8_t) SYSTEM_RESET_BTN
+            (uint8_t) SYSTEM_RESET_BTN_INDEX
         );
     #endif
 
     #if FASTYBIRD_SUPPORT
         fastybirdOnControlRegister(
-            [](const char * payload) {
+            [](const uint8_t controlIndex, const char * payload) {
                 DEBUG_MSG(PSTR("[INFO][SETTINGS] Requested factory reset action\n"));
                 DEBUG_MSG(PSTR("\n\nFACTORY RESET\n\n"));
 

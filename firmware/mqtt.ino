@@ -2,7 +2,7 @@
 
 MQTT MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
@@ -18,16 +18,16 @@ uint32_t _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
 char * _mqtt_user = 0;
 char * _mqtt_pass = 0;
-char * _mqtt_will = "";
+char * _mqtt_will = 0;
 char * _mqtt_will_content;
 
 #if MQTT_SKIP_RETAINED
     uint32_t _mqtt_connected_at = 0;
 #endif
 
-std::vector<mqtt_on_connect_callback_f> _mqtt_on_connect_callbacks;
-std::vector<mqtt_on_disconnect_callback_f> _mqtt_on_disconnect_callbacks;
-std::vector<mqtt_on_message_callback_f> _mqtt_on_message_callbacks;
+std::vector<mqtt_on_connect_callback_t> _mqtt_on_connect_callbacks;
+std::vector<mqtt_on_disconnect_callback_t> _mqtt_on_disconnect_callbacks;
+std::vector<mqtt_on_message_callback_t> _mqtt_on_message_callbacks;
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
@@ -146,7 +146,7 @@ void _mqttConfigure()
 
 // -----------------------------------------------------------------------------
 
-#if FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+#if WEB_SUPPORT && WS_SUPPORT
     /**
      * Provide module configuration schema
      */
@@ -297,7 +297,7 @@ void _mqttConfigure()
 
         return is_updated;
     }
-#endif // FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+#endif // WEB_SUPPORT && WS_SUPPORT
 
 // -----------------------------------------------------------------------------
 
@@ -455,7 +455,7 @@ void _mqttOnMessage(
 // -----------------------------------------------------------------------------
 
 void mqttOnConnectRegister(
-    mqtt_on_connect_callback_f callback
+    mqtt_on_connect_callback_t callback
 ) {
     _mqtt_on_connect_callbacks.push_back(callback);
 }
@@ -463,7 +463,7 @@ void mqttOnConnectRegister(
 // -----------------------------------------------------------------------------
 
 void mqttOnDisconnectRegister(
-    mqtt_on_disconnect_callback_f callback
+    mqtt_on_disconnect_callback_t callback
 ) {
     _mqtt_on_disconnect_callbacks.push_back(callback);
 }
@@ -471,7 +471,7 @@ void mqttOnDisconnectRegister(
 // -----------------------------------------------------------------------------
 
 void mqttOnMessageRegister(
-    mqtt_on_message_callback_f callback
+    mqtt_on_message_callback_t callback
 ) {
     _mqtt_on_message_callbacks.push_back(callback);
 }

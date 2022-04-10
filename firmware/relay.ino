@@ -2,7 +2,7 @@
 
 RELAY MODULE
 
-Copyright (C) 2017 - 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
@@ -193,7 +193,7 @@ uint8_t _relayParsePayload(
 
 // -----------------------------------------------------------------------------
 
-#if FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+#if WEB_SUPPORT && WS_SUPPORT
     /**
      * Provide module configuration schema
      */
@@ -414,7 +414,7 @@ uint8_t _relayParsePayload(
 
         return is_updated;
     }
-#endif // FASTYBIRD_SUPPORT || (WEB_SUPPORT && WS_SUPPORT)
+#endif // WEB_SUPPORT && WS_SUPPORT
 
 // -----------------------------------------------------------------------------
 
@@ -527,20 +527,6 @@ uint8_t _relayParsePayload(
                         for (uint8_t i = 0; i < channels_configuration["values"].size(); i++) {
                             if (_relayRelayConfigure(i, channels_configuration["values"][i])) {
                                 is_configuration_updated = true;
-
-                                #if FASTYBIRD_SUPPORT
-                                    DynamicJsonBuffer jsonBuffer;
-
-                                    JsonObject& configuration = jsonBuffer.createObject();
-
-                                    fastybirdCallReportChannelConfiguration(_relays[i].channel_index, configuration);
-
-                                    fastybird_channel_t channel = fastybirdGetChannel(_relays[i].channel_index);
-
-                                    if (configuration.size() > 0) {
-                                        fastybirdApiPropagateChannelConfiguration(channel.name.c_str(), configuration);
-                                    }
-                                #endif
                             }
                         }
                     }
@@ -611,7 +597,7 @@ uint8_t _relayParsePayload(
 // -----------------------------------------------------------------------------
 
 #if FASTYBIRD_SUPPORT && FASTYBIRD_MAX_CHANNELS > 0
-    void _relayFastyBirdProperyPayload(
+    void _relayFastyBirdProperySet(
         const uint8_t channelIndex,
         const uint8_t propertyIndex,
         const char * payload
@@ -639,51 +625,15 @@ uint8_t _relayParsePayload(
         for (uint8_t i = 0; i < _relays.size(); i++) {
             if (_relays[i].channel_index == channelIndex) {
                 fastybirdReportChannelPropertyValue(
+                    FASTYBIRD_MAIN_DEVICE_INDEX,
                     channelIndex,
-                    fastybirdFindChannelPropertyIndex(channelIndex, FASTYBIRD_PROPERTY_SWITCH),
+                    fastybirdFindChannelPropertyIndex(
+                        FASTYBIRD_MAIN_DEVICE_INDEX,
+                        channelIndex,
+                        FASTYBIRD_PROPERTY_SWITCH
+                    ),
                     relayStatus(i) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
                 );
-            }
-        }
-    }
-
-// -----------------------------------------------------------------------------
-
-    void _relayFastyBirdChannelReportConfigurationSchema(
-        const uint8_t channelIndex,
-        JsonArray& schema
-    ) {
-        for (uint8_t i = 0; i < _relays.size(); i++) {
-            if (_relays[i].channel_index == channelIndex) {
-                _relayReportRelayConfigurationSchema(schema);
-            }
-        }
-    }
-
-// -----------------------------------------------------------------------------
-
-    void _relayFastyBirdChannelReportConfiguration(
-        const uint8_t channelIndex,
-        JsonObject& configuration
-    ) {
-        for (uint8_t i = 0; i < _relays.size(); i++) {
-            if (_relays[i].channel_index == channelIndex) {
-                _relayReportRelayConfiguration(i, configuration);
-            }
-        }
-    }
-
-// -----------------------------------------------------------------------------
-
-    void _relayFastyBirdChannelConfigure(
-        const uint8_t channelIndex,
-        JsonObject& configuration
-    ) {
-        for (uint8_t i = 0; i < _relays.size(); i++) {
-            if (_relays[i].channel_index == channelIndex) {
-                _relayRelayConfigure(i, configuration);
-
-                DEBUG_MSG(PSTR("[INFO][RELAY] Configuration changes were saved\n"));
             }
         }
     }
@@ -715,17 +665,17 @@ uint8_t _relayParsePayload(
                 FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
                 "",
                 format,
-                _relayFastyBirdProperyPayload,
+                _relayFastyBirdProperySet,
                 _relayFastyBirdProperyQuery
             );
 
             for (uint8_t i = 0; i < _relays.size(); i++) {
                 // Register property to channel
-                fastybirdMapPropertyToChannel(_relays[i].channel_index, propertyIndex);
-
-                fastybirdReportChannelConfigurationSchemaRegister(_relays[i].channel_index, _relayFastyBirdChannelReportConfigurationSchema);
-                fastybirdReportChannelConfigurationRegister(_relays[i].channel_index, _relayFastyBirdChannelReportConfiguration);
-                fastybirdOnChannelConfigureRegister(_relays[i].channel_index, _relayFastyBirdChannelConfigure);
+                fastybirdMapPropertyToChannel(
+                    FASTYBIRD_MAIN_DEVICE_INDEX,
+                    _relays[i].channel_index,
+                    propertyIndex
+                );
             }
         }
     }
@@ -810,44 +760,7 @@ void _relayProviderStatus(
         Serial.flush();
     #endif
 
-    #if RELAY_PROVIDER == RELAY_PROVIDER_LIGHT
-        // Real relays
-        uint8_t physical = _relays.size() - DUMMY_RELAY_COUNT;
-
-        // Support for a mixed of dummy and real relays
-        // Reference: https://github.com/xoseperez/espurna/issues/1305
-        if (id >= physical) {
-            // If the number of dummy relays matches the number of light channels
-            // assume each relay controls one channel.
-            // If the number of dummy relays is the number of channels plus 1
-            // assume the first one controls all the channels and
-            // the rest one channel each.
-            // Otherwise every dummy relay controls all channels.
-            if (DUMMY_RELAY_COUNT == lightChannels()) {
-                lightState(id-physical, status);
-                lightState(true);
-
-            } else if (DUMMY_RELAY_COUNT == (lightChannels() + 1u)) {
-                if (id == physical) {
-                    lightState(status);
-
-                } else {
-                    lightState(id - 1 - physical, status);
-                }
-
-            } else {
-                lightState(status);
-            }
-
-            lightUpdate(true, true);
-
-            return;
-        }
-    #endif
-
-    #if (RELAY_PROVIDER == RELAY_PROVIDER_RELAY) || (RELAY_PROVIDER == RELAY_PROVIDER_LIGHT)
-        // If this is a light, all dummy relays have already been processed above
-        // we reach here if the user has toggled a physical relay
+    #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY
         if (_relays[id].type == RELAY_TYPE_NORMAL) {
             digitalWrite(_relays[id].pin, status);
 
@@ -919,8 +832,13 @@ void _relayProcess(
         // Send to Broker
         #if FASTYBIRD_SUPPORT && FASTYBIRD_MAX_CHANNELS > 0
             fastybirdReportChannelPropertyValue(
+                FASTYBIRD_MAIN_DEVICE_INDEX,
                 _relays[id].channel_index,
-                fastybirdFindChannelPropertyIndex(_relays[id].channel_index, FASTYBIRD_PROPERTY_SWITCH),
+                fastybirdFindChannelPropertyIndex(
+                    FASTYBIRD_MAIN_DEVICE_INDEX,
+                    _relays[id].channel_index,
+                    FASTYBIRD_PROPERTY_SWITCH
+                ),
                 target ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
             );
         #endif
@@ -1319,7 +1237,7 @@ void relaySetup()
         #endif
     #endif
 
-    // Dummy relays for AI Light, Magic Home LED Controller, H801, Sonoff Dual and Sonoff RF Bridge
+    // Dummy relays for Sonoff Dual and Sonoff RF Bridge
     // No delay_on or off for these devices to easily allow having more than
     // 8 channels. This behaviour will be recovered with v2.
     for (uint8_t i = 0; i < DUMMY_RELAY_COUNT; i++) {
@@ -1342,27 +1260,25 @@ void relaySetup()
         wsOnActionRegister(_relayWSOnAction);
     #endif
 
-    #if FASTYBIRD_SUPPORT
-        // Module schema report
-        fastybirdReportConfigurationSchemaRegister(_relayReportConfigurationSchema);
-        fastybirdReportConfigurationRegister(_relayReportConfiguration);
-        fastybirdOnConfigureRegister(_relayUpdateConfiguration);
+    #if FASTYBIRD_SUPPORT && FASTYBIRD_MAX_CHANNELS > 0
+        if (relayCount() > 0) {
+            _relayFastyBirdRegisterRealys();
 
-        #if FASTYBIRD_MAX_CHANNELS > 0
-            if (relayCount() > 0) {
-                _relayFastyBirdRegisterRealys();
-
-                fastybirdOnConnectRegister([](){
-                    for (uint8_t i = 0; i < relayCount(); i++) {
-                        fastybirdReportChannelPropertyValue(
+            fastybirdOnConnectRegister([](){
+                for (uint8_t i = 0; i < relayCount(); i++) {
+                    fastybirdReportChannelPropertyValue(
+                        FASTYBIRD_MAIN_DEVICE_INDEX,
+                        _relays[i].channel_index,
+                        fastybirdFindChannelPropertyIndex(
+                            FASTYBIRD_MAIN_DEVICE_INDEX,
                             _relays[i].channel_index,
-                            fastybirdFindChannelPropertyIndex(_relays[i].channel_index, FASTYBIRD_PROPERTY_SWITCH),
-                            relayStatus(i) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
-                        );
-                    }
-                });
-            }
-        #endif
+                            FASTYBIRD_PROPERTY_SWITCH
+                        ),
+                        relayStatus(i) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
+                    );
+                }
+            });
+        }
     #endif
 
     #if MQTT_SUPPORT

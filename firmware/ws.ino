@@ -2,7 +2,7 @@
 
 WEBSOCKET MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
@@ -14,10 +14,10 @@ AsyncWebSocket _ws_client(WEB_API_WS_DATA);
 
 Ticker _web_defer;
 
-std::vector<ws_on_connect_callback_f> _ws_on_connect_callbacks;
-std::vector<ws_on_update_callback_f> _ws_on_update_callbacks;
-std::vector<ws_on_action_callback_f> _ws_on_action_callbacks;
-std::vector<ws_on_configure_callback_f> _ws_on_configure_callbacks;
+std::vector<ws_on_connect_callback_t> _ws_on_connect_callbacks;
+std::vector<ws_on_update_callback_t> _ws_on_update_callbacks;
+std::vector<ws_on_action_callback_t> _ws_on_action_callbacks;
+std::vector<ws_on_configure_callback_t> _ws_on_configure_callbacks;
 
 typedef struct {
     IPAddress ip;
@@ -171,10 +171,6 @@ void _wsParse(
                     wsSend_P(client_id, PSTR("{\"message\": \"changes_saved\"}"));
 
                     wsSendStatusToClients();
-
-                    #if FASTYBIRD_SUPPORT
-                        fastybirdReportConfiguration();
-                    #endif
                 }
             }
 
@@ -300,7 +296,7 @@ bool wsConnected()
 // -----------------------------------------------------------------------------
 
 void wsOnConnectRegister(
-    ws_on_connect_callback_f callback
+    ws_on_connect_callback_t callback
 ) {
     _ws_on_connect_callbacks.push_back(callback);
 }
@@ -308,7 +304,7 @@ void wsOnConnectRegister(
 // -----------------------------------------------------------------------------
 
 void wsOnUpdateRegister(
-    ws_on_update_callback_f callback
+    ws_on_update_callback_t callback
 ) {
     _ws_on_update_callbacks.push_back(callback);
 }
@@ -316,7 +312,7 @@ void wsOnUpdateRegister(
 // -----------------------------------------------------------------------------
 
 void wsOnConfigureRegister(
-    ws_on_configure_callback_f callback
+    ws_on_configure_callback_t callback
 ) {
     _ws_on_configure_callbacks.push_back(callback);
 }
@@ -324,7 +320,7 @@ void wsOnConfigureRegister(
 // -----------------------------------------------------------------------------
 
 void wsOnActionRegister(
-    ws_on_action_callback_f callback
+    ws_on_action_callback_t callback
 ) {
     _ws_on_action_callbacks.push_back(callback);
 }
@@ -332,7 +328,7 @@ void wsOnActionRegister(
 // -----------------------------------------------------------------------------
 
 void wsSend(
-    ws_on_connect_callback_f callback
+    ws_on_connect_callback_t callback
 ) {
     DynamicJsonBuffer jsonBuffer;
 
@@ -353,7 +349,7 @@ void wsSend(
 
 void wsSend(
     uint32_t clientId,
-    ws_on_connect_callback_f callback
+    ws_on_connect_callback_t callback
 ) {
     DynamicJsonBuffer jsonBuffer;
 

@@ -2,7 +2,7 @@
 
 SENSOR MODULE
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
@@ -857,8 +857,13 @@ bool _sensorHasMagnitude(
                     dtostrf(value, 1 - sizeof(buffer), decimals, buffer);
 
                     fastybirdReportChannelPropertyValue(
+                        FASTYBIRD_MAIN_DEVICE_INDEX,
                         FASTYBIRD_SENSOR1_CHANNEL_INDEX,
-                        fastybirdFindChannelPropertyIndex(FASTYBIRD_SENSOR1_CHANNEL_INDEX, sensorMagnitudeName(sensor->type(j))),
+                        fastybirdFindChannelPropertyIndex(
+                            FASTYBIRD_MAIN_DEVICE_INDEX,
+                            FASTYBIRD_SENSOR1_CHANNEL_INDEX,
+                            sensorMagnitudeName(sensor->type(j))
+                        ),
                         buffer
                     );
                 }
@@ -885,7 +890,11 @@ bool _sensorHasMagnitude(
         );
 
         // Register property to channel
-        fastybirdMapPropertyToChannel(FASTYBIRD_SENSOR1_CHANNEL_INDEX, propertyIndex);
+        fastybirdMapPropertyToChannel(
+            FASTYBIRD_MAIN_DEVICE_INDEX,
+            FASTYBIRD_SENSOR1_CHANNEL_INDEX,
+            propertyIndex
+        );
     }
 
     void _sensorFastyBirdRegisterSensor(
@@ -1309,8 +1318,13 @@ void _sensorReport(
 
     #if FASTYBIRD_SUPPORT
         fastybirdReportChannelPropertyValue(
+            FASTYBIRD_MAIN_DEVICE_INDEX,
             FASTYBIRD_SENSOR1_CHANNEL_INDEX,
-            fastybirdFindChannelPropertyIndex(FASTYBIRD_SENSOR1_CHANNEL_INDEX, sensorMagnitudeName(magnitude.type)),
+            fastybirdFindChannelPropertyIndex(
+                FASTYBIRD_MAIN_DEVICE_INDEX,
+                FASTYBIRD_SENSOR1_CHANNEL_INDEX,
+                sensorMagnitudeName(magnitude.type)
+            ),
             buffer
         );
     #endif
@@ -1450,11 +1464,6 @@ void sensorSetup()
     #endif
 
     #if FASTYBIRD_SUPPORT
-        // Module schema report
-        fastybirdReportConfigurationSchemaRegister(_sensorReportConfigurationSchema);
-        fastybirdReportConfigurationRegister(_sensorReportConfiguration);
-        fastybirdOnConfigureRegister(_sensorUpdateConfiguration);
-
         // Channels registration
         if (sensorCount() > 0) {
             // Process all device sensors
@@ -1475,8 +1484,13 @@ void sensorSetup()
                     dtostrf(value, 1 - sizeof(buffer), decimals, buffer);
 
                     fastybirdReportChannelPropertyValue(
+                        FASTYBIRD_MAIN_DEVICE_INDEX,
                         FASTYBIRD_SENSOR1_CHANNEL_INDEX,
-                        fastybirdFindChannelPropertyIndex(FASTYBIRD_SENSOR1_CHANNEL_INDEX, sensorMagnitudeName(_magnitudes[i].type)),
+                        fastybirdFindChannelPropertyIndex(
+                            FASTYBIRD_MAIN_DEVICE_INDEX,
+                            FASTYBIRD_SENSOR1_CHANNEL_INDEX,
+                            sensorMagnitudeName(_magnitudes[i].type)
+                        ),
                         buffer
                     );
                 }

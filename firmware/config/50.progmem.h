@@ -2,15 +2,15 @@
 
 PROGMEM DEFINITIONS
 
-Copyright (C) 2018 FastyBird Ltd. <info@fastybird.com>
+Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
 #pragma once
 
-//--------------------------------------------------------------------------------
+// =============================================================================
 // Reset reasons
-//--------------------------------------------------------------------------------
+// =============================================================================
 
 const char custom_reset_web[] PROGMEM       = "Reboot from web interface";
 const char custom_reset_broker[] PROGMEM    = "Reboot from MQTT";
@@ -27,19 +27,13 @@ PROGMEM const char * const custom_reset_string[] = {
     custom_upgrade_web, custom_restore_web
 };
 
-//--------------------------------------------------------------------------------
+// =============================================================================
 // Capabilities
-//--------------------------------------------------------------------------------
+// =============================================================================
 
 const char firmware_modules[] PROGMEM =
-    #if ALEXA_SUPPORT
-        "ALEXA "
-    #endif
     #if RELAY_PROVIDER != RELAY_PROVIDER_NONE
         "RELAY "
-    #endif
-    #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-        "LIGHT "
     #endif
     #if BUTTON_SUPPORT
         "BUTTON "
@@ -73,6 +67,9 @@ const char firmware_modules[] PROGMEM =
     #endif
     #if WEB_SUPPORT
         "WEB "
+    #endif
+    #if WS_SUPPORT
+        "WS "
     #endif
     #if FASTYBIRD_SUPPORT
         "FASTYBIRD "

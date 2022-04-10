@@ -2,8 +2,7 @@
 
 WebSocketIncommingBuffer
 
-Code by Hermann Kraus (https://bitbucket.org/hermr2d2/)
-and slightly modified.
+Code by Hermann Kraus (https://bitbucket.org/hermr2d2/) and slightly modified
 
 */
 
