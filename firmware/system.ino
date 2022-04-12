@@ -400,7 +400,7 @@ void systemSetup()
         stabiltyCheck(false);
     #endif
 
-    Serial.begin(SERIAL_BAUDRATE);
+    SERIAL_PORT.begin(SERIAL_BAUDRATE);
 
     // Cache loop delay value to speed things (recommended max 250ms)
     _system_loop_delay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());
@@ -418,6 +418,24 @@ void systemSetup()
     systemOnHeartbeatRegister(_systemInfoOnHeartbeat);
 
     _systemInfo();
+
+    #if BUTTON_SUPPORT && SYSTEM_RESET_BTN_INDEX != INDEX_NONE
+        buttonOnEventRegister(
+            [](uint8_t event) {
+                if (event == SYSTEM_RESET_BTN_EVENT) {
+                    DEBUG_MSG(PSTR("[INFO][SETTINGS] Requested reset action\n"));
+
+                    #if WEB_SUPPORT && WS_SUPPORT
+                        // Send notification to all clients
+                        wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"reset\"}"));
+                    #endif
+
+                    deferredReset(250, CUSTOM_RESET_BUTTON);
+                }
+            },
+            (uint8_t) SYSTEM_RESET_BTN_INDEX
+        );
+    #endif
 
     // Register loop
     firmwareRegisterLoop(systemLoop);

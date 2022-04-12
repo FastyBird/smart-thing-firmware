@@ -148,7 +148,7 @@ String _fastybirdMqttApiCreateChannelTopicString(
 void _fastybirdMqttApiTopicMatchCallback(
     const char * match,
     const uint32_t length,
-    const MatchState & topic_match
+    const MatchState & topicMatch
 ) {
     // Add string to vector
     _fastybird_topic_parts.push_back(String(match).substring(0, length));
@@ -290,15 +290,15 @@ void _fastybirdMqttApiMqttOnMessage(
 
     // Device topis
     if (parts_count > FASTYBIRD_TOPIC_POSITION_DEVICE_NAME) {
-        String deviceName = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_DEVICE_NAME];
+        String device_name = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_DEVICE_NAME];
 
-        uint8_t deviceIndex = fastybirdFindDeviceIndex(deviceName.c_str());
+        uint8_t device_index = fastybirdFindDeviceIndex(device_name.c_str());
 
-        if (deviceIndex == INDEX_NONE) {
+        if (device_index == INDEX_NONE) {
             return;
         }
 
-        fastybird_device_t device = fastybirdGetDevice(deviceIndex);
+        fastybird_device_t device = fastybirdGetDevice(device_index);
 
         // Device property topic
         if (
@@ -311,17 +311,17 @@ void _fastybirdMqttApiMqttOnMessage(
         ) {
             DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Device property topic\n"));
 
-            String propertyName = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_DEVICE_PROPERTY_NAME];
+            String property_name = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_DEVICE_PROPERTY_NAME];
 
-            uint8_t propertyIndex = fastybirdFindDevicePropertyIndex(deviceIndex, propertyName.c_str());
+            uint8_t property_index = fastybirdFindDevicePropertyIndex(device_index, property_name.c_str());
 
-            if (propertyIndex == INDEX_NONE) {
-                DEBUG_MSG(PSTR("[WARN][FASTYBIRD][API] Device property: %s was not found\n"), propertyName.c_str());
+            if (property_index == INDEX_NONE) {
+                DEBUG_MSG(PSTR("[WARN][FASTYBIRD][API] Device property: %s was not found\n"), property_name.c_str());
 
                 return;
             }
 
-            fastybird_property_t property = fastybirdGetProperty(propertyIndex);
+            fastybird_property_t property = fastybirdGetProperty(property_index);
 
             if (
                 _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_DEVICE_PROPERTY_ACTION].equals(FASTYBIRD_TOPIC_PART_SET)
@@ -329,7 +329,7 @@ void _fastybirdMqttApiMqttOnMessage(
             ) {
                 DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Calling device property topic setter\n"));
 
-                property.set_callback(deviceIndex, propertyIndex, payload);
+                property.set_callback(device_index, property_index, payload);
 
                 return;
             }
@@ -340,7 +340,7 @@ void _fastybirdMqttApiMqttOnMessage(
             ) {
                 DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Calling device property topic getter\n"));
 
-                property.query_callback(deviceIndex, propertyIndex);
+                property.query_callback(device_index, property_index);
 
                 return;
             }
@@ -356,17 +356,17 @@ void _fastybirdMqttApiMqttOnMessage(
         ) {
             DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Device control topic\n"));
 
-            String controlName = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_DEVICE_CONTROL_NAME];
+            String control_name = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_DEVICE_CONTROL_NAME];
 
-            uint8_t controlIndex = fastybirdFindDeviceControlIndex(deviceIndex, controlName.c_str());
+            uint8_t control_index = fastybirdFindDeviceControlIndex(device_index, control_name.c_str());
 
-            if (controlIndex == INDEX_NONE) {
+            if (control_index == INDEX_NONE) {
                 return;
             }
 
-            fastybird_control_t control = fastybirdGetControl(controlIndex);
+            fastybird_control_t control = fastybirdGetControl(control_index);
 
-            control.call_callback(controlIndex, payload);
+            control.call_callback(control_index, payload);
 
             return;
         }
@@ -378,15 +378,15 @@ void _fastybirdMqttApiMqttOnMessage(
         ) {
             DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Device channel topic\n"));
 
-            String channelName = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_NAME];
+            String channel_name = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_NAME];
 
-            uint8_t channelIndex = fastybirdFindChannelIndex(deviceIndex, channelName.c_str());
+            uint8_t channel_index = fastybirdFindChannelIndex(device_index, channel_name.c_str());
 
-            if (channelIndex == INDEX_NONE) {
+            if (channel_index == INDEX_NONE) {
                 return;
             }
 
-            fastybird_channel_t channel = fastybirdGetChannel(channelIndex);
+            fastybird_channel_t channel = fastybirdGetChannel(channel_index);
 
             // Channel property topic
             if (
@@ -399,17 +399,17 @@ void _fastybirdMqttApiMqttOnMessage(
             ) {
                 DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Channel property topic\n"));
 
-                String propertyName = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_PROPERTY_NAME];
+                String property_name = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_PROPERTY_NAME];
 
-                uint8_t propertyIndex = fastybirdFindChannelPropertyIndex(deviceIndex, channelIndex, propertyName.c_str());
+                uint8_t property_index = fastybirdFindChannelPropertyIndex(device_index, channel_index, property_name.c_str());
 
-                if (propertyIndex == INDEX_NONE) {
-                    DEBUG_MSG(PSTR("[WARN][FASTYBIRD][API] Channel property: %s was not found\n"), propertyName.c_str());
+                if (property_index == INDEX_NONE) {
+                    DEBUG_MSG(PSTR("[WARN][FASTYBIRD][API] Channel property: %s was not found\n"), property_name.c_str());
 
                     return;
                 }
 
-                fastybird_property_t property = fastybirdGetProperty(propertyIndex);
+                fastybird_property_t property = fastybirdGetProperty(property_index);
 
                 if (
                     _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_PROPERTY_ACTION].equals(FASTYBIRD_TOPIC_PART_SET)
@@ -417,7 +417,7 @@ void _fastybirdMqttApiMqttOnMessage(
                 ) {
                     DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Calling channel property topic setter\n"));
 
-                    property.set_callback(channelIndex, propertyIndex, payload);
+                    property.set_callback(channel_index, property_index, payload);
 
                     return;
                 }
@@ -428,7 +428,7 @@ void _fastybirdMqttApiMqttOnMessage(
                 ) {
                     DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Calling channel property topic getter\n"));
 
-                    property.query_callback(channelIndex, propertyIndex);
+                    property.query_callback(channel_index, property_index);
 
                     return;
                 }
@@ -444,17 +444,17 @@ void _fastybirdMqttApiMqttOnMessage(
             ) {
                 DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Channel control topic\n"));
 
-                String controlName = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_CONTROL_NAME];
+                String control_name = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_CONTROL_NAME];
 
-                uint8_t controlIndex = fastybirdFindChannelControlIndex(deviceIndex, channelIndex, controlName.c_str());
+                uint8_t control_index = fastybirdFindChannelControlIndex(device_index, channel_index, control_name.c_str());
 
-                if (controlIndex == INDEX_NONE) {
+                if (control_index == INDEX_NONE) {
                     return;
                 }
 
-                fastybird_control_t control = fastybirdGetControl(controlIndex);
+                fastybird_control_t control = fastybirdGetControl(control_index);
 
-                control.call_callback(controlIndex, payload);
+                control.call_callback(control_index, payload);
 
                 return;
             }

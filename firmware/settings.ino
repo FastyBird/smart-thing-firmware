@@ -251,8 +251,8 @@ bool _settingsRestoreJson(
 
         // No buffer
         if (final && (index == 0)) {
-            DynamicJsonBuffer jsonBuffer;
-            JsonObject& root = jsonBuffer.parseObject((char *) data);
+            DynamicJsonBuffer json_buffer;
+            JsonObject& root = json_buffer.parseObject((char *) data);
 
             if (root.success()) {
                 _web_config_success = _settingsRestoreJson(root);
@@ -285,8 +285,8 @@ bool _settingsRestoreJson(
             _web_config_buffer->push_back(0);
 
             // Parse JSON
-            DynamicJsonBuffer jsonBuffer;
-            JsonObject& root = jsonBuffer.parseObject((char *) _web_config_buffer->data());
+            DynamicJsonBuffer json_buffer;
+            JsonObject& root = json_buffer.parseObject((char *) _web_config_buffer->data());
 
             if (root.success()) {
                 _web_config_success = _settingsRestoreJson(root);
@@ -514,24 +514,6 @@ void settingsSetup()
                 }
             },
             (uint8_t) SETTINGS_FACTORY_BTN_INDEX
-        );
-    #endif
-
-    #if BUTTON_SUPPORT && SYSTEM_RESET_BTN_INDEX != INDEX_NONE
-        buttonOnEventRegister(
-            [](uint8_t event) {
-                if (event == SYSTEM_RESET_BTN_EVENT) {
-                    DEBUG_MSG(PSTR("[INFO][SETTINGS] Requested reset action\n"));
-
-                    #if WEB_SUPPORT && WS_SUPPORT
-                        // Send notification to all clients
-                        wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"reset\"}"));
-                    #endif
-
-                    deferredReset(250, CUSTOM_RESET_BUTTON);
-                }
-            },
-            (uint8_t) SYSTEM_RESET_BTN_INDEX
         );
     #endif
 

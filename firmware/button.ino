@@ -61,7 +61,7 @@ uint8_t _buttonMapEvent(
         // Configuration field
         JsonObject& delay = configuration.createNestedObject();
 
-        delay["name"] = "btn_delay";
+        delay["name"] = "delay";
         delay["type"] = "number";
         delay["min"] = BUTTON_DEBOUNCE_DBL_CLICK_MIN;
         delay["max"] = BUTTON_DEBOUNCE_DBL_CLICK_MAX;
@@ -77,7 +77,7 @@ uint8_t _buttonMapEvent(
     void _buttonReportConfiguration(
         JsonObject& configuration
     ) {
-        configuration["btn_delay"] = _btn_delay;
+        configuration["delay"] = _btn_delay;
     }
 
 // -----------------------------------------------------------------------------
@@ -93,16 +93,16 @@ uint8_t _buttonMapEvent(
         bool is_updated = false;
 
         if (
-            configuration.containsKey("btn_delay")
-            && configuration["btn_delay"].as<uint32_t>() >= BUTTON_DEBOUNCE_DBL_CLICK_MIN
-            && configuration["btn_delay"].as<uint32_t>() <= BUTTON_DEBOUNCE_DBL_CLICK_MAX
-            && configuration["btn_delay"].as<uint32_t>() != _btn_delay
+            configuration.containsKey("delay")
+            && configuration["delay"].as<uint32_t>() >= BUTTON_DEBOUNCE_DBL_CLICK_MIN
+            && configuration["delay"].as<uint32_t>() <= BUTTON_DEBOUNCE_DBL_CLICK_MAX
+            && configuration["delay"].as<uint32_t>() != _btn_delay
         )  {
-            DEBUG_MSG(PSTR("[INFO][BUTTON] Setting: \"btn_delay\" to: %d\n"), configuration["btn_delay"].as<uint32_t>());
+            DEBUG_MSG(PSTR("[INFO][BUTTON] Setting: \"btn_delay\" to: %d\n"), configuration["delay"].as<uint32_t>());
 
-            setSetting("btnDelay", configuration["btn_delay"].as<uint32_t>());
+            setSetting("btn_delay", configuration["delay"].as<uint32_t>());
 
-            _btn_delay = configuration["btn_delay"].as<uint32_t>();
+            _btn_delay = configuration["delay"].as<uint32_t>();
 
             is_updated = true;
         }
@@ -199,7 +199,7 @@ void buttonOnEventRegister(
 
 void buttonSetup()
 {
-    _btn_delay = getSetting("btnDelay", BUTTON_DBL_CLICK_DELAY).toInt();
+    _btn_delay = getSetting("btn_delay", BUTTON_DBL_CLICK_DELAY).toInt();
 
     #if BUTTON1_PIN != GPIO_NONE
     {

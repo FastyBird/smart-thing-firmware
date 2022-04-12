@@ -76,13 +76,13 @@ uint8_t fastybirdFindChannelIndex(
     fastybird_device_t device = fastybirdGetDevice(deviceIndex);
 
     for (uint8_t i = 0; i < device.channels.size(); i++) {
-        uint8_t channelIndex = device.channels[i];
+        uint8_t channel_index = device.channels[i];
 
         if (
-            channelIndex < _fastybird_channels.size()
-            && strcmp(_fastybird_channels[channelIndex].name, name) == 0
+            channel_index < _fastybird_channels.size()
+            && strcmp(_fastybird_channels[channel_index].name, name) == 0
         ) {
-            return channelIndex;
+            return channel_index;
         }
     }
 
@@ -110,13 +110,13 @@ uint8_t fastybirdFindDevicePropertyIndex(
     fastybird_device_t device = fastybirdGetDevice(deviceIndex);
 
     for (uint8_t i = 0; i < device.properties.size(); i++) {
-        uint8_t propertyIndex = device.properties[i];
+        uint8_t property_index = device.properties[i];
 
         if (
-            propertyIndex < _fastybird_properties.size()
-            && strcmp(_fastybird_properties[propertyIndex].name, name) == 0
+            property_index < _fastybird_properties.size()
+            && strcmp(_fastybird_properties[property_index].name, name) == 0
         ) {
-            return propertyIndex;
+            return property_index;
         }
     }
 
@@ -143,13 +143,13 @@ uint8_t fastybirdFindChannelPropertyIndex(
     fastybird_channel_t channel = fastybirdGetChannel(channelIndex);
 
     for (uint8_t i = 0; i < channel.properties.size(); i++) {
-        uint8_t propertyIndex = channel.properties[i];
+        uint8_t property_index = channel.properties[i];
 
         if (
-            propertyIndex < _fastybird_properties.size()
-            && strcmp(_fastybird_properties[propertyIndex].name, name) == 0
+            property_index < _fastybird_properties.size()
+            && strcmp(_fastybird_properties[property_index].name, name) == 0
         ) {
-            return propertyIndex;
+            return property_index;
         }
     }
 
@@ -177,13 +177,13 @@ uint8_t fastybirdFindDeviceControlIndex(
     fastybird_device_t device = fastybirdGetDevice(deviceIndex);
 
     for (uint8_t i = 0; i < device.controls.size(); i++) {
-        uint8_t controlIndex = device.controls[i];
+        uint8_t control_index = device.controls[i];
 
         if (
-            controlIndex < _fastybird_controls.size()
-            && strcmp(_fastybird_controls[controlIndex].name, name) == 0
+            control_index < _fastybird_controls.size()
+            && strcmp(_fastybird_controls[control_index].name, name) == 0
         ) {
-            return controlIndex;
+            return control_index;
         }
     }
 
@@ -210,13 +210,13 @@ uint8_t fastybirdFindChannelControlIndex(
     fastybird_channel_t channel = fastybirdGetChannel(channelIndex);
 
     for (uint8_t i = 0; i < channel.controls.size(); i++) {
-        uint8_t controlIndex = channel.controls[i];
+        uint8_t control_index = channel.controls[i];
 
         if (
-            controlIndex < _fastybird_controls.size()
-            && strcmp(_fastybird_controls[controlIndex].name, name) == 0
+            control_index < _fastybird_controls.size()
+            && strcmp(_fastybird_controls[control_index].name, name) == 0
         ) {
-            return controlIndex;
+            return control_index;
         }
     }
 
@@ -247,10 +247,10 @@ void _fastybirdInitialize()
         false
     });
 
-    uint8_t propertyIndex;
+    uint8_t property_index;
 
     // Create device property structure
-    propertyIndex = fastybirdRegisterProperty(
+    property_index = fastybirdRegisterProperty(
         FASTYBIRD_PROPERTY_INTERVAL,
         FASTYBIRD_PROPERTY_DATA_TYPE_INTEGER,
         "",
@@ -260,11 +260,11 @@ void _fastybirdInitialize()
     // Register property to device
     fastybirdMapPropertyToDevice(
         FASTYBIRD_MAIN_DEVICE_INDEX,
-        propertyIndex
+        property_index
     );
 
     // Create device property structure
-    propertyIndex = fastybirdRegisterProperty(
+    property_index = fastybirdRegisterProperty(
         FASTYBIRD_PROPERTY_UPTIME,
         FASTYBIRD_PROPERTY_DATA_TYPE_INTEGER,
         "",
@@ -274,11 +274,11 @@ void _fastybirdInitialize()
     // Register property to device
     fastybirdMapPropertyToDevice(
         FASTYBIRD_MAIN_DEVICE_INDEX,
-        propertyIndex
+        property_index
     );
 
     // Create device property structure
-    propertyIndex = fastybirdRegisterProperty(
+    property_index = fastybirdRegisterProperty(
         FASTYBIRD_PROPERTY_FREE_HEAP,
         FASTYBIRD_PROPERTY_DATA_TYPE_INTEGER,
         "",
@@ -288,11 +288,11 @@ void _fastybirdInitialize()
     // Register property to device
     fastybirdMapPropertyToDevice(
         FASTYBIRD_MAIN_DEVICE_INDEX,
-        propertyIndex
+        property_index
     );
 
     // Create device property structure
-    propertyIndex = fastybirdRegisterProperty(
+    property_index = fastybirdRegisterProperty(
         FASTYBIRD_PROPERTY_CPU_LOAD,
         FASTYBIRD_PROPERTY_DATA_TYPE_INTEGER,
         "",
@@ -302,12 +302,12 @@ void _fastybirdInitialize()
     // Register property to device
     fastybirdMapPropertyToDevice(
         FASTYBIRD_MAIN_DEVICE_INDEX,
-        propertyIndex
+        property_index
     );
 
     #if WIFI_SUPPORT
         // Create device property structure
-        propertyIndex = fastybirdRegisterProperty(
+        property_index = fastybirdRegisterProperty(
             FASTYBIRD_PROPERTY_IP_ADDRESS,
             FASTYBIRD_PROPERTY_DATA_TYPE_STRING,
             "",
@@ -317,11 +317,11 @@ void _fastybirdInitialize()
         // Register property to device
         fastybirdMapPropertyToDevice(
             FASTYBIRD_MAIN_DEVICE_INDEX,
-            propertyIndex
+            property_index
         );
 
         // Create device property structure
-        propertyIndex = fastybirdRegisterProperty(
+        property_index = fastybirdRegisterProperty(
             FASTYBIRD_PROPERTY_SSID,
             FASTYBIRD_PROPERTY_DATA_TYPE_STRING,
             "",
@@ -331,11 +331,11 @@ void _fastybirdInitialize()
         // Register property to device
         fastybirdMapPropertyToDevice(
             FASTYBIRD_MAIN_DEVICE_INDEX,
-            propertyIndex
+            property_index
         );
 
         // Create device property structure
-        propertyIndex = fastybirdRegisterProperty(
+        property_index = fastybirdRegisterProperty(
             FASTYBIRD_PROPERTY_RSSI,
             FASTYBIRD_PROPERTY_DATA_TYPE_INTEGER,
             "",
@@ -345,13 +345,13 @@ void _fastybirdInitialize()
         // Register property to device
         fastybirdMapPropertyToDevice(
             FASTYBIRD_MAIN_DEVICE_INDEX,
-            propertyIndex
+            property_index
         );
     #endif
 
     #if ADC_MODE_VALUE == ADC_VCC
         // Create device property structure
-        propertyIndex = fastybirdRegisterProperty(
+        property_index = fastybirdRegisterProperty(
             FASTYBIRD_PROPERTY_VCC,
             FASTYBIRD_PROPERTY_DATA_TYPE_INTEGER,
             "",
@@ -361,18 +361,18 @@ void _fastybirdInitialize()
         // Register property to device
         fastybirdMapPropertyToDevice(
             FASTYBIRD_MAIN_DEVICE_INDEX,
-            propertyIndex
+            property_index
         );
     #endif
 
-    char channelName[50];
+    char channel_name[50];
 
     for (uint8_t i = 0; i < FASTYBIRD_MAX_CHANNELS; i++) {
-        strcpy(channelName, FASTYBIRD_CHANNEL_DEFAULT);
-        strcat(channelName, "-");
-        itoa((i + 1), channelName + strlen(channelName), 10);
+        strcpy(channel_name, FASTYBIRD_CHANNEL_DEFAULT);
+        strcat(channel_name, "-");
+        itoa((i + 1), channel_name + strlen(channel_name), 10);
 
-        fastybirdRegisterChannel(channelName);
+        fastybirdRegisterChannel(channel_name);
 
         fastybirdMapChannelToDevice(FASTYBIRD_MAIN_DEVICE_INDEX, (_fastybird_channels.size() - 1));
     }
@@ -420,24 +420,24 @@ void _fastybirdSystemOnHeartbeat()
 {
     fastybird_device_t device = fastybirdGetDevice(FASTYBIRD_MAIN_DEVICE_INDEX);
 
-    char buf[20];
+    char buff[20];
 
     fastybirdApiReportDevicePropertyValue(
         device.name,
         FASTYBIRD_PROPERTY_INTERVAL,
-        itoa(HEARTBEAT_INTERVAL / 1000, buf, 10)
+        itoa(HEARTBEAT_INTERVAL / 1000, buff, 10)
     );
 
     fastybirdApiReportDevicePropertyValue(
         device.name,
         FASTYBIRD_PROPERTY_FREE_HEAP,
-        itoa(getFreeHeap(), buf, 10)
+        itoa(getFreeHeap(), buff, 10)
     );
 
     fastybirdApiReportDevicePropertyValue(
         device.name,
         FASTYBIRD_PROPERTY_UPTIME,
-        itoa(getUptime(), buf, 10)
+        itoa(getUptime(), buff, 10)
     );
 
     #if WIFI_SUPPORT
@@ -450,7 +450,7 @@ void _fastybirdSystemOnHeartbeat()
         fastybirdApiReportDevicePropertyValue(
             device.name,
             FASTYBIRD_PROPERTY_RSSI,
-            itoa(WiFi.RSSI(), buf, 10)
+            itoa(WiFi.RSSI(), buff, 10)
         );
 
         fastybirdApiReportDevicePropertyValue(
@@ -463,14 +463,14 @@ void _fastybirdSystemOnHeartbeat()
     fastybirdApiReportDevicePropertyValue(
         device.name,
         FASTYBIRD_PROPERTY_CPU_LOAD,
-        itoa(systemLoadAverage(), buf, 10)
+        itoa(systemLoadAverage(), buff, 10)
     );
 
     #if ADC_MODE_VALUE == ADC_VCC
         fastybirdApiReportDevicePropertyValue(
             device.name,
             FASTYBIRD_PROPERTY_VCC,
-            itoa(ESP.getVcc(), buf, 10)
+            itoa(ESP.getVcc(), buff, 10)
         );
     #endif
 }
@@ -1022,9 +1022,9 @@ void fastybirdOnControlRegister(
         callback,
     });
 
-    uint8_t controlIndex = (_fastybird_controls.size() - 1);
+    uint8_t control_index = (_fastybird_controls.size() - 1);
 
-    _fastybird_devices[FASTYBIRD_MAIN_DEVICE_INDEX].controls.push_back(controlIndex);
+    _fastybird_devices[FASTYBIRD_MAIN_DEVICE_INDEX].controls.push_back(control_index);
 }
 
 // -----------------------------------------------------------------------------
@@ -1264,18 +1264,18 @@ bool fastybirdMapPropertyToChannel(
 
     fastybird_device_t device = fastybirdGetDevice(deviceIndex);
 
-    bool validChannelIndex = false;
+    bool valid_channel_index = false;
 
     // Validate channel index against device channels
     for (uint8_t i = 0; i < device.channels.size(); i++) {
         if (device.channels[i] == channelIndex) {
-            validChannelIndex = true;
+            valid_channel_index = true;
 
             break;
         }
     }
 
-    if (validChannelIndex == false) {
+    if (valid_channel_index == false) {
         return false;
     }
 
@@ -1321,35 +1321,35 @@ bool fastybirdReportChannelPropertyValue(
 
     fastybird_device_t device = fastybirdGetDevice(deviceIndex);
 
-    bool validChannelIndex = false;
+    bool valid_channel_index = false;
 
     // Validate channel index against device channels
     for (uint8_t i = 0; i < device.channels.size(); i++) {
         if (device.channels[i] == channelIndex) {
-            validChannelIndex = true;
+            valid_channel_index = true;
 
             break;
         }
     }
 
-    if (validChannelIndex == false) {
+    if (valid_channel_index == false) {
         return false;
     }
 
     fastybird_channel_t channel = fastybirdGetChannel(channelIndex);
 
-    bool validPropertyIndex = false;
+    bool valid_property_index = false;
 
     // Validate property index against channel properties
     for (uint8_t i = 0; i < channel.properties.size(); i++) {
         if (channel.properties[i] == propertyIndex) {
-            validPropertyIndex = true;
+            valid_property_index = true;
 
             break;
         }
     }
 
-    if (validPropertyIndex == false) {
+    if (valid_property_index == false) {
         return false;
     }
 
@@ -1383,7 +1383,7 @@ void fastybirdSetup()
     systemOnHeartbeatRegister(_fastybirdSystemOnHeartbeat);
 
     fastybirdOnControlRegister(
-        [](const uint8_t controlIndex, const char * payload) {
+        [](const uint8_t control_index, const char * payload) {
             DEBUG_MSG(PSTR("[INFO][FASTYBIRD] Requested reset action\n"));
 
             #if WEB_SUPPORT && WS_SUPPORT

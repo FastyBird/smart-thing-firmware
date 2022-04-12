@@ -32,29 +32,9 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define DEBUG_MQTT_SUPPORT              0                                   // Enable mqtt debug log
 #endif
 
-#ifndef SERIAL_BAUDRATE
-    #define SERIAL_BAUDRATE                 115200                              // Default baudrate
-#endif
-
 #ifndef DEBUG_ADD_TIMESTAMP
     #define DEBUG_ADD_TIMESTAMP             1                                   // Add timestamp to debug messages
                                                                                 // (in millis overflowing every 1000 seconds)
-#endif
-
-// Second serial port (used for RX)
-
-#ifndef SERIAL_RX_ENABLED
-    #define SERIAL_RX_ENABLED               0                                   // Secondary serial port for RX
-#endif
-
-#ifndef SERIAL_RX_PORT
-    #define SERIAL_RX_PORT                  Serial                              // This setting is usually defined
-                                                                                // in the hardware.h file for those
-                                                                                // boards that require it
-#endif
-
-#ifndef SERIAL_RX_BAUDRATE
-    #define SERIAL_RX_BAUDRATE              115200                              // Default baudrate
 #endif
 
 // =============================================================================

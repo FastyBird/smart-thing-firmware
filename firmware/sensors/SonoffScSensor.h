@@ -113,18 +113,18 @@ class SonoffScSensor : public BaseSensor {
         // ---------------------------------------------------------------------
 
         void _send(const char *data) {
-            Serial.write(data);
-            Serial.write(0x1B);
-            Serial.write("\n");
+            SERIAL_PORT.write(data);
+            SERIAL_PORT.write(0x1B);
+            SERIAL_PORT.write("\n");
         }
 
         bool _read() {
             static String rec_string = "";
             int16_t index1;
 
-            while (Serial.available() > 0)
+            while (SERIAL_PORT.available() > 0)
             {
-                char a = (char) Serial.read();
+                char a = (char) SERIAL_PORT.read();
 
                 rec_string += a;
 
@@ -144,9 +144,9 @@ class SonoffScSensor : public BaseSensor {
                     char rec_chars[rec_string.length() + 1];
                     rec_string.toCharArray(rec_chars, rec_string.length() + 1);
 
-                    DynamicJsonBuffer jsonBuffer;
+                    DynamicJsonBuffer json_buffer;
 
-                    JsonObject& root = jsonBuffer.parseObject((char *) rec_chars);
+                    JsonObject& root = json_buffer.parseObject((char *) rec_chars);
 
                     if (root.success()) {
                         if (root.containsKey("temperature")) {
@@ -185,7 +185,7 @@ class SonoffScSensor : public BaseSensor {
                 rec_string = "";
 
             } else if (rec_string.indexOf("AT") != -1) {
-                Serial.flush();
+                SERIAL_PORT.flush();
 
             } else {
                 // Do nothing

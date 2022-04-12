@@ -145,42 +145,42 @@ void _mqttConfigure()
         JsonArray& configuration
     ) {
         // Configuration field
-        JsonObject& server = configuration.createNestedObject();
+        JsonObject& host = configuration.createNestedObject();
 
-        server["name"] = "mqtt_server";
-        server["type"] = "text";
-        server["default"] = "";
+        host["name"] = "host";
+        host["type"] = "text";
+        host["default"] = "";
 
-        JsonObject& server_port = configuration.createNestedObject();
+        JsonObject& port = configuration.createNestedObject();
 
-        server_port["name"] = "mqtt_server_port";
-        server_port["type"] = "number";
-        server_port["min"] = 1;
-        server_port["max"] = 36000;
-        server_port["default"] = "";
+        port["name"] = "port";
+        port["type"] = "number";
+        port["min"] = 1;
+        port["max"] = 36000;
+        port["default"] = MQTT_DEFAULT_PORT;
 
         JsonObject& username = configuration.createNestedObject();
 
-        username["name"] = "mqtt_username";
+        username["name"] = "username";
         username["type"] = "text";
         username["default"] = "";
 
         JsonObject& password = configuration.createNestedObject();
 
-        password["name"] = "mqtt_password";
+        password["name"] = "password";
         password["type"] = "text";
         password["default"] = "";
 
         #if ASYNC_TCP_SSL_ENABLED
             JsonObject& ssl_enabled = configuration.createNestedObject();
 
-            ssl_enabled["name"] = "mqtt_ssl_enabled";
+            ssl_enabled["name"] = "ssl_enabled";
             ssl_enabled["type"] = "boolean";
             ssl_enabled["default"] = false;
 
             JsonObject& ssl_fp = configuration.createNestedObject();
 
-            ssl_fp["name"] = "mqtt_ssl_fp";
+            ssl_fp["name"] = "ssl_fp";
             ssl_fp["type"] = "text";
             ssl_fp["default"] = "";
         #endif
@@ -194,15 +194,15 @@ void _mqttConfigure()
     void _mqttReportConfiguration(
         JsonObject& configuration
     ) {
-        configuration["mqtt_server"] = _mqtt_host;
-        configuration["mqtt_server_port"] = _mqtt_port;
-        configuration["mqtt_username"] = _mqtt_user;
-        configuration["mqtt_password"] = _mqtt_pass;
-        configuration["mqtt_client_id"] = _mqtt_clientId;
+        configuration["host"] = _mqtt_host;
+        configuration["port"] = _mqtt_port;
+        configuration["username"] = _mqtt_user;
+        configuration["password"] = _mqtt_pass;
+        configuration["client_id"] = _mqtt_clientId;
 
         #if ASYNC_TCP_SSL_ENABLED
-            configuration["mqtt_use_ssl"] = getSetting("mqttUseSsl", 0).toInt() == 1;
-            configuration["mqtt_fp"] = getSetting("mqttSslFp");
+            configuration["use_ssl"] = getSetting("mqtt_use_ssl", 0).toInt() == 1;
+            configuration["fp"] = getSetting("mqtt_ssl_fp");
         #endif
     }
 
@@ -219,93 +219,93 @@ void _mqttConfigure()
         bool is_updated = false;
 
         if (
-            configuration.containsKey("mqtt_server")
-            && strcmp(configuration["mqtt_server"].as<char *>(), _mqtt_host) != 0
+            configuration.containsKey("host")
+            && strcmp(configuration["host"].as<char *>(), _mqtt_host) != 0
         )  {
-            DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_server\" to: %s\n"), configuration["mqtt_server"].as<char *>());
+            DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_host\" to: %s\n"), configuration["host"].as<char *>());
 
-            setSetting("mqttServer", configuration["mqtt_server"].as<char *>());
+            setSetting("mqtt_host", configuration["host"].as<char *>());
 
-            _mqtt_host = strdup(configuration["mqtt_server"].as<char *>());
+            _mqtt_host = strdup(configuration["host"].as<char *>());
 
             is_updated = true;
         }
 
         if (
-            configuration.containsKey("mqtt_server_port")
-            && configuration["mqtt_server_port"].as<uint16_t>() != _mqtt_port
+            configuration.containsKey("port")
+            && configuration["port"].as<uint16_t>() != _mqtt_port
         )  {
-            DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_server_port\" to: %d\n"), configuration["mqtt_server_port"].as<uint16_t>());
+            DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_port\" to: %d\n"), configuration["port"].as<uint16_t>());
 
-            setSetting("mqttPort", configuration["mqtt_server_port"].as<uint16_t>());
+            setSetting("mqtt_port", configuration["port"].as<uint16_t>());
 
-            _mqtt_port = configuration["mqtt_server_port"].as<uint16_t>();
+            _mqtt_port = configuration["port"].as<uint16_t>();
 
             is_updated = true;
         }
 
         if (
-            configuration.containsKey("mqtt_username")
-            && strcmp(configuration["mqtt_username"].as<char *>(), _mqtt_user) != 0
+            configuration.containsKey("username")
+            && strcmp(configuration["username"].as<char *>(), _mqtt_user) != 0
         )  {
-            DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_username\" to: %s\n"), configuration["mqtt_username"].as<char *>());
+            DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_username\" to: %s\n"), configuration["username"].as<char *>());
 
-            setSetting("mqttUser", configuration["mqtt_username"].as<char *>());
+            setSetting("mqtt_username", configuration["username"].as<char *>());
 
-            _mqtt_user = strdup(configuration["mqtt_username"].as<char *>());
+            _mqtt_user = strdup(configuration["username"].as<char *>());
 
             is_updated = true;
         }
 
         if (
-            configuration.containsKey("mqtt_password")
-            && strcmp(configuration["mqtt_password"].as<char *>(), _mqtt_pass) != 0
+            configuration.containsKey("password")
+            && strcmp(configuration["password"].as<char *>(), _mqtt_pass) != 0
         )  {
-            DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_password\" to: %s\n"), configuration["mqtt_password"].as<char *>());
+            DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_password\" to: %s\n"), configuration["password"].as<char *>());
 
-            setSetting("mqttPassword", configuration["mqtt_password"].as<char *>());
+            setSetting("mqtt_password", configuration["password"].as<char *>());
 
-            _mqtt_pass = strdup(configuration["mqtt_password"].as<char *>());
+            _mqtt_pass = strdup(configuration["password"].as<char *>());
 
             is_updated = true;
         }
 
         if (
-            configuration.containsKey("mqtt_client_id")
-            && strcmp(configuration["mqtt_client_id"].as<char *>(), _mqtt_clientId) != 0
+            configuration.containsKey("client_id")
+            && strcmp(configuration["client_id"].as<char *>(), _mqtt_clientId) != 0
         )  {
-            DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_client_id\" to: %s\n"), configuration["mqtt_client_id"].as<char *>());
+            DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_client_id\" to: %s\n"), configuration["client_id"].as<char *>());
 
-            setSetting("mqttClientId", configuration["mqtt_client_id"].as<char *>());
+            setSetting("mqtt_client_id", configuration["client_id"].as<char *>());
 
-            _mqtt_clientId = strdup(configuration["mqtt_client_id"].as<char *>());
+            _mqtt_clientId = strdup(configuration["client_id"].as<char *>());
 
             is_updated = true;
         }
 
         #if ASYNC_TCP_SSL_ENABLED
             if (
-                configuration.containsKey("mqtt_ssl_enabled")
-                && configuration["mqtt_ssl_enabled"].as<bool>() != (getSetting("mqttUseSsl").toInt() == 1)
+                configuration.containsKey("ssl_enabled")
+                && configuration["ssl_enabled"].as<bool>() != (getSetting("mqtt_use_ssl").toInt() == 1)
             )  {
-                DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_ssl_enabled\" to: %d\n"), (configuration["mqtt_ssl_enabled"].as<bool>() ? 1 : 0));
+                DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_ssl_enabled\" to: %d\n"), (configuration["ssl_enabled"].as<bool>() ? 1 : 0));
 
-                setSetting("mqttUseSsl", configuration["mqtt_ssl_enabled"].as<bool>() ? 1 : 0);
+                setSetting("mqtt_use_ssl", configuration["ssl_enabled"].as<bool>() ? 1 : 0);
 
                 is_updated = true;
             }
 
             if (
-                configuration.containsKey("mqtt_ssl_fp")
-                && strcmp(configuration["mqtt_ssl_fp"].as<char *>(), getSetting("mqttSslFp").c_str()) != 0
+                configuration.containsKey("ssl_fp")
+                && strcmp(configuration["ssl_fp"].as<char *>(), getSetting("mqtt_ssl_fp").c_str()) != 0
             )  {
-                setSetting("mqttSslFp", configuration["mqtt_ssl_fp"].as<char *>());
+                setSetting("mqtt_ssl_fp", configuration["ssl_fp"].as<char *>());
 
                 is_updated = true;
             }
         #else
-            delSetting("mqttUseSsl");
-            delSetting("mqttSslFp");
+            delSetting("mqtt_use_ssl");
+            delSetting("mqtt_ssl_fp");
         #endif
 
         return is_updated;
@@ -585,12 +585,12 @@ void mqttSetWill(
 
 void mqttSetup()
 {
-    _mqtt_host = strdup(getSetting("mqttServer").c_str());
-    _mqtt_port = getSetting("mqttPort", MQTT_DEFAULT_PORT).toInt();
+    _mqtt_host = strdup(getSetting("mqtt_host").c_str());
+    _mqtt_port = getSetting("mqtt_port", MQTT_DEFAULT_PORT).toInt();
 
-    _mqtt_user = strdup(getSetting("mqttUser").c_str());
-    _mqtt_pass = strdup(getSetting("mqttPassword").c_str());
-    _mqtt_clientId = strdup(getSetting("mqttClientId").c_str());
+    _mqtt_user = strdup(getSetting("mqtt_username").c_str());
+    _mqtt_pass = strdup(getSetting("mqtt_password").c_str());
+    _mqtt_clientId = strdup(getSetting("mqtt_client_id").c_str());
 
     DEBUG_MSG(PSTR("[INFO][MQTT] SSL %s, Autoconnect %s\n"),
         ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",

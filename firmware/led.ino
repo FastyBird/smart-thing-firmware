@@ -72,7 +72,7 @@ void _ledBlink(
     ) {
         JsonObject& mode = configuration.createNestedObject();
 
-        mode["name"] = "led_mode";
+        mode["name"] = "mode";
         mode["type"] = "select";
         #if WIFI_SUPPORT
         mode["default"] = LED_MODE_WIFI;
@@ -105,7 +105,7 @@ void _ledBlink(
     void _ledReportConfiguration(
         JsonObject& configuration
     ) {
-        configuration["led_mode"] = _led_mode;
+        configuration["mode"] = _led_mode;
     }
 
 // -----------------------------------------------------------------------------
@@ -121,19 +121,19 @@ void _ledBlink(
         bool is_updated = false;
 
         if (
-            configuration.containsKey("led_mode")
+            configuration.containsKey("mode")
             && (
-                configuration["led_mode"].as<uint8_t>() == LED_MODE_WIFI
-                || configuration["led_mode"].as<uint8_t>() == LED_MODE_ON
-                || configuration["led_mode"].as<uint8_t>() == LED_MODE_OFF
+                configuration["mode"].as<uint8_t>() == LED_MODE_WIFI
+                || configuration["mode"].as<uint8_t>() == LED_MODE_ON
+                || configuration["mode"].as<uint8_t>() == LED_MODE_OFF
             )
-            && configuration["led_mode"].as<uint8_t>() != _led_mode
+            && configuration["mode"].as<uint8_t>() != _led_mode
         )  {
-            DEBUG_MSG(PSTR("[INFO][LED] Setting: \"led_mode\" to: %d\n"), configuration["led_mode"].as<uint8_t>());
+            DEBUG_MSG(PSTR("[INFO][LED] Setting: \"led_mode\" to: %d\n"), configuration["mode"].as<uint8_t>());
 
-            setSetting("ledMode", configuration["led_mode"].as<uint8_t>());
+            setSetting("led_mode", configuration["mode"].as<uint8_t>());
 
-            _led_mode = configuration["led_mode"].as<uint8_t>();
+            _led_mode = configuration["mode"].as<uint8_t>();
 
             is_updated = true;
         }
@@ -150,8 +150,6 @@ void _ledBlink(
     void _ledWSOnConnect(
         JsonObject& root
     ) {
-        DynamicJsonBuffer jsonBuffer;
-
         JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
         JsonObject& module = modules.createNestedObject();
 
@@ -205,7 +203,7 @@ void _ledBlink(
  */
 void _ledInitialize()
 {
-    _led_mode = getSetting("ledMode", STATUS_LED_MODE).toInt();
+    _led_mode = getSetting("led_mode", STATUS_LED_MODE).toInt();
 }
 
 // -----------------------------------------------------------------------------
@@ -214,8 +212,8 @@ void _ledInitialize()
 
 void ledSetup()
 {
-    if (!hasSetting("ledMode")) {
-        setSetting("ledMode", STATUS_LED_MODE);
+    if (!hasSetting("led_mode")) {
+        setSetting("led_mode", STATUS_LED_MODE);
     }
 
     pinMode(STATUS_LED_PIN, OUTPUT);

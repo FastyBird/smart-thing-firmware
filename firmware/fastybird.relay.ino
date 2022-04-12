@@ -127,7 +127,7 @@ void _fastyBirdRelayRegisterToChannel(
     strcat(format, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE);
 
     // Create relay property structure
-    uint8_t propertyIndex = fastybirdRegisterProperty(
+    uint8_t property_index = fastybirdRegisterProperty(
         FASTYBIRD_PROPERTY_SWITCH,
         FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
         "",
@@ -140,17 +140,17 @@ void _fastyBirdRelayRegisterToChannel(
     fastybirdMapPropertyToChannel(
         FASTYBIRD_MAIN_DEVICE_INDEX,
         channelIndex,
-        propertyIndex
+        property_index
     );
 
     relayOnEventRegister(
-        [channelIndex, propertyIndex](uint8_t event) {
+        [channelIndex, property_index](uint8_t event) {
         },
         relayIndex
     );
 
     relayOnEventRegister(
-        [channelIndex, propertyIndex](bool state) {
+        [channelIndex, property_index](bool state) {
             fastybirdReportChannelPropertyValue(
                 FASTYBIRD_MAIN_DEVICE_INDEX,
                 channelIndex,

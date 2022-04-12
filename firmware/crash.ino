@@ -51,9 +51,9 @@ extern "C" {
  * It should be kept quick / consise to be able to execute before hardware wdt may kick in
  */
 extern "C" void custom_crash_callback(
-    struct rst_info * rst_info,
-    uint32_t stack_start,
-    uint32_t stack_end
+    struct rst_info * rstInfo,
+    uint32_t stackStart,
+    uint32_t stackEnd
 ) {
     // Do not record crash data when resetting the board
     if (checkNeedsReset()) {
@@ -69,19 +69,19 @@ extern "C" void custom_crash_callback(
     EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_CRASH_TIME, crash_time);
 
     // write reset info to EEPROM
-    EEPROMr.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON, rst_info->reason);
-    EEPROMr.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE, rst_info->exccause);
+    EEPROMr.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_RESTART_REASON, rstInfo->reason);
+    EEPROMr.write(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCEPTION_CAUSE, rstInfo->exccause);
 
     // write epc1, epc2, epc3, excvaddr and depc to EEPROM
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, rst_info->epc1);
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, rst_info->epc2);
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, rst_info->epc3);
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, rst_info->excvaddr);
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, rst_info->depc);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC1, rstInfo->epc1);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC2, rstInfo->epc2);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EPC3, rstInfo->epc3);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_EXCVADDR, rstInfo->excvaddr);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_DEPC, rstInfo->depc);
 
     // write stack start and end address to EEPROM
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stack_start);
-    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stack_end);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_START, stackStart);
+    EEPROMr.put(SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_END, stackEnd);
 
     // starting address of Embedis data plus reserve
     const uint16_t settings_start = SPI_FLASH_SEC_SIZE - settingsSize() - 0x10;
@@ -89,7 +89,7 @@ extern "C" void custom_crash_callback(
     // write stack trace to EEPROM and avoid overwriting settings
     int16_t current_address = SAVE_CRASH_EEPROM_OFFSET + SAVE_CRASH_STACK_TRACE;
 
-    for (uint32_t i = stack_start; i < stack_end; i++) {
+    for (uint32_t i = stackStart; i < stackEnd; i++) {
         if (current_address >= settings_start) {
             break;
         }

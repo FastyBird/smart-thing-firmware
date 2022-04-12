@@ -713,8 +713,6 @@ bool _sensorHasMagnitude(
             return;
         }
 
-        DynamicJsonBuffer jsonBuffer;
-
         JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
         JsonObject& module = modules.createNestedObject();
 

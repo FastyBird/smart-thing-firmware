@@ -84,9 +84,9 @@ void _onDiscover(
 
     AsyncResponseStream *response = request->beginResponseStream("text/json");
 
-    DynamicJsonBuffer jsonBuffer;
+    DynamicJsonBuffer json_buffer;
 
-    JsonObject &root = jsonBuffer.createObject();
+    JsonObject &root = json_buffer.createObject();
 
     char buffer[20];
 
@@ -132,7 +132,7 @@ void _onSignIn(
 
     if (
         username.equals(String(WEB_USERNAME)) == false
-        || password.equals(getSetting("adminPass", ADMIN_PASSWORD)) == false
+        || password.equals(getSetting("web_password", ADMIN_PASSWORD)) == false
     ) {
         request->send(401);
 
@@ -150,9 +150,9 @@ void _onSignIn(
 
     AsyncResponseStream *response = request->beginResponseStream("text/json");
 
-    DynamicJsonBuffer jsonBuffer;
+    DynamicJsonBuffer json_buffer;
 
-    JsonObject &root = jsonBuffer.createObject();
+    JsonObject &root = json_buffer.createObject();
 
     root["token"] = String("Basic ") + String(encoded);
 
@@ -402,7 +402,7 @@ uint8_t webPort()
     #if NETWORK_SSL_ENABLED & WEB_SSL_ENABLED
         return 443;
     #else
-        return getSetting("webPort", WEB_PORT).toInt();
+        return getSetting("web_port", WEB_PORT).toInt();
     #endif
 }
 
@@ -419,11 +419,11 @@ void webLog(
 bool webAuthenticate(
     AsyncWebServerRequest * request
 ) {
-    if (getSetting("adminPass", ADMIN_PASSWORD).length() == 0) {
+    if (getSetting("web_password", ADMIN_PASSWORD).length() == 0) {
         return true;
     }
 
-    String password = getSetting("adminPass", ADMIN_PASSWORD);
+    String password = getSetting("web_password", ADMIN_PASSWORD);
 
     size_t toEncodeLen = strlen(WEB_USERNAME) + strlen(password.c_str()) + 1;
 

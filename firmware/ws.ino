@@ -109,9 +109,9 @@ void _wsParse(
     uint32_t client_id = client->id();
 
     // Parse JSON input
-    DynamicJsonBuffer jsonBuffer;
+    DynamicJsonBuffer json_buffer;
 
-    JsonObject& root = jsonBuffer.parseObject((char *) payload);
+    JsonObject& root = json_buffer.parseObject((char *) payload);
 
     if (!root.success()) {
         DEBUG_MSG(PSTR("[INFO][WS] Error parsing data\n"));
@@ -142,6 +142,15 @@ void _wsParse(
 
                 _web_defer.once_ms(250, wifiDisconnect);
             #endif
+            return;
+
+        } else if (strcmp(action, "factory") == 0) {
+            // Send notification to all clients
+            wsSend_P(PSTR("{\"doAction\": \"reload\", \"reason\": \"factory\"}"));
+
+            resetSettings();
+
+            deferredReset(250, CUSTOM_FACTORY_WEB);
             return;
 
         } else if (strcmp(action, "configure") == 0) {
@@ -186,7 +195,7 @@ void _wsParse(
                 }
 
             } else {
-                JsonObject& data = jsonBuffer.createObject();
+                JsonObject& data = json_buffer.createObject();
 
                 // Callbacks
                 for (uint8_t i = 0; i < _ws_on_action_callbacks.size(); i++) {
@@ -330,9 +339,9 @@ void wsOnActionRegister(
 void wsSend(
     ws_on_connect_callback_t callback
 ) {
-    DynamicJsonBuffer jsonBuffer;
+    DynamicJsonBuffer json_buffer;
 
-    JsonObject& root = jsonBuffer.createObject();
+    JsonObject& root = json_buffer.createObject();
 
     callback(root);
 
@@ -340,7 +349,7 @@ void wsSend(
 
     root.printTo(output);
 
-    jsonBuffer.clear();
+    json_buffer.clear();
 
     _ws_client.textAll((char *) output.c_str());
 }
@@ -351,9 +360,9 @@ void wsSend(
     uint32_t clientId,
     ws_on_connect_callback_t callback
 ) {
-    DynamicJsonBuffer jsonBuffer;
+    DynamicJsonBuffer json_buffer;
 
-    JsonObject& root = jsonBuffer.createObject();
+    JsonObject& root = json_buffer.createObject();
 
     callback(root);
 
@@ -361,7 +370,7 @@ void wsSend(
 
     root.printTo(output);
 
-    jsonBuffer.clear();
+    json_buffer.clear();
 
     _ws_client.text(clientId, (char *) output.c_str());
 }

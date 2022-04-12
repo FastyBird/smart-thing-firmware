@@ -21,6 +21,34 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 #endif
 
 //------------------------------------------------------------------------------
+// SERIAL PORT
+//------------------------------------------------------------------------------
+
+#ifndef SERIAL_PORT
+    #define SERIAL_PORT                     Serial
+#endif
+
+#ifndef SERIAL_BAUDRATE
+    #define SERIAL_BAUDRATE                 115200                              // Default baudrate
+#endif
+
+// Second serial port (used for RX)
+
+#ifndef SERIAL_RX_ENABLED
+    #define SERIAL_RX_ENABLED               0                                   // Secondary serial port for RX
+#endif
+
+#ifndef SERIAL_RX_PORT
+    #define SERIAL_RX_PORT                  Serial                              // This setting is usually defined
+                                                                                // in the hardware.h file for those
+                                                                                // boards that require it
+#endif
+
+#ifndef SERIAL_RX_BAUDRATE
+    #define SERIAL_RX_BAUDRATE              115200                              // Default baudrate
+#endif
+
+//------------------------------------------------------------------------------
 // NETWORK
 //------------------------------------------------------------------------------
 

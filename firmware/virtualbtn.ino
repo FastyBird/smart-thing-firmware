@@ -14,7 +14,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 void _virtualButtonLoop()
 {
-    uint8_t counter = getSetting("virtualBtnCounter", 0).toInt();
+    uint8_t counter = getSetting("virtual_btn_counter", 0).toInt();
 
     if (counter == VIRTUAL_BTN_COUNT && millis() > VIRTUAL_BTN_WAIT_INTERVAL) {
         DEBUG_MSG(PSTR("[INFO][VIRTUAL_BUTTON] Requested factory reset action\n"));
@@ -33,7 +33,7 @@ void _virtualButtonLoop()
     // Virtual button timeout
     if (millis() > VIRTUAL_BTN_CLEAR_INTERVAL && counter > 0) {
         // Clear counter
-        setSetting("virtualBtnCounter", 0);
+        setSetting("virtual_btn_counter", 0);
     }
 }
 
@@ -43,9 +43,9 @@ void _virtualButtonLoop()
 
 void virtualButtonSetup()
 {
-    uint8_t counter = getSetting("virtualBtnCounter", 0).toInt();
+    uint8_t counter = getSetting("virtual_btn_counter", 0).toInt();
 
-    setSetting("virtualBtnCounter", counter + 1);
+    setSetting("virtual_btn_counter", counter + 1);
 
     // Register loop
     firmwareRegisterLoop(_virtualButtonLoop);

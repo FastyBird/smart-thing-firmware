@@ -23,8 +23,8 @@ Ticker _relay_save_ticker;
 void _relayConfigure()
 {
     for (uint8_t i = 0; i < _relays.size(); i++) {
-        _relays[i].pulse = getSetting("relayPulse", i, RELAY_PULSE_MODE).toInt();
-        _relays[i].pulse_ms = 1000 * getSetting("relayTime", i, RELAY_PULSE_TIME).toFloat();
+        _relays[i].pulse = getSetting("relay_pulse_mode", i, RELAY_PULSE_MODE).toInt();
+        _relays[i].pulse_ms = 1000 * getSetting("relay_pulse_time", i, RELAY_PULSE_TIME).toFloat();
 
         if (_relays[i].pin == GPIO_NONE) {
             continue;
@@ -45,7 +45,7 @@ void _relayConfigure()
 
 // -----------------------------------------------------------------------------
 
-void _relayBoot()
+void _relay_boot()
 {
     _relay_recursive = true;
 
@@ -68,7 +68,7 @@ void _relayBoot()
     bool status;
 
     for (uint8_t i = 0; i < _relays.size(); i++) {
-        uint8_t boot_mode = getSetting("relayBoot", i, RELAY_BOOT_MODE).toInt();
+        uint8_t boot_mode = getSetting("relay_boot_mode", i, RELAY_BOOT_MODE).toInt();
 
         DEBUG_MSG(PSTR("[INFO][RELAY] Relay #%d boot mode %d\n"), i, boot_mode);
 
@@ -179,27 +179,27 @@ uint8_t _relayParsePayload(
         if (relayCount() > 1) {
             JsonObject& sync = configuration.createNestedObject();
 
-            sync["name"] = "relays_sync";
+            sync["name"] = "sync";
             sync["type"] = "select";
             sync["default"] = RELAY_SYNC;
 
-            JsonArray& relaysSyncValues = sync.createNestedArray("values");
+            JsonArray& relays_sync_values = sync.createNestedArray("values");
 
-            JsonObject& relaysSyncValue0 = relaysSyncValues.createNestedObject();
-            relaysSyncValue0["value"] = 0;
-            relaysSyncValue0["name"] = "disabled";
+            JsonObject& relays_sync_value_0 = relays_sync_values.createNestedObject();
+            relays_sync_value_0["value"] = 0;
+            relays_sync_value_0["name"] = "disabled";
 
-            JsonObject& relaysSyncValue1 = relaysSyncValues.createNestedObject();
-            relaysSyncValue1["value"] = 1;
-            relaysSyncValue1["name"] = "zero_or_one";
+            JsonObject& relays_sync_value_1 = relays_sync_values.createNestedObject();
+            relays_sync_value_1["value"] = 1;
+            relays_sync_value_1["name"] = "zero_or_one";
 
-            JsonObject& relaysSyncValue2 = relaysSyncValues.createNestedObject();
-            relaysSyncValue2["value"] = 2;
-            relaysSyncValue2["name"] = "only_one";
+            JsonObject& relays_sync_value_2 = relays_sync_values.createNestedObject();
+            relays_sync_value_2["value"] = 2;
+            relays_sync_value_2["name"] = "only_one";
 
-            JsonObject& relaysSyncValue3 = relaysSyncValues.createNestedObject();
-            relaysSyncValue3["value"] = 3;
-            relaysSyncValue3["name"] = "all_synchronized";
+            JsonObject& relays_sync_value_3 = relays_sync_values.createNestedObject();
+            relays_sync_value_3["value"] = 3;
+            relays_sync_value_3["name"] = "all_synchronized";
         }
     }
 
@@ -212,7 +212,7 @@ uint8_t _relayParsePayload(
         JsonObject& configuration
     ) {
         if (relayCount() > 1) {
-            configuration["relays_sync"] = getSetting("relaysSync", RELAY_SYNC).toInt();
+            configuration["relays_sync"] = getSetting("relays_sync", RELAY_SYNC).toInt();
         }
     }
 
@@ -228,18 +228,18 @@ uint8_t _relayParsePayload(
 
         if (relayCount() > 1) {
             if (
-                configuration.containsKey("relays_sync")
-                && configuration["relays_sync"].as<uint8_t>() >= 0  // Minimum select value
-                && configuration["relays_sync"].as<uint8_t>() <= 3  // Maximum select value
-                && configuration["relays_sync"].as<uint8_t>() != getSetting("relaysSync").toInt()
+                configuration.containsKey("sync")
+                && configuration["sync"].as<uint8_t>() >= 0  // Minimum select value
+                && configuration["sync"].as<uint8_t>() <= 3  // Maximum select value
+                && configuration["sync"].as<uint8_t>() != getSetting("relays_sync").toInt()
             )  {
-                setSetting("relaysSync", configuration["relays_sync"].as<uint8_t>());
+                setSetting("relays_sync", configuration["sync"].as<uint8_t>());
 
                 return true;
             }
 
         } else {
-            delSetting("relaysSync");
+            delSetting("relays_sync");
         }
 
         return false;
@@ -250,84 +250,84 @@ uint8_t _relayParsePayload(
     void _relayReportRelayConfigurationSchema(
         JsonArray& container
     ) {
-        JsonObject& relayMode = container.createNestedObject();
+        JsonObject& relay_boot_mode = container.createNestedObject();
 
-        relayMode["name"] = "relay_boot";
-        relayMode["type"] = "select";
-        relayMode["default"] = RELAY_BOOT_MODE;
+        relay_boot_mode["name"] = "boot_mode";
+        relay_boot_mode["type"] = "select";
+        relay_boot_mode["default"] = RELAY_BOOT_MODE;
 
-        JsonArray& relayModeValues = relayMode.createNestedArray("values");
+        JsonArray& relay_boot_mode_values = relay_boot_mode.createNestedArray("values");
 
-        JsonObject& relayModeValue0 = relayModeValues.createNestedObject();
-        relayModeValue0["value"] = 0;
-        relayModeValue0["name"] = "always_off";
+        JsonObject& relay_boot_mode_value_0 = relay_boot_mode_values.createNestedObject();
+        relay_boot_mode_value_0["value"] = 0;
+        relay_boot_mode_value_0["name"] = "always_off";
 
-        JsonObject& relayModeValue1 = relayModeValues.createNestedObject();
-        relayModeValue1["value"] = 1;
-        relayModeValue1["name"] = "always_on";
+        JsonObject& relay_boot_mode_value_1 = relay_boot_mode_values.createNestedObject();
+        relay_boot_mode_value_1["value"] = 1;
+        relay_boot_mode_value_1["name"] = "always_on";
 
-        JsonObject& relayModeValue2 = relayModeValues.createNestedObject();
-        relayModeValue2["value"] = 2;
-        relayModeValue2["name"] = "same_before";
+        JsonObject& relay_boot_mode_value_2 = relay_boot_mode_values.createNestedObject();
+        relay_boot_mode_value_2["value"] = 2;
+        relay_boot_mode_value_2["name"] = "same_before";
 
-        JsonObject& relayModeValue3 = relayModeValues.createNestedObject();
-        relayModeValue3["value"] = 3;
-        relayModeValue3["name"] = "toggle_before";
-
-        // -------------------------------------------------------------------------
-
-        JsonObject& relayPulseMode = container.createNestedObject();
-
-        relayPulseMode["name"] = "pulse_mode";
-        relayPulseMode["type"] = "select";
-        relayPulseMode["default"] = RELAY_PULSE_MODE;
-
-        JsonArray& relayPulseModeValues = relayPulseMode.createNestedArray("values");
-
-        JsonObject& relayPulseModeValue0 = relayPulseModeValues.createNestedObject();
-        relayPulseModeValue0["value"] = 0;
-        relayPulseModeValue0["name"] = "disabled";
-
-        JsonObject& relayPulseModeValue1 = relayPulseModeValues.createNestedObject();
-        relayPulseModeValue1["value"] = 1;
-        relayPulseModeValue1["name"] = "normally_off";
-
-        JsonObject& relayPulseModeValue2 = relayPulseModeValues.createNestedObject();
-        relayPulseModeValue2["value"] = 2;
-        relayPulseModeValue2["name"] = "normally_on";
+        JsonObject& relay_boot_mode_value_3 = relay_boot_mode_values.createNestedObject();
+        relay_boot_mode_value_3["value"] = 3;
+        relay_boot_mode_value_3["name"] = "toggle_before";
 
         // -------------------------------------------------------------------------
 
-        JsonObject& relayPulseTime = container.createNestedObject();
+        JsonObject& relay_pulse_mode = container.createNestedObject();
 
-        relayPulseTime["name"] = "pulse_time";
-        relayPulseTime["type"] = "number";
-        relayPulseTime["default"] = RELAY_PULSE_TIME;
-        relayPulseTime["min"] = 1;
-        relayPulseTime["max"] = 60;
-        relayPulseTime["step"] = 0.1;
+        relay_pulse_mode["name"] = "pulse_mode";
+        relay_pulse_mode["type"] = "select";
+        relay_pulse_mode["default"] = RELAY_PULSE_MODE;
+
+        JsonArray& relay_pulse_mode_values = relay_pulse_mode.createNestedArray("values");
+
+        JsonObject& relay_pulse_mode_value_0 = relay_pulse_mode_values.createNestedObject();
+        relay_pulse_mode_value_0["value"] = 0;
+        relay_pulse_mode_value_0["name"] = "disabled";
+
+        JsonObject& relay_pulse_mode_value_1 = relay_pulse_mode_values.createNestedObject();
+        relay_pulse_mode_value_1["value"] = 1;
+        relay_pulse_mode_value_1["name"] = "normally_off";
+
+        JsonObject& relay_pulse_mode_value_2 = relay_pulse_mode_values.createNestedObject();
+        relay_pulse_mode_value_2["value"] = 2;
+        relay_pulse_mode_value_2["name"] = "normally_on";
 
         // -------------------------------------------------------------------------
 
-        JsonObject& onDisconnect = container.createNestedObject();
+        JsonObject& relay_pulse_time = container.createNestedObject();
 
-        onDisconnect["name"] = "on_disconnect";
-        onDisconnect["type"] = "select";
-        onDisconnect["default"] = RELAY_PULSE_MODE;
+        relay_pulse_time["name"] = "pulse_time";
+        relay_pulse_time["type"] = "number";
+        relay_pulse_time["default"] = RELAY_PULSE_TIME;
+        relay_pulse_time["min"] = 1;
+        relay_pulse_time["max"] = 60;
+        relay_pulse_time["step"] = 0.1;
 
-        JsonArray& onDisconnectValues = onDisconnect.createNestedArray("values");
+        // -------------------------------------------------------------------------
 
-        JsonObject& onDisconnectValue0 = onDisconnectValues.createNestedObject();
-        onDisconnectValue0["value"] = 0;
-        onDisconnectValue0["name"] = "no_change";
+        JsonObject& relay_on_disconnect = container.createNestedObject();
 
-        JsonObject& onDisconnectValue1 = onDisconnectValues.createNestedObject();
-        onDisconnectValue1["value"] = 1;
-        onDisconnectValue1["name"] = "turn_off";
+        relay_on_disconnect["name"] = "on_disconnect";
+        relay_on_disconnect["type"] = "select";
+        relay_on_disconnect["default"] = RELAY_PULSE_MODE;
 
-        JsonObject& onDisconnectValue3 = onDisconnectValues.createNestedObject();
-        onDisconnectValue3["value"] = 2;
-        onDisconnectValue3["name"] = "turn_on";
+        JsonArray& relay_on_disconnect_values = relay_on_disconnect.createNestedArray("values");
+
+        JsonObject& relay_on_disconnect_value_0 = relay_on_disconnect_values.createNestedObject();
+        relay_on_disconnect_value_0["value"] = 0;
+        relay_on_disconnect_value_0["name"] = "no_change";
+
+        JsonObject& relay_on_disconnect_value_1 = relay_on_disconnect_values.createNestedObject();
+        relay_on_disconnect_value_1["value"] = 1;
+        relay_on_disconnect_value_1["name"] = "turn_off";
+
+        JsonObject& relay_on_disconnect_value_2 = relay_on_disconnect_values.createNestedObject();
+        relay_on_disconnect_value_2["value"] = 2;
+        relay_on_disconnect_value_2["name"] = "turn_on";
     }
 
 // -----------------------------------------------------------------------------
@@ -336,10 +336,10 @@ uint8_t _relayParsePayload(
         const uint8_t id,
         JsonObject& configuration
     ) {
-        configuration["relay_boot"] = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
-        configuration["pulse_mode"] = getSetting("relayPulse", id, RELAY_PULSE_MODE).toInt();
-        configuration["pulse_time"] = getSetting("relayTime", id, RELAY_PULSE_TIME).toFloat();
-        configuration["on_disconnect"] = getSetting("relayOnDisc", id, 0).toInt();
+        configuration["boot_mode"] = getSetting("relay_boot_mode", id, RELAY_BOOT_MODE).toInt();
+        configuration["pulse_mode"] = getSetting("relay_pulse_mode", id, RELAY_PULSE_MODE).toInt();
+        configuration["pulse_time"] = getSetting("relay_pulse_time", id, RELAY_PULSE_TIME).toFloat();
+        configuration["on_disconnect"] = getSetting("relay_on_disconnect", id, 0).toInt();
     }
 
 // -----------------------------------------------------------------------------
@@ -352,10 +352,10 @@ uint8_t _relayParsePayload(
 
         bool is_updated = false;
 
-        if (configuration.containsKey("relay_boot"))  {
-            DEBUG_MSG(PSTR("[INFO][RELAY] Setting: \"relay_boot\" to: %d\n"), configuration["relay_boot"].as<uint8_t>());
+        if (configuration.containsKey("boot_mode"))  {
+            DEBUG_MSG(PSTR("[INFO][RELAY] Setting: \"relay_boot\" to: %d\n"), configuration["boot_mode"].as<uint8_t>());
 
-            setSetting("relayBoot", id, configuration["relay_boot"].as<uint8_t>());
+            setSetting("relay_boot_mode", id, configuration["boot_mode"].as<uint8_t>());
 
             is_updated = true;
         }
@@ -363,7 +363,7 @@ uint8_t _relayParsePayload(
         if (configuration.containsKey("pulse_mode"))  {
             DEBUG_MSG(PSTR("[INFO][RELAY] Setting: \"pulse_mode\" to: %d\n"), configuration["pulse_mode"].as<uint8_t>());
 
-            setSetting("relayPulseMode", id, configuration["pulse_mode"].as<uint8_t>());
+            setSetting("relay_pulse_mode", id, configuration["pulse_mode"].as<uint8_t>());
 
             is_updated = true;
         }
@@ -375,7 +375,7 @@ uint8_t _relayParsePayload(
         )  {
             DEBUG_MSG(PSTR("[INFO][RELAY] Setting: \"pulse_time\" to: %d\n"), configuration["pulse_time"].as<uint8_t>());
 
-            setSetting("relayPulseTime", id, configuration["pulse_time"].as<float>());
+            setSetting("relay_pulse_time", id, configuration["pulse_time"].as<float>());
 
             is_updated = true;
         }
@@ -383,7 +383,7 @@ uint8_t _relayParsePayload(
         if (configuration.containsKey("on_disconnect"))  {
             DEBUG_MSG(PSTR("[INFO][RELAY] Setting: \"on_disconnect\" to: %d\n"), configuration["on_disconnect"].as<uint8_t>());
 
-            setSetting("relayOnDisc", id, configuration["on_disconnect"].as<uint8_t>());
+            setSetting("relay_on_disconnect", id, configuration["on_disconnect"].as<uint8_t>());
 
             is_updated = true;
         }
@@ -421,8 +421,6 @@ uint8_t _relayParsePayload(
         if (relayCount() == 0) {
             return;
         }
-
-        DynamicJsonBuffer jsonBuffer;
 
         JsonArray& modules = root.containsKey("modules") ? root["modules"] : root.createNestedArray("modules");
         JsonObject& module = modules.createNestedObject();
@@ -543,7 +541,7 @@ uint8_t _relayParsePayload(
 
     // WS client called action
     void _relayWSOnAction(
-        const uint32_t client_id,
+        const uint32_t clientId,
         const char * action,
         JsonObject& data
     ) {
@@ -632,21 +630,21 @@ void _relayProviderStatus(
         }
 
         // Send it to F330
-        Serial.flush();
-        Serial.write(0xA0);
-        Serial.write(0x04);
-        Serial.write(mask);
-        Serial.write(0xA1);
-        Serial.flush();
+        SERIAL_PORT.flush();
+        SERIAL_PORT.write(0xA0);
+        SERIAL_PORT.write(0x04);
+        SERIAL_PORT.write(mask);
+        SERIAL_PORT.write(0xA1);
+        SERIAL_PORT.flush();
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_STM
-        Serial.flush();
-        Serial.write(0xA0);
-        Serial.write(id + 1);
-        Serial.write(status);
-        Serial.write(0xA1 + status + id);
-        Serial.flush();
+        SERIAL_PORT.flush();
+        SERIAL_PORT.write(0xA0);
+        SERIAL_PORT.write(id + 1);
+        SERIAL_PORT.write(status);
+        SERIAL_PORT.write(0xA1 + status + id);
+        SERIAL_PORT.flush();
     #endif
 
     #if RELAY_PROVIDER == RELAY_PROVIDER_RELAY
@@ -724,11 +722,11 @@ void _relayProcess(
         }
 
         if (!_relay_recursive) {
-            relayPulse(id);
+            relay_pulse_mode(id);
 
             // We will trigger a commit only if
             // we care about current relay status on boot
-            uint8_t boot_mode = getSetting("relayBoot", id, RELAY_BOOT_MODE).toInt();
+            uint8_t boot_mode = getSetting("relay_boot_mode", id, RELAY_BOOT_MODE).toInt();
             bool save_eeprom = ((RELAY_BOOT_SAME == boot_mode) || (RELAY_BOOT_TOGGLE == boot_mode));
 
             _relay_save_ticker.once_ms(RELAY_SAVE_DELAY, relaySave, save_eeprom);
@@ -746,7 +744,7 @@ void _relayProcess(
 // MODULE API
 // -----------------------------------------------------------------------------
 
-void relayPulse(
+void relay_pulse_mode(
     const uint8_t id
 ) {
     _relays[id].pulseTicker.detach();
@@ -772,8 +770,8 @@ void relayPulse(
         _relays[id].pulseTicker.once_ms(ms, relayToggle, id);
 
         // Reconfigure after dynamic pulse
-        _relays[id].pulse = getSetting("relayPulse", id, RELAY_PULSE_MODE).toInt();
-        _relays[id].pulse_ms = 1000 * getSetting("relayTime", id, RELAY_PULSE_MODE).toFloat();
+        _relays[id].pulse = getSetting("relay_pulse_mode", id, RELAY_PULSE_MODE).toInt();
+        _relays[id].pulse_ms = 1000 * getSetting("relay_pulse_time", id, RELAY_PULSE_MODE).toFloat();
     }
 }
 
@@ -806,7 +804,7 @@ bool relayStatus(
         #endif
 
         // Update the pulse counter if the relay is already in the non-normal state (#454)
-        relayPulse(id);
+        relay_pulse_mode(id);
 
     } else {
         uint32_t current_time = millis();
@@ -1141,7 +1139,7 @@ void relaySetup()
     }
 
     _relayConfigure();
-    _relayBoot();
+    _relay_boot();
 
     relayLoop();
 

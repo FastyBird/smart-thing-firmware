@@ -47,8 +47,8 @@ void _debugSend(
                 snprintf_P(buffer, sizeof(buffer), PSTR("%s"), m.c_str());
             #endif
 
-            DynamicJsonBuffer jsonBuffer;
-            JsonObject& message = jsonBuffer.createObject();
+            DynamicJsonBuffer json_buffer;
+            JsonObject& message = json_buffer.createObject();
 
             message["module"] = "dbg";
             message["data"] = buffer;

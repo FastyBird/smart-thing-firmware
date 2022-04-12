@@ -31,7 +31,7 @@ void _fastyBirdButtonRegisterToChannel(
     strcat(format, FASTYBIRD_BTN_PAYLOAD_LNG_LNG_CLICK);
 
     // Create button property structure
-    uint8_t propertyIndex = fastybirdRegisterProperty(
+    uint8_t property_index = fastybirdRegisterProperty(
         FASTYBIRD_PROPERTY_BUTTON,
         FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
         "",
@@ -42,17 +42,17 @@ void _fastyBirdButtonRegisterToChannel(
     fastybirdMapPropertyToChannel(
         FASTYBIRD_MAIN_DEVICE_INDEX,
         channelIndex,
-        propertyIndex
+        property_index
     );
 
     buttonOnEventRegister(
-        [channelIndex, propertyIndex](uint8_t event) {
+        [channelIndex, property_index](uint8_t event) {
             switch (event) {
                 case BUTTON_EVENT_PRESSED:
                     fastybirdReportChannelPropertyValue(
                         FASTYBIRD_MAIN_DEVICE_INDEX,
                         channelIndex,
-                        propertyIndex,
+                        property_index,
                         FASTYBIRD_BTN_PAYLOAD_PRESS
                     );
                     break;
@@ -61,7 +61,7 @@ void _fastyBirdButtonRegisterToChannel(
                     fastybirdReportChannelPropertyValue(
                         FASTYBIRD_MAIN_DEVICE_INDEX,
                         channelIndex,
-                        propertyIndex,
+                        property_index,
                         FASTYBIRD_BTN_PAYLOAD_CLICK
                     );
                     break;
@@ -70,7 +70,7 @@ void _fastyBirdButtonRegisterToChannel(
                     fastybirdReportChannelPropertyValue(
                         FASTYBIRD_MAIN_DEVICE_INDEX,
                         channelIndex,
-                        propertyIndex,
+                        property_index,
                         FASTYBIRD_BTN_PAYLOAD_DBL_CLICK
                     );
                     break;
@@ -79,7 +79,7 @@ void _fastyBirdButtonRegisterToChannel(
                     fastybirdReportChannelPropertyValue(
                         FASTYBIRD_MAIN_DEVICE_INDEX,
                         channelIndex,
-                        propertyIndex,
+                        property_index,
                         FASTYBIRD_BTN_PAYLOAD_TRIPLE_CLICK
                     );
                     break;
@@ -88,7 +88,7 @@ void _fastyBirdButtonRegisterToChannel(
                     fastybirdReportChannelPropertyValue(
                         FASTYBIRD_MAIN_DEVICE_INDEX,
                         channelIndex,
-                        propertyIndex,
+                        property_index,
                         FASTYBIRD_BTN_PAYLOAD_LNG_CLICK
                     );
                     break;
@@ -97,7 +97,7 @@ void _fastyBirdButtonRegisterToChannel(
                     fastybirdReportChannelPropertyValue(
                         FASTYBIRD_MAIN_DEVICE_INDEX,
                         channelIndex,
-                        propertyIndex,
+                        property_index,
                         FASTYBIRD_BTN_PAYLOAD_LNG_LNG_CLICK
                     );
                     break;

@@ -33,11 +33,11 @@ void _wifiConfigure()
 {
     jw.setHostname(getIdentifier().c_str());
 
-    if (getSetting("wifiPass", WIFI_PASSWORD).length() == 0) {
+    if (getSetting("wifi_password", WIFI_PASSWORD).length() == 0) {
         jw.setSoftAP(getIdentifier().c_str());
 
     } else {
-        jw.setSoftAP(getIdentifier().c_str(), getSetting("wifiPass", WIFI_PASSWORD).c_str());
+        jw.setSoftAP(getIdentifier().c_str(), getSetting("wifi_password", WIFI_PASSWORD).c_str());
     }
 
     jw.setConnectTimeout(WIFI_CONNECT_TIMEOUT);
@@ -58,31 +58,31 @@ void _wifiConfigure()
     _wifiClean(WIFI_MAX_NETWORKS);
 
     for (uint8_t i = 0; i < WIFI_MAX_NETWORKS; i++) {
-        if (getSetting("ssid", i, "").length() == 0) {
+        if (getSetting("wifi_ssid", i, "").length() == 0) {
             break;
         }
 
         DEBUG_MSG(PSTR("[INFO][WIFI] Wifi configured, trying to connect\n"));
 
-        if (getSetting("ip", i, "").length() == 0) {
+        if (getSetting("wifi_ip", i, "").length() == 0) {
             jw.addNetwork(
-                getSetting("ssid", i, "").c_str(),
-                getSetting("pass", i, "").c_str()
+                getSetting("wifi_ssid", i, "").c_str(),
+                getSetting("wifi_password", i, "").c_str()
             );
 
         } else {
             jw.addNetwork(
-                getSetting("ssid", i, "").c_str(),
-                getSetting("pass", i, "").c_str(),
-                getSetting("ip", i, "").c_str(),
-                getSetting("gw", i, "").c_str(),
-                getSetting("mask", i, "").c_str(),
-                getSetting("dns", i, "").c_str()
+                getSetting("wifi_ssid", i, "").c_str(),
+                getSetting("wifi_password", i, "").c_str(),
+                getSetting("wifi_ip", i, "").c_str(),
+                getSetting("wifi_gw", i, "").c_str(),
+                getSetting("wifi_mask", i, "").c_str(),
+                getSetting("wifi_dns", i, "").c_str()
             );
         }
     }
 
-    jw.enableScan(getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1);
+    jw.enableScan(getSetting("wifi_scan", WIFI_SCAN_NETWORKS).toInt() == 1);
 }
 
 // -----------------------------------------------------------------------------
@@ -93,9 +93,9 @@ void _wifiScan(
     DEBUG_MSG(PSTR("[INFO][WIFI] Start scanning\n"));
 
     #if WEB_SUPPORT && WS_SUPPORT
-        DynamicJsonBuffer jsonBuffer;
+        DynamicJsonBuffer json_buffer;
 
-        JsonObject& output = jsonBuffer.createObject();
+        JsonObject& output = json_buffer.createObject();
 
         output["module"] = "wifi";
 
@@ -108,18 +108,18 @@ void _wifiScan(
         JsonArray& networks = data.createNestedArray("networks");
 
         for (uint8_t i = 0; i < WIFI_MAX_NETWORKS; i++) {
-            if (!hasSetting("ssid", i)) {
+            if (!hasSetting("wifi_ssid", i)) {
                 break;
             }
 
             JsonObject& network = networks.createNestedObject();
 
-            network["ssid"] = getSetting("ssid", i, "");
-            network["pass"] = getSetting("pass", i, "");
-            network["ip"] = getSetting("ip", i, "");
-            network["gw"] = getSetting("gw", i, "");
-            network["mask"] = getSetting("mask", i, "");
-            network["dns"] = getSetting("dns", i, "");
+            network["ssid"] = getSetting("wifi_ssid", i, "");
+            network["password"] = getSetting("wifi_password", i, "");
+            network["ip"] = getSetting("wifi_ip", i, "");
+            network["gw"] = getSetting("wifi_gw", i, "");
+            network["mask"] = getSetting("wifi_mask", i, "");
+            network["dns"] = getSetting("wifi_dns", i, "");
         }
 
         // Found networks container
@@ -172,7 +172,7 @@ void _wifiScan(
 
             #if WEB_SUPPORT && WS_SUPPORT
                 if (clientId > 0) {
-                    scanResult["result"] = String("OK");
+                    scanResult["result"] = "OK";
                     scanResult["found"] = result;
 
                     JsonObject& line = foundNetworks.createNestedObject();
@@ -216,31 +216,31 @@ bool _wifiClean(
     // Clean defined settings
     while (i < num) {
         // Skip on first non-defined setting
-        if (!hasSetting("ssid", i)) {
-            delSetting("ssid", i);
+        if (!hasSetting("wifi_ssid", i)) {
+            delSetting("wifi_ssid", i);
             break;
         }
 
         // Delete empty values
-        if (!hasSetting("pass", i)) delSetting("pass", i);
-        if (!hasSetting("ip", i)) delSetting("ip", i);
-        if (!hasSetting("gw", i)) delSetting("gw", i);
-        if (!hasSetting("mask", i)) delSetting("mask", i);
-        if (!hasSetting("dns", i)) delSetting("dns", i);
+        if (!hasSetting("wifi_password", i)) delSetting("wifi_password", i);
+        if (!hasSetting("wifi_ip", i)) delSetting("wifi_ip", i);
+        if (!hasSetting("wifi_gw", i)) delSetting("wifi_gw", i);
+        if (!hasSetting("wifi_mask", i)) delSetting("wifi_mask", i);
+        if (!hasSetting("wifi_dns", i)) delSetting("wifi_dns", i);
 
         ++i;
     }
 
     // Delete all other settings
     while (i < WIFI_MAX_NETWORKS) {
-        changed = hasSetting("ssid", i);
+        changed = hasSetting("wifi_ssid", i);
 
-        delSetting("ssid", i);
-        delSetting("pass", i);
-        delSetting("ip", i);
-        delSetting("gw", i);
-        delSetting("mask", i);
-        delSetting("dns", i);
+        delSetting("wifi_ssid", i);
+        delSetting("wifi_pass", i);
+        delSetting("wifi_ip", i);
+        delSetting("wifi_gw", i);
+        delSetting("wifi_mask", i);
+        delSetting("wifi_dns", i);
 
         ++i;
     }
@@ -362,7 +362,7 @@ bool _wifiClean(
         // Configuration field
         JsonObject& scan = configuration.createNestedObject();
 
-        scan["name"] = "wifi_scan";
+        scan["name"] = "scan";
         scan["type"] = "boolean";
         scan["default"] = WIFI_SCAN_NETWORKS == 1 ? true : false;
     }
@@ -375,7 +375,8 @@ bool _wifiClean(
     void _wifiReportConfiguration(
         JsonObject& configuration
     ) {
-        configuration["wifi_scan"] = getSetting("wifiScan", WIFI_SCAN_NETWORKS).toInt() == 1;
+        configuration["max"] = WIFI_MAX_NETWORKS;
+        configuration["scan"] = getSetting("wifi_scan", WIFI_SCAN_NETWORKS).toInt() == 1;
     }
 
 // -----------------------------------------------------------------------------
@@ -391,12 +392,12 @@ bool _wifiClean(
         bool is_updated = false;
 
         if (
-            configuration.containsKey("wifi_scan")
-            && configuration["wifi_scan"].as<bool>() != ((getSetting("wifiScan").toInt() == 1))
+            configuration.containsKey("scan")
+            && configuration["scan"].as<bool>() != ((getSetting("wifi_scan").toInt() == 1))
         )  {
-            DEBUG_MSG(PSTR("[INFO][WIFI] Setting: \"wifi_scan\" to: %d\n"), configuration["wifi_scan"].as<bool>() ? 1 : 0);
+            DEBUG_MSG(PSTR("[INFO][WIFI] Setting: \"wifi_scan\" to: %d\n"), configuration["scan"].as<bool>() ? 1 : 0);
 
-            setSetting("wifiScan", configuration["wifi_scan"].as<bool>() ? 1 : 0);
+            setSetting("wifi_scan", configuration["scan"].as<bool>() ? 1 : 0);
 
             is_updated = true;
         }
@@ -425,24 +426,22 @@ bool _wifiClean(
         JsonArray& networks = data.createNestedArray("networks");
 
         for (uint8_t i = 0; i < WIFI_MAX_NETWORKS; i++) {
-            if (!hasSetting("ssid", i)) {
+            if (!hasSetting("wifi_ssid", i)) {
                 break;
             }
 
             JsonObject& network = networks.createNestedObject();
 
-            network["ssid"] = getSetting("ssid", i, "");
-            network["pass"] = getSetting("pass", i, "");
-            network["ip"] = getSetting("ip", i, "");
-            network["gw"] = getSetting("gw", i, "");
-            network["mask"] = getSetting("mask", i, "");
-            network["dns"] = getSetting("dns", i, "");
+            network["ssid"] = getSetting("wifi_ssid", i, "");
+            network["password"] = getSetting("wifi_password", i, "");
+            network["ip"] = getSetting("wifi_ip", i, "");
+            network["gw"] = getSetting("wifi_gw", i, "");
+            network["mask"] = getSetting("wifi_mask", i, "");
+            network["dns"] = getSetting("wifi_dns", i, "");
         }
 
         // Configuration container
         JsonObject& configuration = module.createNestedObject("config");
-
-        configuration["max"] = WIFI_MAX_NETWORKS;
 
         // Configuration values container
         JsonObject& configuration_values = configuration.createNestedObject("values");
@@ -481,23 +480,23 @@ bool _wifiClean(
 
                     // Delete all other configuration
                     while (i < WIFI_MAX_NETWORKS) {
-                        delSetting("ssid", i);
-                        delSetting("pass", i);
-                        delSetting("ip", i);
-                        delSetting("gw", i);
-                        delSetting("mask", i);
-                        delSetting("dns", i);
+                        delSetting("wifi_ssid", i);
+                        delSetting("wifi_password", i);
+                        delSetting("wifi_ip", i);
+                        delSetting("wifi_gw", i);
+                        delSetting("wifi_mask", i);
+                        delSetting("wifi_dns", i);
 
                         ++i;
                     }
 
                     for (uint8_t i = 0; i < configuration["networks"].size(); i++) {
-                        setSetting("ssid", i, configuration["networks"][i]["ssid"].as<char *>());
-                        setSetting("pass", i, configuration["networks"][i]["pass"].as<char *>());
-                        setSetting("ip", i, configuration["networks"][i]["ip"].as<char *>());
-                        setSetting("gw", i, configuration["networks"][i]["gw"].as<char *>());
-                        setSetting("mask", i, configuration["networks"][i]["mask"].as<char *>());
-                        setSetting("dns", i, configuration["networks"][i]["dns"].as<char *>());
+                        setSetting("wifi_ssid", i, configuration["networks"][i]["ssid"].as<char *>());
+                        setSetting("wifi_password", i, configuration["networks"][i]["password"].as<char *>());
+                        setSetting("wifi_ip", i, configuration["networks"][i]["ip"].as<char *>());
+                        setSetting("wifi_gw", i, configuration["networks"][i]["gw"].as<char *>());
+                        setSetting("wifi_mask", i, configuration["networks"][i]["mask"].as<char *>());
+                        setSetting("wifi_dns", i, configuration["networks"][i]["dns"].as<char *>());
                     }
 
                     wsSend_P(clientId, PSTR("{\"message\": \"wifi_updated\"}"));
