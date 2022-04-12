@@ -19,6 +19,8 @@ bool _eepromCommit()
     _eeprom_commit_count++;
     _eeprom_last_commit_result = EEPROMr.commit();
 
+    DEBUG_MSG(PSTR("[INFO][EEPROM] Eeprom commit result: %s\n"), _eeprom_last_commit_result ? "ok" : "err");
+
     return _eeprom_last_commit_result;
 }
 

@@ -108,22 +108,22 @@ void setup()
     // Init webserver required before any module that uses API
     #if WEB_SUPPORT
         webSetup();
-
-        #if WS_SUPPORT
-            wsSetup();
-        #endif
     #endif
 
     crashSetup();
 
-    #if LED_SUPPORT
-        ledSetup();
+    #if WS_SUPPORT
+        wsSetup();
     #endif
 
     #if MQTT_SUPPORT
         mqttSetup();
     #endif
     
+    #if LED_SUPPORT
+        ledSetup();
+    #endif
+
     #if BUTTON_SUPPORT
         buttonSetup();
     #endif
@@ -138,6 +138,18 @@ void setup()
 
     #if SENSOR_SUPPORT
         sensorSetup();
+    #endif
+
+    // -------------------------------------------------------------------------
+    // Modules relations setup
+    // -------------------------------------------------------------------------
+
+    #if BUTTON_SUPPORT && FASTYBIRD_SUPPORT
+        fastyBirdButtonSetup();
+    #endif
+
+    #if RELAY_PROVIDER != RELAY_PROVIDER_NONE && FASTYBIRD_SUPPORT
+        fastyBirdRelaySetup();
     #endif
 }
 

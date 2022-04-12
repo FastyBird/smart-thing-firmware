@@ -14,16 +14,19 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 AsyncMqttClient _mqtt;
 
 bool _mqtt_enabled = true;
+
+uint32_t _mqtt_connected_at = 0;
 uint32_t _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
-char * _mqtt_user = 0;
-char * _mqtt_pass = 0;
-char * _mqtt_will = 0;
-char * _mqtt_will_content;
+char * _mqtt_host = "";
+uint16_t _mqtt_port = MQTT_DEFAULT_PORT;
 
-#if MQTT_SKIP_RETAINED
-    uint32_t _mqtt_connected_at = 0;
-#endif
+char * _mqtt_user = "";
+char * _mqtt_pass = "";
+char * _mqtt_clientId = "";
+
+char * _mqtt_will = "";
+char * _mqtt_will_content = "";
 
 std::vector<mqtt_on_connect_callback_t> _mqtt_on_connect_callbacks;
 std::vector<mqtt_on_disconnect_callback_t> _mqtt_on_disconnect_callbacks;
@@ -61,38 +64,28 @@ void _mqttConnect()
         _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MAX;
     }
 
-    char * host = strdup(getSetting("mqttServer").c_str());
-    int port = getSetting("mqttPort").toInt();
+    //if (strlen(_mqtt_user) == 0 || strlen(_mqtt_pass) == 0) {
+    //    DEBUG_MSG(PSTR("[INFO][MQTT] Aborting attempt to connect. Mising username or password\n"));
 
-    if (_mqtt_user) {
-        free(_mqtt_user);
+    //    return;
+    //}
+
+    DEBUG_MSG(PSTR("[INFO][MQTT] Connecting to broker at %s:%d\n"), _mqtt_host, _mqtt_port);
+
+    _mqtt.setServer(_mqtt_host, _mqtt_port);
+
+    if (strlen(_mqtt_clientId) > 0) {
+        _mqtt.setClientId(_mqtt_clientId);
     }
 
-    if (_mqtt_pass) {
-        free(_mqtt_pass);
-    }
-
-    _mqtt_user = strdup(getSetting("mqttUser").c_str());
-    _mqtt_pass = strdup(getSetting("mqttPassword").c_str());
-
-    if (strlen(_mqtt_user) == 0 || strlen(_mqtt_pass) == 0) {
-        DEBUG_MSG(PSTR("[INFO][MQTT] Aborting attempt to connect. Mising username or password\n"));
-
-        return;
-    }
-
-    DEBUG_MSG(PSTR("[INFO][MQTT] Connecting to broker at %s:%d\n"), host, port);
-
-    _mqtt.setServer(host, port);
-    _mqtt.setClientId(_mqtt_user);
     _mqtt.setKeepAlive(MQTT_KEEPALIVE);
     _mqtt.setCleanSession(false);
 
-    if (strcmp(_mqtt_will, "") != 0) {
+    if (strlen(_mqtt_will) > 0) {
         _mqtt.setWill(_mqtt_will, MQTT_QOS, true, _mqtt_will_content);
     }
 
-    if ((strlen(_mqtt_user) > 0) && (strlen(_mqtt_pass) > 0)) {
+    if (strlen(_mqtt_user) > 0 && strlen(_mqtt_pass) > 0) {
         DEBUG_MSG(PSTR("[INFO][MQTT] Connecting as user %s\n"), _mqtt_user);
 
         _mqtt.setCredentials(_mqtt_user, _mqtt_pass);
@@ -120,13 +113,11 @@ void _mqttConnect()
     DEBUG_MSG(PSTR("[INFO][MQTT] QoS: %d\n"), MQTT_QOS);
     DEBUG_MSG(PSTR("[INFO][MQTT] Keepalive time: %ds\n"), MQTT_KEEPALIVE);
 
-    if (strcmp(_mqtt_will, "") != 0) {
+    if (strlen(_mqtt_will) > 0) {
         DEBUG_MSG(PSTR("[INFO][MQTT] Will topic: %s\n"), _mqtt_will);
     }
 
     _mqtt.connect();
-
-    free(host);
 }
 
 // -----------------------------------------------------------------------------
@@ -134,7 +125,7 @@ void _mqttConnect()
 void _mqttConfigure()
 {
     // Enable
-    if (getSetting("mqttServer").length() == 0) {
+    if (strlen(_mqtt_host) == 0) {
         _mqtt_enabled = false;
 
     } else {
@@ -203,11 +194,12 @@ void _mqttConfigure()
     void _mqttReportConfiguration(
         JsonObject& configuration
     ) {
-        configuration["mqtt_server"] = getSetting("mqttServer");
-        configuration["mqtt_server_port"] = getSetting("mqttPort").toInt();
-        configuration["mqtt_username"] = getSetting("mqttUser");
-        configuration["mqtt_password"] = getSetting("mqttPassword");
-        
+        configuration["mqtt_server"] = _mqtt_host;
+        configuration["mqtt_server_port"] = _mqtt_port;
+        configuration["mqtt_username"] = _mqtt_user;
+        configuration["mqtt_password"] = _mqtt_pass;
+        configuration["mqtt_client_id"] = _mqtt_clientId;
+
         #if ASYNC_TCP_SSL_ENABLED
             configuration["mqtt_use_ssl"] = getSetting("mqttUseSsl", 0).toInt() == 1;
             configuration["mqtt_fp"] = getSetting("mqttSslFp");
@@ -228,44 +220,65 @@ void _mqttConfigure()
 
         if (
             configuration.containsKey("mqtt_server")
-            && strcmp(configuration["mqtt_server"].as<char *>(), getSetting("mqttServer").c_str()) != 0
+            && strcmp(configuration["mqtt_server"].as<char *>(), _mqtt_host) != 0
         )  {
             DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_server\" to: %s\n"), configuration["mqtt_server"].as<char *>());
 
             setSetting("mqttServer", configuration["mqtt_server"].as<char *>());
+
+            _mqtt_host = strdup(configuration["mqtt_server"].as<char *>());
 
             is_updated = true;
         }
 
         if (
             configuration.containsKey("mqtt_server_port")
-            && configuration["mqtt_server_port"].as<uint16_t>() != getSetting("mqttPort").toInt()
+            && configuration["mqtt_server_port"].as<uint16_t>() != _mqtt_port
         )  {
             DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_server_port\" to: %d\n"), configuration["mqtt_server_port"].as<uint16_t>());
 
             setSetting("mqttPort", configuration["mqtt_server_port"].as<uint16_t>());
+
+            _mqtt_port = configuration["mqtt_server_port"].as<uint16_t>();
 
             is_updated = true;
         }
 
         if (
             configuration.containsKey("mqtt_username")
-            && strcmp(configuration["mqtt_username"].as<char *>(), getSetting("mqttUser").c_str()) != 0
+            && strcmp(configuration["mqtt_username"].as<char *>(), _mqtt_user) != 0
         )  {
             DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_username\" to: %s\n"), configuration["mqtt_username"].as<char *>());
 
             setSetting("mqttUser", configuration["mqtt_username"].as<char *>());
+
+            _mqtt_user = strdup(configuration["mqtt_username"].as<char *>());
 
             is_updated = true;
         }
 
         if (
             configuration.containsKey("mqtt_password")
-            && strcmp(configuration["mqtt_password"].as<char *>(), getSetting("mqttPassword").c_str()) != 0
+            && strcmp(configuration["mqtt_password"].as<char *>(), _mqtt_pass) != 0
         )  {
             DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_password\" to: %s\n"), configuration["mqtt_password"].as<char *>());
 
             setSetting("mqttPassword", configuration["mqtt_password"].as<char *>());
+
+            _mqtt_pass = strdup(configuration["mqtt_password"].as<char *>());
+
+            is_updated = true;
+        }
+
+        if (
+            configuration.containsKey("mqtt_client_id")
+            && strcmp(configuration["mqtt_client_id"].as<char *>(), _mqtt_clientId) != 0
+        )  {
+            DEBUG_MSG(PSTR("[INFO][MQTT] Setting: \"mqtt_client_id\" to: %s\n"), configuration["mqtt_client_id"].as<char *>());
+
+            setSetting("mqttClientId", configuration["mqtt_client_id"].as<char *>());
+
+            _mqtt_clientId = strdup(configuration["mqtt_client_id"].as<char *>());
 
             is_updated = true;
         }
@@ -386,9 +399,7 @@ void _mqttOnConnect()
 
     _mqtt_reconnect_delay = MQTT_RECONNECT_DELAY_MIN;
 
-    #if MQTT_SKIP_RETAINED
-        _mqtt_connected_at = millis();
-    #endif
+    _mqtt_connected_at = millis();
 
     // Clean subscriptions
     mqttUnsubscribe("#");
@@ -567,13 +578,20 @@ void mqttSetWill(
     char * payload
 ) {
     _mqtt_will = strdup(topic);
-    _mqtt_will_content = payload;
+    _mqtt_will_content = strdup(payload);
 }
 
 // -----------------------------------------------------------------------------
 
 void mqttSetup()
 {
+    _mqtt_host = strdup(getSetting("mqttServer").c_str());
+    _mqtt_port = getSetting("mqttPort", MQTT_DEFAULT_PORT).toInt();
+
+    _mqtt_user = strdup(getSetting("mqttUser").c_str());
+    _mqtt_pass = strdup(getSetting("mqttPassword").c_str());
+    _mqtt_clientId = strdup(getSetting("mqttClientId").c_str());
+
     DEBUG_MSG(PSTR("[INFO][MQTT] SSL %s, Autoconnect %s\n"),
         ASYNC_TCP_SSL_ENABLED ? "ENABLED" : "DISABLED",
         MQTT_AUTOCONNECT ? "ENABLED" : "DISABLED"

@@ -8,7 +8,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 #if LED_SUPPORT
 
-uint8_t _system_led_mode = STATUS_LED_MODE;
+uint8_t _led_mode = STATUS_LED_MODE;
 
 // -----------------------------------------------------------------------------
 // MODULE PRIVATE
@@ -45,27 +45,6 @@ bool _ledStatus(
 bool _ledToggle()
 {
     return _ledStatus(!_ledStatus());
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * Get mode of given LED
- */
-uint8_t _ledMode()
-{
-    return _system_led_mode;
-}
-
-// -----------------------------------------------------------------------------
-
-/**
- * Set mode of given LED
- */
-void _ledMode(
-    const uint8_t mode
-) {
-    _system_led_mode = mode;
 }
 
 // -----------------------------------------------------------------------------
@@ -126,7 +105,7 @@ void _ledBlink(
     void _ledReportConfiguration(
         JsonObject& configuration
     ) {
-        configuration["led_mode"] = getSetting("ledMode").toInt();
+        configuration["led_mode"] = _led_mode;
     }
 
 // -----------------------------------------------------------------------------
@@ -148,13 +127,13 @@ void _ledBlink(
                 || configuration["led_mode"].as<uint8_t>() == LED_MODE_ON
                 || configuration["led_mode"].as<uint8_t>() == LED_MODE_OFF
             )
-            && configuration["led_mode"].as<uint8_t>() != getSetting("ledMode").toInt()
+            && configuration["led_mode"].as<uint8_t>() != _led_mode
         )  {
             DEBUG_MSG(PSTR("[INFO][LED] Setting: \"led_mode\" to: %d\n"), configuration["led_mode"].as<uint8_t>());
 
             setSetting("ledMode", configuration["led_mode"].as<uint8_t>());
 
-            _ledMode(configuration["led_mode"].as<uint8_t>());
+            _led_mode = configuration["led_mode"].as<uint8_t>();
 
             is_updated = true;
         }
@@ -226,7 +205,7 @@ void _ledBlink(
  */
 void _ledInitialize()
 {
-    _ledMode(getSetting("ledMode", STATUS_LED_MODE).toInt());
+    _led_mode = getSetting("ledMode", STATUS_LED_MODE).toInt();
 }
 
 // -----------------------------------------------------------------------------
@@ -235,8 +214,6 @@ void _ledInitialize()
 
 void ledSetup()
 {
-    _system_led_mode = STATUS_LED_MODE;
-
     if (!hasSetting("ledMode")) {
         setSetting("ledMode", STATUS_LED_MODE);
     }
@@ -262,7 +239,7 @@ void ledSetup()
 void ledLoop()
 {
     #if WIFI_SUPPORT
-        if (_ledMode() == LED_MODE_WIFI) {
+        if (_led_mode == LED_MODE_WIFI) {
             if (wifiState() & WIFI_STATE_STA) {
                 _ledBlink(4900, 100);
 
@@ -275,11 +252,11 @@ void ledLoop()
         }
     #endif
 
-    if (_ledMode() == LED_MODE_ON) {
+    if (_led_mode == LED_MODE_ON) {
         _ledStatus(true);
     }
 
-    if (_ledMode() == LED_MODE_OFF) {
+    if (_led_mode == LED_MODE_OFF) {
         _ledStatus(false);
     }
 }

@@ -75,14 +75,13 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 // =============================================================================
 
 typedef std::function<void(unsigned int)> button_on_event_callback_t;
+void buttonOnEventRegister(button_on_event_callback_t callback, uint8_t button);
 
 typedef struct {
     DebounceEvent * button;
-    uint8_t channel_index;
     std::vector<button_on_event_callback_t> callbacks;
 } button_t;
 
-void buttonOnEventRegister(button_on_event_callback_t callback, unsigned int button);
 
 // =============================================================================
 // MODULE DEFAULTS

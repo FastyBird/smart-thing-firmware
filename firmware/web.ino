@@ -331,7 +331,7 @@ void _onRequest(
 // -----------------------------------------------------------------------------
 
 #if NETWORK_SSL_ENABLED & WEB_SSL_ENABLED
-    int _onCertificate(
+    uint8_t _onCertificate(
         void * arg,
         const char * filename,
         uint8_t ** buf

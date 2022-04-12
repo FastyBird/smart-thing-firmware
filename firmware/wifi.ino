@@ -211,7 +211,7 @@ bool _wifiClean(
     const uint8_t num
 ) {
     bool changed = false;
-    int i = 0;
+    uint8_t i = 0;
 
     // Clean defined settings
     while (i < num) {

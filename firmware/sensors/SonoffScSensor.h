@@ -43,8 +43,6 @@ class SonoffScSensor : public BaseSensor {
            // Sensor is ready to communicate
            _ready = true;
 
-            Serial.begin(SERIAL_BAUDRATE);
-
             // Init communication
             _send("AT+START");
         }

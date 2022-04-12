@@ -147,7 +147,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 // FASTYBIRD - Channels names
 //------------------------------------------------------------------------------
 
-#define FASTYBIRD_CHANNEL_DEFAULT                           "channel-{no}"
+#define FASTYBIRD_CHANNEL_DEFAULT                           "channel"
 
 #define FASTYBIRD_CHANNEL_ANALOG_SENSOR                     "analog-sensor"
 #define FASTYBIRD_CHANNEL_ANALOG_ACTOR                      "analog-actor"
@@ -362,15 +362,15 @@ typedef std::function<void(const uint8_t, const uint8_t, const char *)> fastybir
 typedef std::function<void(const uint8_t, const uint8_t)> fastybird_properties_process_query_t;
 
 typedef struct {
-    String name;
+    const char * name;
 
     bool settable;
     bool queryable;
 
-    String dataType;
-    String unit;
+    const char * dataType;
+    const char * unit;
 
-    String format;
+    const char * format;
 
     fastybird_properties_process_set_t set_callback;
     fastybird_properties_process_query_t query_callback;
@@ -382,7 +382,7 @@ typedef struct {
 typedef std::function<void(const uint8_t, const char *)> fastybird_controls_process_call_t;
 
 typedef struct {
-    String name;
+    const char * name;
 
     fastybird_controls_process_call_t call_callback;
 } fastybird_control_t;
@@ -391,7 +391,7 @@ typedef struct {
 
 // CHANNELS
 typedef struct {
-    String name;
+    const char * name;
 
     // Properties mapping via array indexes
     std::vector<uint8_t> properties;
@@ -403,12 +403,12 @@ typedef struct {
 
 // DEVICES
 typedef struct {
-    String name;
-    String hardware_model;
-    String hardware_manufacturer;
-    String hardware_version;
-    String firmware_manufacturer;
-    String firmware_version;
+    const char * name;
+    const char * hardware_model;
+    const char * hardware_manufacturer;
+    const char * hardware_version;
+    const char * firmware_manufacturer;
+    const char * firmware_version;
     bool initialized;
 
     // Channels mapping via array indexes

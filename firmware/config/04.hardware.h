@@ -90,9 +90,13 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define STATUS_LED_PIN_INVERSE          1
 
     // FASTYBIRD
-    #define FASTYBIRD_SUPPORT               0
+    #define FASTYBIRD_SUPPORT               1
 
     #define FASTYBIRD_MAX_CHANNELS          3
+
+    #define FASTYBIRD_BUTTON1_CHANNEL_INDEX 0
+    #define FASTYBIRD_BUTTON2_CHANNEL_INDEX 1
+    #define FASTYBIRD_BUTTON3_CHANNEL_INDEX 2
 
     #define FASTYBIRD_RELAY1_CHANNEL_INDEX  0
     #define FASTYBIRD_RELAY2_CHANNEL_INDEX  1

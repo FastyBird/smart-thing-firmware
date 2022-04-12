@@ -97,6 +97,37 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 #define RELAY_PROVIDER_STM                      4
 
 // =============================================================================
+// MODULE PROTOTYPES
+// =============================================================================
+
+typedef std::function<void(unsigned int)> relay_on_event_callback_t;
+void relayOnEventRegister(relay_on_event_callback_t callback, uint8_t relay);
+
+typedef struct {
+    // Configuration variables
+    uint8_t pin;            // GPIO pin for the relay
+    uint8_t type;           // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
+    uint8_t reset_pin;      // GPIO to reset the relay if RELAY_TYPE_LATCHED
+    uint32_t delay_on;      // Delay to turn relay ON
+    uint32_t delay_off;     // Delay to turn relay OFF
+    uint8_t pulse;          // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
+    uint32_t pulse_ms;      // Pulse length in millis
+
+    // Status variables
+    bool current_status;    // Holds the current (physical) status of the relay
+    bool target_status;     // Holds the target status
+    uint32_t fw_start;      // Flood window start time
+    uint8_t fw_count;       // Number of changes within the current flood window
+    uint32_t change_time;   // Scheduled time to change
+    bool report;            // Whether to report to own topic
+
+    // Helping objects
+    Ticker pulseTicker;     // Holds the pulse back timer
+
+    std::vector<relay_on_event_callback_t> callbacks;
+} relay_t;
+
+// =============================================================================
 // MODULE DEFAULTS
 // =============================================================================
 

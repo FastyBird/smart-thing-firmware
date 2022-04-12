@@ -10,30 +10,6 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 #include <EEPROM.h>
 
-typedef struct {
-    // Configuration variables
-    uint8_t pin;            // GPIO pin for the relay
-    uint8_t type;           // RELAY_TYPE_NORMAL, RELAY_TYPE_INVERSE, RELAY_TYPE_LATCHED or RELAY_TYPE_LATCHED_INVERSE
-    uint8_t reset_pin;      // GPIO to reset the relay if RELAY_TYPE_LATCHED
-    uint8_t channel_index;  // Communication channel number
-    uint32_t delay_on;      // Delay to turn relay ON
-    uint32_t delay_off;     // Delay to turn relay OFF
-    uint8_t pulse;          // RELAY_PULSE_NONE, RELAY_PULSE_OFF or RELAY_PULSE_ON
-    uint32_t pulse_ms;      // Pulse length in millis
-
-    // Status variables
-    bool current_status;    // Holds the current (physical) status of the relay
-    bool target_status;     // Holds the target status
-    uint32_t fw_start;      // Flood window start time
-    uint8_t fw_count;       // Number of changes within the current flood window
-    uint32_t change_time;   // Scheduled time to change
-    bool report;            // Whether to report to own topic
-
-    // Helping objects
-    Ticker pulseTicker;     // Holds the pulse back timer
-
-} relay_t;
-
 std::vector<relay_t> _relays;
 
 bool _relay_recursive = false;
@@ -177,13 +153,13 @@ uint8_t _relayParsePayload(
         p[i] = tolower(p[i]);
     }
 
-    if (strcmp(p, FASTYBIRD_SWITCH_PAYLOAD_OFF) == 0) {
+    if (strcmp(p, "false") == 0) {
         return 0;
 
-    } else if (strcmp(p, FASTYBIRD_SWITCH_PAYLOAD_ON) == 0) {
+    } else if (strcmp(p, "true") == 0) {
         return 1;
 
-    } else if (strcmp(p, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE) == 0) {
+    } else if (strcmp(p, "toggle") == 0) {
         return 2;
 
     } else {
@@ -596,93 +572,6 @@ uint8_t _relayParsePayload(
 
 // -----------------------------------------------------------------------------
 
-#if FASTYBIRD_SUPPORT && FASTYBIRD_MAX_CHANNELS > 0
-    void _relayFastyBirdProperySet(
-        const uint8_t channelIndex,
-        const uint8_t propertyIndex,
-        const char * payload
-    ) {
-        for (uint8_t i = 0; i < _relays.size(); i++) {
-            if (_relays[i].channel_index == channelIndex) {
-                // Toggle relay status
-                if (strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE) == 0) {
-                    relayToggle(i);
-
-                // Set relay status
-                } else {
-                    relayStatus(i, strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_ON) == 0);
-                }
-            }
-        }
-    }
-
-// -----------------------------------------------------------------------------
-
-    void _relayFastyBirdProperyQuery(
-        const uint8_t channelIndex,
-        const uint8_t propertyIndex
-    ) {
-        for (uint8_t i = 0; i < _relays.size(); i++) {
-            if (_relays[i].channel_index == channelIndex) {
-                fastybirdReportChannelPropertyValue(
-                    FASTYBIRD_MAIN_DEVICE_INDEX,
-                    channelIndex,
-                    fastybirdFindChannelPropertyIndex(
-                        FASTYBIRD_MAIN_DEVICE_INDEX,
-                        channelIndex,
-                        FASTYBIRD_PROPERTY_SWITCH
-                    ),
-                    relayStatus(i) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
-                );
-            }
-        }
-    }
-
-// -----------------------------------------------------------------------------
-
-    void _relayFastyBirdRegisterRealys()
-    {
-        bool has_channel = false;
-
-        for (uint8_t i = 0; i < _relays.size(); i++) {
-            if (_relays[i].channel_index != INDEX_NONE) {
-                has_channel = true;
-            }
-        }
-
-        if (has_channel) {
-            char format[30];
-
-            strcpy(format, FASTYBIRD_SWITCH_PAYLOAD_ON);
-            strcat(format, ",");
-            strcat(format, FASTYBIRD_SWITCH_PAYLOAD_OFF);
-            strcat(format, ",");
-            strcat(format, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE);
-
-            // Create relay property structure
-            uint8_t propertyIndex = fastybirdRegisterProperty(
-                FASTYBIRD_PROPERTY_SWITCH,
-                FASTYBIRD_PROPERTY_DATA_TYPE_ENUM,
-                "",
-                format,
-                _relayFastyBirdProperySet,
-                _relayFastyBirdProperyQuery
-            );
-
-            for (uint8_t i = 0; i < _relays.size(); i++) {
-                // Register property to channel
-                fastybirdMapPropertyToChannel(
-                    FASTYBIRD_MAIN_DEVICE_INDEX,
-                    _relays[i].channel_index,
-                    propertyIndex
-                );
-            }
-        }
-    }
-#endif // FASTYBIRD_SUPPORT && FASTYBIRD_MAX_CHANNELS > 0
-
-// -----------------------------------------------------------------------------
-
 #if MQTT_SUPPORT
     void _relayMQTTOnConnect()
     {
@@ -829,19 +718,10 @@ void _relayProcess(
         // Call the provider to perform the action
         _relayProviderStatus(id, target);
 
-        // Send to Broker
-        #if FASTYBIRD_SUPPORT && FASTYBIRD_MAX_CHANNELS > 0
-            fastybirdReportChannelPropertyValue(
-                FASTYBIRD_MAIN_DEVICE_INDEX,
-                _relays[id].channel_index,
-                fastybirdFindChannelPropertyIndex(
-                    FASTYBIRD_MAIN_DEVICE_INDEX,
-                    _relays[id].channel_index,
-                    FASTYBIRD_PROPERTY_SWITCH
-                ),
-                target ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
-            );
-        #endif
+        // Relay event was fired
+        for (uint8_t i = 0; i < _relays[id].callbacks.size(); i++) {
+            _relays[id].callbacks[i](target);
+        }
 
         if (!_relay_recursive) {
             relayPulse(id);
@@ -1060,7 +940,10 @@ void relaySave(
     if (eeprom) {
         // We are actually enqueuing the commit so it will be
         // executed on the main loop, in case this is called from a callback
+        EEPROMr.write(EEPROM_RELAY_STATUS, mask.to_ulong());
         eepromCommit();
+
+        DEBUG_MSG(PSTR("[INFO][RELAY] Comminting relay mask: %d\n"), mask);
     }
 }
 
@@ -1116,6 +999,19 @@ bool relayStatus(
 }
 
 // -----------------------------------------------------------------------------
+
+void relayOnEventRegister(
+    relay_on_event_callback_t callback,
+    const uint8_t id
+) {
+    if (id >= _relays.size()) {
+        return;
+    }
+
+    _relays[id].callbacks.push_back(callback);
+}
+
+// -----------------------------------------------------------------------------
 // MODULE CORE
 // -----------------------------------------------------------------------------
 
@@ -1123,28 +1019,28 @@ void relaySetup()
 {
     // Ad-hoc relays
     #if RELAY1_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, FASTYBIRD_RELAY1_CHANNEL_INDEX, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY1_PIN, RELAY1_TYPE, RELAY1_RESET_PIN, RELAY1_DELAY_ON, RELAY1_DELAY_OFF });
     #endif
     #if RELAY2_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, FASTYBIRD_RELAY2_CHANNEL_INDEX, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY2_PIN, RELAY2_TYPE, RELAY2_RESET_PIN, RELAY2_DELAY_ON, RELAY2_DELAY_OFF });
     #endif
     #if RELAY3_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, FASTYBIRD_RELAY3_CHANNEL_INDEX, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY3_PIN, RELAY3_TYPE, RELAY3_RESET_PIN, RELAY3_DELAY_ON, RELAY3_DELAY_OFF });
     #endif
     #if RELAY4_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, FASTYBIRD_RELAY4_CHANNEL_INDEX, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY4_PIN, RELAY4_TYPE, RELAY4_RESET_PIN, RELAY4_DELAY_ON, RELAY4_DELAY_OFF });
     #endif
     #if RELAY5_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, FASTYBIRD_RELAY5_CHANNEL_INDEX, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY5_PIN, RELAY5_TYPE, RELAY5_RESET_PIN, RELAY5_DELAY_ON, RELAY5_DELAY_OFF });
     #endif
     #if RELAY6_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, FASTYBIRD_RELAY6_CHANNEL_INDEX, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY6_PIN, RELAY6_TYPE, RELAY6_RESET_PIN, RELAY6_DELAY_ON, RELAY6_DELAY_OFF });
     #endif
     #if RELAY7_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, FASTYBIRD_RELAY7_CHANNEL_INDEX, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY7_PIN, RELAY7_TYPE, RELAY7_RESET_PIN, RELAY7_DELAY_ON, RELAY7_DELAY_OFF });
     #endif
     #if RELAY8_PIN != GPIO_NONE
-        _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, FASTYBIRD_RELAY8_CHANNEL_INDEX, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
+        _relays.push_back((relay_t) { RELAY8_PIN, RELAY8_TYPE, RELAY8_RESET_PIN, RELAY8_DELAY_ON, RELAY8_DELAY_OFF });
     #endif
 
     #if BUTTON_SUPPORT
@@ -1258,27 +1154,6 @@ void relaySetup()
         wsOnConfigureRegister(_relayWSOnConfigure);
         wsOnUpdateRegister(_relayWSOnUpdate);
         wsOnActionRegister(_relayWSOnAction);
-    #endif
-
-    #if FASTYBIRD_SUPPORT && FASTYBIRD_MAX_CHANNELS > 0
-        if (relayCount() > 0) {
-            _relayFastyBirdRegisterRealys();
-
-            fastybirdOnConnectRegister([](){
-                for (uint8_t i = 0; i < relayCount(); i++) {
-                    fastybirdReportChannelPropertyValue(
-                        FASTYBIRD_MAIN_DEVICE_INDEX,
-                        _relays[i].channel_index,
-                        fastybirdFindChannelPropertyIndex(
-                            FASTYBIRD_MAIN_DEVICE_INDEX,
-                            _relays[i].channel_index,
-                            FASTYBIRD_PROPERTY_SWITCH
-                        ),
-                        relayStatus(i) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
-                    );
-                }
-            });
-        }
     #endif
 
     #if MQTT_SUPPORT

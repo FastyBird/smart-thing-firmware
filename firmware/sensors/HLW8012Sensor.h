@@ -375,10 +375,6 @@ void HLW8012Sensor::_attach(
     uint8_t gpio,
     uint8_t mode
 ) {
-    if (!gpioValid(gpio)) {
-        return;
-    }
-
     _detach(gpio);
 
     uint8_t index = gpio > 5 ? gpio-6 : gpio;
@@ -395,10 +391,6 @@ void HLW8012Sensor::_attach(
 void HLW8012Sensor::_detach(
     uint8_t gpio
 ) {
-    if (!gpioValid(gpio)) {
-        return;
-    }
-
     uint8_t index = gpio > 5 ? gpio-6 : gpio;
 
     if (_hlw8012_sensor_instance[index]) {

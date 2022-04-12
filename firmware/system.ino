@@ -172,7 +172,7 @@ void _systemInfoOnHeartbeat()
 
         device["device"] = HARDWARE_MODEL;
         device["manufacturer"] = HARDWARE_MANUFACTURER;
-        device["chipid"] = String(chipid);
+        device["chipid"] = chipid;
         device["sdk"] = ESP.getSdkVersion();
         device["core"] = getCoreVersion();
         device["mac"] = WiFi.macAddress();
@@ -180,7 +180,7 @@ void _systemInfoOnHeartbeat()
         // Network
         JsonObject& network = data.createNestedObject("network");
 
-        network["bssid"] = String(bssid_str);
+        network["bssid"] = bssid_str;
         network["channel"] = WiFi.channel();
         network["hostname"] = getIdentifier();
         network["network"] = getNetwork();
@@ -210,17 +210,6 @@ void _systemInfoOnHeartbeat()
         _systemStatus(status);
     }
 #endif // WEB_SUPPORT && WS_SUPPORT
-
-// -----------------------------------------------------------------------------
-
-void _systemSetupSpecificHardware()
-{
-    // These devices use the hardware UART
-    // to communicate to secondary microcontrollers
-    #if defined(ITEAD_SONOFF_RFBRIDGE) || defined(ITEAD_SONOFF_DUAL) || defined(ITEAD_SONOFF_SC) || defined(ITEAD_SONOFF_SC_PRO) || (RELAY_PROVIDER == RELAY_PROVIDER_STM)
-        Serial.begin(SERIAL_BAUDRATE);
-    #endif
-}
 
 // -----------------------------------------------------------------------------
 
@@ -411,8 +400,7 @@ void systemSetup()
         stabiltyCheck(false);
     #endif
 
-    // Init device-specific hardware
-    _systemSetupSpecificHardware();
+    Serial.begin(SERIAL_BAUDRATE);
 
     // Cache loop delay value to speed things (recommended max 250ms)
     _system_loop_delay = atol(getSetting("loopDelay", LOOP_DELAY_TIME).c_str());

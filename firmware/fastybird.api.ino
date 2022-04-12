@@ -147,7 +147,7 @@ String _fastybirdMqttApiCreateChannelTopicString(
 
 void _fastybirdMqttApiTopicMatchCallback(
     const char * match,
-    const unsigned int length,
+    const uint32_t length,
     const MatchState & topic_match
 ) {
     // Add string to vector
@@ -173,7 +173,7 @@ void _fastybirdMqttApiMqttOnConnect()
 
     // Device property set topic
     topic = _fastybirdMqttApiCreateDeviceTopicString(
-        device.name.c_str(),
+        device.name,
         FASTYBIRD_TOPIC_DEVICE_PROPERTY_SET,
         "property",
         "+"
@@ -183,7 +183,7 @@ void _fastybirdMqttApiMqttOnConnect()
 
     // Device property query topic
     topic = _fastybirdMqttApiCreateDeviceTopicString(
-        device.name.c_str(),
+        device.name,
         FASTYBIRD_TOPIC_DEVICE_PROPERTY_QUERY,
         "property",
         "+"
@@ -193,7 +193,7 @@ void _fastybirdMqttApiMqttOnConnect()
 
     // Device control topic
     topic = _fastybirdMqttApiCreateDeviceTopicString(
-        device.name.c_str(),
+        device.name,
         FASTYBIRD_TOPIC_DEVICE_CONTROL_SET,
         "control",
         "+"
@@ -204,7 +204,7 @@ void _fastybirdMqttApiMqttOnConnect()
     #if FASTYBIRD_MAX_CHANNELS > 0
         // Channel property set topic
         topic = _fastybirdMqttApiCreateChannelTopicString(
-        device.name.c_str(),
+            device.name,
             "+",
             FASTYBIRD_TOPIC_CHANNEL_PROPERTY_SET,
             "property",
@@ -215,7 +215,7 @@ void _fastybirdMqttApiMqttOnConnect()
 
         // Channel property query topic
         topic = _fastybirdMqttApiCreateChannelTopicString(
-            device.name.c_str(),
+            device.name,
             "+",
             FASTYBIRD_TOPIC_CHANNEL_PROPERTY_QUERY,
             "property",
@@ -226,7 +226,7 @@ void _fastybirdMqttApiMqttOnConnect()
 
         // Channel control topic
         topic = _fastybirdMqttApiCreateChannelTopicString(
-            device.name.c_str(),
+            device.name,
             "+",
             FASTYBIRD_TOPIC_CHANNEL_CONTROL_SET,
             "control",
@@ -292,7 +292,7 @@ void _fastybirdMqttApiMqttOnMessage(
     if (parts_count > FASTYBIRD_TOPIC_POSITION_DEVICE_NAME) {
         String deviceName = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_DEVICE_NAME];
 
-        uint8_t deviceIndex = fastybirdFindDeviceIndex(deviceName);
+        uint8_t deviceIndex = fastybirdFindDeviceIndex(deviceName.c_str());
 
         if (deviceIndex == INDEX_NONE) {
             return;
@@ -313,9 +313,11 @@ void _fastybirdMqttApiMqttOnMessage(
 
             String propertyName = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_DEVICE_PROPERTY_NAME];
 
-            uint8_t propertyIndex = fastybirdFindDevicePropertyIndex(deviceIndex, propertyName);
+            uint8_t propertyIndex = fastybirdFindDevicePropertyIndex(deviceIndex, propertyName.c_str());
 
             if (propertyIndex == INDEX_NONE) {
+                DEBUG_MSG(PSTR("[WARN][FASTYBIRD][API] Device property: %s was not found\n"), propertyName.c_str());
+
                 return;
             }
 
@@ -325,6 +327,8 @@ void _fastybirdMqttApiMqttOnMessage(
                 _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_DEVICE_PROPERTY_ACTION].equals(FASTYBIRD_TOPIC_PART_SET)
                 && property.settable
             ) {
+                DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Calling device property topic setter\n"));
+
                 property.set_callback(deviceIndex, propertyIndex, payload);
 
                 return;
@@ -334,6 +338,8 @@ void _fastybirdMqttApiMqttOnMessage(
                 _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_DEVICE_PROPERTY_ACTION].equals(FASTYBIRD_TOPIC_PART_QUERY)
                 && property.queryable
             ) {
+                DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Calling device property topic getter\n"));
+
                 property.query_callback(deviceIndex, propertyIndex);
 
                 return;
@@ -352,7 +358,7 @@ void _fastybirdMqttApiMqttOnMessage(
 
             String controlName = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_DEVICE_CONTROL_NAME];
 
-            uint8_t controlIndex = fastybirdFindDevicePropertyIndex(deviceIndex, controlName);
+            uint8_t controlIndex = fastybirdFindDeviceControlIndex(deviceIndex, controlName.c_str());
 
             if (controlIndex == INDEX_NONE) {
                 return;
@@ -374,7 +380,7 @@ void _fastybirdMqttApiMqttOnMessage(
 
             String channelName = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_NAME];
 
-            uint8_t channelIndex = fastybirdFindChannelIndex(deviceIndex, channelName);
+            uint8_t channelIndex = fastybirdFindChannelIndex(deviceIndex, channelName.c_str());
 
             if (channelIndex == INDEX_NONE) {
                 return;
@@ -393,11 +399,13 @@ void _fastybirdMqttApiMqttOnMessage(
             ) {
                 DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Channel property topic\n"));
 
-                String propertylName = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_PROPERTY_NAME];
+                String propertyName = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_PROPERTY_NAME];
 
-                uint8_t propertyIndex = fastybirdFindChannelPropertyIndex(deviceIndex, channelIndex, propertylName);
+                uint8_t propertyIndex = fastybirdFindChannelPropertyIndex(deviceIndex, channelIndex, propertyName.c_str());
 
                 if (propertyIndex == INDEX_NONE) {
+                    DEBUG_MSG(PSTR("[WARN][FASTYBIRD][API] Channel property: %s was not found\n"), propertyName.c_str());
+
                     return;
                 }
 
@@ -407,6 +415,8 @@ void _fastybirdMqttApiMqttOnMessage(
                     _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_PROPERTY_ACTION].equals(FASTYBIRD_TOPIC_PART_SET)
                     && property.settable
                 ) {
+                    DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Calling channel property topic setter\n"));
+
                     property.set_callback(channelIndex, propertyIndex, payload);
 
                     return;
@@ -416,6 +426,8 @@ void _fastybirdMqttApiMqttOnMessage(
                     _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_PROPERTY_ACTION].equals(FASTYBIRD_TOPIC_PART_QUERY)
                     && property.queryable
                 ) {
+                    DEBUG_MSG(PSTR("[INFO][FASTYBIRD][API] Calling channel property topic getter\n"));
+
                     property.query_callback(channelIndex, propertyIndex);
 
                     return;
@@ -434,7 +446,7 @@ void _fastybirdMqttApiMqttOnMessage(
 
                 String controlName = _fastybird_topic_parts[FASTYBIRD_TOPIC_POSITION_CHANNEL_CONTROL_NAME];
 
-                uint8_t controlIndex = fastybirdFindChannelPropertyIndex(deviceIndex, channelIndex, controlName);
+                uint8_t controlIndex = fastybirdFindChannelControlIndex(deviceIndex, channelIndex, controlName.c_str());
 
                 if (controlIndex == INDEX_NONE) {
                     return;
@@ -470,8 +482,8 @@ void fastybirdApiSetup()
     mqttOnMessageRegister(_fastybirdMqttApiMqttOnMessage);
 
     char will_topic[100];
-    
-    strcpy(will_topic, _fastybirdMqttApiCreateStateTopicString(device.name.c_str()).c_str());
+
+    strcpy(will_topic, _fastybirdMqttApiCreateStateTopicString(device.name).c_str());
 
     mqttSetWill(
         will_topic,

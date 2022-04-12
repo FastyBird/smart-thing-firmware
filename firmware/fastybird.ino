@@ -44,10 +44,10 @@ fastybird_device_t fastybirdGetDevice(
 // -----------------------------------------------------------------------------
 
 uint8_t fastybirdFindDeviceIndex(
-    String name
+    const char * name
 ) {
     for (uint8_t i = 0; i < _fastybird_devices.size(); i++) {
-        if (_fastybird_devices[i].name.equals(name)) {
+        if (strcmp(_fastybird_devices[i].name, name) == 0) {
             return i;
         }
     }
@@ -67,7 +67,7 @@ fastybird_channel_t fastybirdGetChannel(
 
 uint8_t fastybirdFindChannelIndex(
     const uint8_t deviceIndex,
-    String name
+    const char * name
 ) {
     if (deviceIndex >= _fastybird_devices.size()) {
         return INDEX_NONE;
@@ -80,7 +80,7 @@ uint8_t fastybirdFindChannelIndex(
 
         if (
             channelIndex < _fastybird_channels.size()
-            && _fastybird_channels[channelIndex].name.equals(name)
+            && strcmp(_fastybird_channels[channelIndex].name, name) == 0
         ) {
             return channelIndex;
         }
@@ -101,7 +101,7 @@ fastybird_property_t fastybirdGetProperty(
 
 uint8_t fastybirdFindDevicePropertyIndex(
     const uint8_t deviceIndex,
-    String name
+    const char * name
 ) {
     if (deviceIndex >= _fastybird_devices.size()) {
         return INDEX_NONE;
@@ -114,7 +114,7 @@ uint8_t fastybirdFindDevicePropertyIndex(
 
         if (
             propertyIndex < _fastybird_properties.size()
-            && _fastybird_properties[propertyIndex].name.equals(name)
+            && strcmp(_fastybird_properties[propertyIndex].name, name) == 0
         ) {
             return propertyIndex;
         }
@@ -128,7 +128,7 @@ uint8_t fastybirdFindDevicePropertyIndex(
 uint8_t fastybirdFindChannelPropertyIndex(
     const uint8_t deviceIndex,
     const uint8_t channelIndex,
-    String name
+    const char * name
 ) {
     if (deviceIndex >= _fastybird_devices.size()) {
         return INDEX_NONE;
@@ -147,7 +147,7 @@ uint8_t fastybirdFindChannelPropertyIndex(
 
         if (
             propertyIndex < _fastybird_properties.size()
-            && _fastybird_properties[propertyIndex].name.equals(name)
+            && strcmp(_fastybird_properties[propertyIndex].name, name) == 0
         ) {
             return propertyIndex;
         }
@@ -168,7 +168,7 @@ fastybird_control_t fastybirdGetControl(
 
 uint8_t fastybirdFindDeviceControlIndex(
     const uint8_t deviceIndex,
-    String name
+    const char * name
 ) {
     if (deviceIndex >= _fastybird_devices.size()) {
         return INDEX_NONE;
@@ -181,7 +181,7 @@ uint8_t fastybirdFindDeviceControlIndex(
 
         if (
             controlIndex < _fastybird_controls.size()
-            && _fastybird_controls[controlIndex].name.equals(name)
+            && strcmp(_fastybird_controls[controlIndex].name, name) == 0
         ) {
             return controlIndex;
         }
@@ -195,7 +195,7 @@ uint8_t fastybirdFindDeviceControlIndex(
 uint8_t fastybirdFindChannelControlIndex(
     const uint8_t deviceIndex,
     const uint8_t channelIndex,
-    String name
+    const char * name
 ) {
     if (deviceIndex >= _fastybird_devices.size()) {
         return INDEX_NONE;
@@ -214,7 +214,7 @@ uint8_t fastybirdFindChannelControlIndex(
 
         if (
             controlIndex < _fastybird_controls.size()
-            && _fastybird_controls[controlIndex].name.equals(name)
+            && strcmp(_fastybird_controls[controlIndex].name, name) == 0
         ) {
             return controlIndex;
         }
@@ -229,18 +229,18 @@ uint8_t fastybirdFindChannelControlIndex(
 
 void _fastybirdInitialize()
 {
-    char buffer[20];
+    char buff[20];
 
-    snprintf_P(buffer, sizeof(buffer), PSTR("%08X"), ESP.getChipId());
+    snprintf_P(buff, sizeof(buff), PSTR("%08X"), ESP.getChipId());
 
-    String serial_no = String(buffer);
+    String serial_no = String(buff);
 
     serial_no.toLowerCase();
 
     _fastybird_devices.push_back({
-        serial_no,
-        HARDWARE_MANUFACTURER,
+        strdup(serial_no.c_str()),
         HARDWARE_MODEL,
+        HARDWARE_MANUFACTURER,
         HARDWARE_VERSION,
         FIRMWARE_MANUFACTURER,
         FIRMWARE_VERSION,
@@ -365,13 +365,14 @@ void _fastybirdInitialize()
         );
     #endif
 
-    String channelName;
+    char channelName[50];
 
     for (uint8_t i = 0; i < FASTYBIRD_MAX_CHANNELS; i++) {
-        channelName = FASTYBIRD_CHANNEL_DEFAULT;
-        channelName.replace("{no}", String(i));
+        strcpy(channelName, FASTYBIRD_CHANNEL_DEFAULT);
+        strcat(channelName, "-");
+        itoa((i + 1), channelName + strlen(channelName), 10);
 
-        fastybirdRegisterChannel(channelName.c_str());
+        fastybirdRegisterChannel(channelName);
 
         fastybirdMapChannelToDevice(FASTYBIRD_MAIN_DEVICE_INDEX, (_fastybird_channels.size() - 1));
     }
@@ -419,55 +420,57 @@ void _fastybirdSystemOnHeartbeat()
 {
     fastybird_device_t device = fastybirdGetDevice(FASTYBIRD_MAIN_DEVICE_INDEX);
 
+    char buf[20];
+
     fastybirdApiReportDevicePropertyValue(
-        device.name.c_str(),
+        device.name,
         FASTYBIRD_PROPERTY_INTERVAL,
-        String(HEARTBEAT_INTERVAL / 1000).c_str()
+        itoa(HEARTBEAT_INTERVAL / 1000, buf, 10)
     );
 
     fastybirdApiReportDevicePropertyValue(
-        device.name.c_str(),
+        device.name,
         FASTYBIRD_PROPERTY_FREE_HEAP,
-        String(getFreeHeap()).c_str()
+        itoa(getFreeHeap(), buf, 10)
     );
 
     fastybirdApiReportDevicePropertyValue(
-        device.name.c_str(),
+        device.name,
         FASTYBIRD_PROPERTY_UPTIME,
-        String(getUptime()).c_str()
+        itoa(getUptime(), buf, 10)
     );
 
     #if WIFI_SUPPORT
         fastybirdApiReportDevicePropertyValue(
-            device.name.c_str(),
+            device.name,
             FASTYBIRD_PROPERTY_IP_ADDRESS,
             getIP().c_str()
         );
 
         fastybirdApiReportDevicePropertyValue(
-            device.name.c_str(),
+            device.name,
             FASTYBIRD_PROPERTY_RSSI,
-            String(WiFi.RSSI()).c_str()
+            itoa(WiFi.RSSI(), buf, 10)
         );
 
         fastybirdApiReportDevicePropertyValue(
-            device.name.c_str(),
+            device.name,
             FASTYBIRD_PROPERTY_SSID,
             getNetwork().c_str()
         );
     #endif
 
     fastybirdApiReportDevicePropertyValue(
-        device.name.c_str(),
+        device.name,
         FASTYBIRD_PROPERTY_CPU_LOAD,
-        String(systemLoadAverage()).c_str()
+        itoa(systemLoadAverage(), buf, 10)
     );
 
     #if ADC_MODE_VALUE == ADC_VCC
         fastybirdApiReportDevicePropertyValue(
-            device.name.c_str(),
+            device.name,
             FASTYBIRD_PROPERTY_VCC,
-            String(ESP.getVcc()).c_str()
+            itoa(ESP.getVcc(), buf, 10)
         );
     #endif
 }
@@ -491,10 +494,10 @@ bool _fastybirdInitializeChannelProperty(
         case FASTYBIRD_PUB_PROPERTY_NAME:
             if (
                 !fastybirdApiPropagateChannelPropertyName(
-                    device.name.c_str(),
-                    channel.name.c_str(),
-                    property.name.c_str(),
-                    property.name.c_str()
+                    device.name,
+                    channel.name,
+                    property.name,
+                    property.name
                 )
             ) {
                 return false;
@@ -506,9 +509,9 @@ bool _fastybirdInitializeChannelProperty(
         case FASTYBIRD_PUB_PROPERTY_SETABLE:
             if (
                 !fastybirdApiPropagateChannelPropertySettable(
-                    device.name.c_str(),
-                    channel.name.c_str(),
-                    property.name.c_str(),
+                    device.name,
+                    channel.name,
+                    property.name,
                     property.settable
                 )
             ) {
@@ -521,9 +524,9 @@ bool _fastybirdInitializeChannelProperty(
         case FASTYBIRD_PUB_PROPERTY_QUERYABLE:
             if (
                 !fastybirdApiPropagateChannelPropertyQueryable(
-                    device.name.c_str(),
-                    channel.name.c_str(),
-                    property.name.c_str(),
+                    device.name,
+                    channel.name,
+                    property.name,
                     property.queryable
                 )
             ) {
@@ -536,10 +539,10 @@ bool _fastybirdInitializeChannelProperty(
         case FASTYBIRD_PUB_PROPERTY_DATA_TYPE:
             if (
                 !fastybirdApiPropagateChannelPropertyDataType(
-                    device.name.c_str(),
-                    channel.name.c_str(),
-                    property.name.c_str(),
-                    property.dataType.c_str()
+                    device.name,
+                    channel.name,
+                    property.name,
+                    property.dataType
                 )
             ) {
                 return false;
@@ -551,10 +554,10 @@ bool _fastybirdInitializeChannelProperty(
         case FASTYBIRD_PUB_PROPERTY_UNIT:
             if (
                 !fastybirdApiPropagateChannelPropertyUnit(
-                    device.name.c_str(),
-                    channel.name.c_str(),
-                    property.name.c_str(),
-                    property.unit.c_str()
+                    device.name,
+                    channel.name,
+                    property.name,
+                    property.unit
                 )
             ) {
                 return false;
@@ -566,10 +569,10 @@ bool _fastybirdInitializeChannelProperty(
         case FASTYBIRD_PUB_PROPERTY_FORMAT:
             if (
                 !fastybirdApiPropagateChannelPropertyFormat(
-                    device.name.c_str(),
-                    channel.name.c_str(),
-                    property.name.c_str(),
-                    property.format.c_str()
+                    device.name,
+                    channel.name,
+                    property.name,
+                    property.format
                 )
             ) {
                 return false;
@@ -602,8 +605,8 @@ bool _fastybirdInitializeChannel(
     fastybird_device_t device = fastybirdGetDevice(deviceIndex);
     fastybird_channel_t channel = fastybirdGetChannel(channelIndex);
 
-    std::vector<String> channel_properties;
-    std::vector<String> channel_controls;
+    std::vector<String> properties;
+    std::vector<String> controls;
 
     switch (_fastybird_channel_advertisement_progress)
     {
@@ -615,9 +618,9 @@ bool _fastybirdInitializeChannel(
         case FASTYBIRD_PUB_CHANNEL_NAME:
             if (
                 !fastybirdApiPropagateChannelName(
-                    device.name.c_str(),
-                    channel.name.c_str(),
-                    channel.name.c_str()
+                    device.name,
+                    channel.name,
+                    channel.name
                 )
             ) {
                 return false;
@@ -629,15 +632,15 @@ bool _fastybirdInitializeChannel(
         case FASTYBIRD_PUB_CHANNEL_PROPERTIES:
             for (uint8_t i = 0; i < channel.properties.size(); i++) {
                 if (channel.properties[i] < _fastybird_properties.size()) {
-                    channel_properties.push_back(_fastybird_properties[channel.properties[i]].name);
+                    properties.push_back(_fastybird_properties[channel.properties[i]].name);
                 }
             }
 
             if (
                 !fastybirdApiPropagateChannelPropertiesNames(
-                    device.name.c_str(),
-                    channel.name.c_str(),
-                    channel_properties
+                    device.name,
+                    channel.name,
+                    properties
                 )
             ) {
                 return false;
@@ -649,15 +652,15 @@ bool _fastybirdInitializeChannel(
         case FASTYBIRD_PUB_CHANNEL_CONTROLS:
             for (uint8_t i = 0; i < channel.controls.size(); i++) {
                 if (channel.controls[i] < _fastybird_controls.size()) {
-                    channel_controls.push_back(_fastybird_controls[channel.controls[i]].name);
+                    controls.push_back(_fastybird_controls[channel.controls[i]].name);
                 }
             }
 
             if (
                 !fastybirdApiPropagateChannelControlsNames(
-                    device.name.c_str(),
-                    channel.name.c_str(),
-                    channel_controls
+                    device.name,
+                    channel.name,
+                    controls
                 )
             ) {
                 return false;
@@ -759,7 +762,7 @@ void _fastybirdInitializeDevice(
             // Notify broker that device is sending initialization sequences
             if (
                 !fastybirdApiReportDeviceState(
-                    device.name.c_str(),
+                    device.name,
                     FASTYBIRD_STATUS_INIT
                 )
             ) {
@@ -772,7 +775,7 @@ void _fastybirdInitializeDevice(
         case FASTYBIRD_PUB_DEVICE_NAME:
             if (
                 !fastybirdApiPropagateDeviceName(
-                    device.name.c_str(),
+                    device.name,
                     getIdentifier().c_str()
                 )
             ) {
@@ -785,9 +788,9 @@ void _fastybirdInitializeDevice(
         case FASTYBIRD_PUB_DEVICE_HARDWARE:
             if (
                 !fastybirdApiPropagateDeviceHardwareField(
-                    device.name.c_str(),
+                    device.name,
                     FASTYBIRD_HARDWARE_MANUFACTURER,
-                    device.hardware_manufacturer.c_str()
+                    device.hardware_manufacturer
                 )
             ) {
                 return;
@@ -795,9 +798,9 @@ void _fastybirdInitializeDevice(
 
             if (
                 !fastybirdApiPropagateDeviceHardwareField(
-                    device.name.c_str(),
+                    device.name,
                     FASTYBIRD_HARDWARE_MODEL,
-                    device.hardware_model.c_str()
+                    device.hardware_model
                 )
             ) {
                 return;
@@ -805,9 +808,9 @@ void _fastybirdInitializeDevice(
 
             if (
                 !fastybirdApiPropagateDeviceHardwareField(
-                    device.name.c_str(),
+                    device.name,
                     FASTYBIRD_HARDWARE_VERSION,
-                    device.hardware_version.c_str()
+                    device.hardware_version
                 )
             ) {
                 return;
@@ -816,7 +819,7 @@ void _fastybirdInitializeDevice(
             #if WIFI_SUPPORT
                 if (
                     !fastybirdApiPropagateDeviceHardwareField(
-                        device.name.c_str(),
+                        device.name,
                         FASTYBIRD_HARDWARE_MAC_ADDRESS,
                         WiFi.macAddress().c_str()
                     )
@@ -831,9 +834,9 @@ void _fastybirdInitializeDevice(
         case FASTYBIRD_PUB_DEVICE_FIRMWARE:
             if (
                 !fastybirdApiPropagateDeviceFirmwareField(
-                    device.name.c_str(),
+                    device.name,
                     FASTYBIRD_FIRMWARE_MANUFACTURER,
-                    device.firmware_manufacturer.c_str()
+                    device.firmware_manufacturer
                 )
             ) {
                 return;
@@ -841,9 +844,9 @@ void _fastybirdInitializeDevice(
 
             if (
                 !fastybirdApiPropagateDeviceFirmwareField(
-                    device.name.c_str(),
+                    device.name,
                     FASTYBIRD_FIRMWARE_VERSION,
-                    device.firmware_version.c_str()
+                    device.firmware_version
                 )
             ) {
                 return;
@@ -861,7 +864,7 @@ void _fastybirdInitializeDevice(
 
             if (
                 !fastybirdApiPropagateDevicePropertiesNames(
-                    device.name.c_str(),
+                    device.name,
                     properties
                 )
             ) {
@@ -880,7 +883,7 @@ void _fastybirdInitializeDevice(
 
             if (
                 !fastybirdApiPropagateDeviceControlsNames(
-                    device.name.c_str(),
+                    device.name,
                     controls
                 )
             ) {
@@ -899,7 +902,7 @@ void _fastybirdInitializeDevice(
 
             if (
                 !fastybirdApiPropagateDeviceChannelsNames(
-                    device.name.c_str(),
+                    device.name,
                     channels
                 )
             ) {
@@ -978,7 +981,7 @@ void _fastybirdInitializeDevice(
         case FASTYBIRD_PUB_DEVICE_READY:
             if (
                 !fastybirdApiReportDeviceState(
-                    device.name.c_str(),
+                    device.name,
                     FASTYBIRD_STATUS_READY
                 )
             ) {
@@ -1012,14 +1015,14 @@ void fastybirdOnConnectRegister(
 
 void fastybirdOnControlRegister(
     fastybird_controls_process_call_t callback,
-    String control
+    const char * control
 ) {
     _fastybird_controls.push_back({
-        control,
+        strdup(control),
         callback,
     });
 
-    uint8_t controlIndex = (_fastybird_properties.size() - 1);
+    uint8_t controlIndex = (_fastybird_controls.size() - 1);
 
     _fastybird_devices[FASTYBIRD_MAIN_DEVICE_INDEX].controls.push_back(controlIndex);
 }
@@ -1066,10 +1069,10 @@ bool fastybirdIsDeviceInitialzed()
 // -----------------------------------------------------------------------------
 
 uint8_t fastybirdRegisterChannel(
-    const char name[]
+    const char * name
 ) {
     fastybird_channel_t channel = {
-        String(name)
+        strdup(name)
     };
 
     _fastybird_channels.push_back(channel);
@@ -1104,8 +1107,8 @@ bool fastybirdMapChannelToDevice(
 
     DEBUG_MSG(
         PSTR("[INFO][FASTYBIRD] Map channel: %s to device: %s\n"),
-        device.name.c_str(),
-        channel.name.c_str()
+        device.name,
+        channel.name
     );
 
     _fastybird_devices[deviceIndex].channels.push_back(channelIndex);
@@ -1118,18 +1121,18 @@ bool fastybirdMapChannelToDevice(
 // -----------------------------------------------------------------------------
 
 uint8_t fastybirdRegisterProperty(
-    const char name[],
-    const char dataType[],
-    const char units[],
-    const char format[]
+    const char * name,
+    const char * dataType,
+    const char * units,
+    const char * format
 ) {
     fastybird_property_t property = {
-        String(name),
+        strdup(name),
         false,
         false,
-        String(dataType),
-        String(units),
-        String(format)
+        strdup(dataType),
+        strdup(units),
+        strdup(format)
     };
 
     _fastybird_properties.push_back(property);
@@ -1140,10 +1143,10 @@ uint8_t fastybirdRegisterProperty(
 // -----------------------------------------------------------------------------
 
 uint8_t fastybirdRegisterProperty(
-    const char name[],
-    const char dataType[],
-    const char units[],
-    const char format[],
+    const char * name,
+    const char * dataType,
+    const char * units,
+    const char * format,
     fastybird_properties_process_set_t setCallback
 ) {
     uint8_t propertyIndex = fastybirdRegisterProperty(
@@ -1162,10 +1165,10 @@ uint8_t fastybirdRegisterProperty(
 // -----------------------------------------------------------------------------
 
 uint8_t fastybirdRegisterProperty(
-    const char name[],
-    const char dataType[],
-    const char units[],
-    const char format[],
+    const char * name,
+    const char * dataType,
+    const char * units,
+    const char * format,
     fastybird_properties_process_query_t queryCallback
 ) {
     uint8_t propertyIndex = fastybirdRegisterProperty(
@@ -1184,10 +1187,10 @@ uint8_t fastybirdRegisterProperty(
 // -----------------------------------------------------------------------------
 
 uint8_t fastybirdRegisterProperty(
-    const char name[],
-    const char dataType[],
-    const char units[],
-    const char format[],
+    const char * name,
+    const char * dataType,
+    const char * units,
+    const char * format,
     fastybird_properties_process_set_t setCallback,
     fastybird_properties_process_query_t queryCallback
 ) {
@@ -1234,8 +1237,8 @@ bool fastybirdMapPropertyToDevice(
 
     DEBUG_MSG(
         PSTR("[INFO][FASTYBIRD] Map property: %s to device: %s\n"),
-        device.name.c_str(),
-        property.name.c_str()
+        property.name,
+        device.name
     );
 
     _fastybird_devices[deviceIndex].properties.push_back(propertyIndex);
@@ -1289,9 +1292,9 @@ bool fastybirdMapPropertyToChannel(
 
     DEBUG_MSG(
         PSTR("[INFO][FASTYBIRD] Map property: %s to channel: %s and device: %s\n"),
-        device.name.c_str(),
-        channel.name.c_str(),
-        property.name.c_str()
+        property.name,
+        channel.name,
+        device.name
     );
 
     _fastybird_channels[channelIndex].properties.push_back(propertyIndex);
@@ -1353,9 +1356,9 @@ bool fastybirdReportChannelPropertyValue(
     fastybird_property_t property = fastybirdGetProperty(propertyIndex);
 
     return fastybirdApiReportChannelPropertyValue(
-        device.name.c_str(),
-        channel.name.c_str(),
-        property.name.c_str(),
+        device.name,
+        channel.name,
+        property.name,
         payload
     );
 }

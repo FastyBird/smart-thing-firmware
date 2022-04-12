@@ -18,6 +18,10 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define MQTT_SUPPORT                    0
 #endif
 
+#ifndef MQTT_DEFAULT_PORT
+    #define MQTT_DEFAULT_PORT               1883
+#endif
+
 // MQTT OVER SSL
 // Using MQTT over SSL works pretty well but generates problems with the web interface.
 // It could be a good idea to use it in conjuntion with WEB_SUPPORT=0.
