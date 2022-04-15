@@ -1,6 +1,6 @@
 /*
 
-FASTYBIRD & BUTTON MODULE
+FASTYBIRD & RELAY MODULE
 
 Copyright (C) 2022 FastyBird s.r.o. <code@fastybird.com>
 
@@ -76,16 +76,16 @@ void _relayFastyBirdProperySet(
     const uint8_t propertyIndex,
     const char * payload
 ) {
-    uint8_t relayIndex = _relayFastyBirdChannelIndexToRelayIndex(channelIndex);
+    uint8_t relay_index = _relayFastyBirdChannelIndexToRelayIndex(channelIndex);
 
-    if (relayIndex != INDEX_NONE) {
+    if (relay_index != INDEX_NONE) {
         // Toggle relay status
         if (strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_TOGGLE) == 0) {
-            relayToggle(relayIndex);
+            relayToggle(relay_index);
 
         // Set relay status
         } else {
-            relayStatus(relayIndex, strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_ON) == 0);
+            relayStatus(relay_index, strcmp(payload, FASTYBIRD_SWITCH_PAYLOAD_ON) == 0);
         }
     }
 }
@@ -96,9 +96,9 @@ void _relayFastyBirdProperyQuery(
     const uint8_t channelIndex,
     const uint8_t propertyIndex
 ) {
-    uint8_t relayIndex = _relayFastyBirdChannelIndexToRelayIndex(channelIndex);
+    uint8_t relay_index = _relayFastyBirdChannelIndexToRelayIndex(channelIndex);
 
-    if (relayIndex != INDEX_NONE) {
+    if (relay_index != INDEX_NONE) {
         fastybirdReportChannelPropertyValue(
             FASTYBIRD_MAIN_DEVICE_INDEX,
             channelIndex,
@@ -107,7 +107,7 @@ void _relayFastyBirdProperyQuery(
                 channelIndex,
                 FASTYBIRD_PROPERTY_SWITCH
             ),
-            relayStatus(relayIndex) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
+            relayStatus(relay_index) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF
         );
     }
 }
@@ -206,15 +206,15 @@ void fastyBirdRelaySetup()
 
     fastybirdOnConnectRegister([](){
         for (uint8_t i = 0; i < relayCount(); i++) {
-            uint8_t channelIndex = _relayFastyBirdRelayIndexToChannelIndex(i);
+            uint8_t channel_index = _relayFastyBirdRelayIndexToChannelIndex(i);
 
-            if (channelIndex != INDEX_NONE) {
+            if (channel_index != INDEX_NONE) {
                 fastybirdReportChannelPropertyValue(
                     FASTYBIRD_MAIN_DEVICE_INDEX,
-                    channelIndex,
+                    channel_index,
                     fastybirdFindChannelPropertyIndex(
                         FASTYBIRD_MAIN_DEVICE_INDEX,
-                        channelIndex,
+                        channel_index,
                         FASTYBIRD_PROPERTY_SWITCH
                     ),
                     relayStatus(i) ? FASTYBIRD_SWITCH_PAYLOAD_ON : FASTYBIRD_SWITCH_PAYLOAD_OFF

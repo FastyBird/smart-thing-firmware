@@ -427,13 +427,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define STATUS_LED_PIN_INVERSE          0
 
     // SENSORs
-    #define SENSOR_POWER_CHECK_STATUS       1
-
-    // HLW8012
-    #ifndef HLW8012_SUPPORT
-        #define HLW8012_SUPPORT             1
-    #endif
-
+    #define HLW8012_SUPPORT                 1
     #define HLW8012_SEL_PIN                 5
     #define HLW8012_CF1_PIN                 13
     #define HLW8012_CF_PIN                  14
@@ -493,13 +487,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define STATUS_LED_PIN_INVERSE          1
 
     // SENSOR
-    #define SENSOR_POWER_CHECK_STATUS       1
-
-    // CSE7766
-    #ifndef CSE7766_SUPPORT
-        #define CSE7766_SUPPORT             1
-    #endif
-
+    #define CSE7766_SUPPORT                 1
     #define CSE7766_PIN                     1
 
     // FASTYBIRD
@@ -557,10 +545,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     // SENSOR
     #define FASTYBIRD_SENSOR1_CHANNEL_INDEX 0
 
-  	// SONOFF_SC
-    #ifndef ITEAD_SONOFF_SC_SUPPORT
-        #define ITEAD_SONOFF_SC_SUPPORT     1
-    #endif
+    #define ITEAD_SONOFF_SC_SUPPORT         1
 
     // FASTYBIRD
     #define FASTYBIRD_SUPPORT               0

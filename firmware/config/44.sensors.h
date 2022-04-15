@@ -16,8 +16,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define SENSOR_SUPPORT ( \
         HLW8012_SUPPORT || \
         CSE7766_SUPPORT || \
-        ITEAD_SONOFF_SC_SUPPORT || \
-        ITEAD_SONOFF_SC_PRO_SUPPORT \
+        ITEAD_SONOFF_SC_SUPPORT \
     )
 #endif
 
@@ -33,32 +32,16 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 #define SENSOR_REPORT_MAX_EVERY                 60                      // Maximum
 #define SENSOR_REPORT_STEP_EVERY                1                       // Step
 
-#ifndef SENSOR_POWER_CHECK_STATUS
-    #define SENSOR_POWER_CHECK_STATUS           0                       // If set to 1 the reported power/current/energy will be 0 if the relay[0] is OFF
-#endif
-
 #ifndef SENSOR_TEMPERATURE_CORRECTION
     #define SENSOR_TEMPERATURE_CORRECTION       0.0                     // Offset correction
-#endif
-
-#ifndef SENSOR_TEMPERATURE_MIN_CHANGE
-    #define SENSOR_TEMPERATURE_MIN_CHANGE       0.0                     // Minimum temperature change to report
 #endif
 
 #ifndef SENSOR_HUMIDITY_CORRECTION
     #define SENSOR_HUMIDITY_CORRECTION          0.0                     // Offset correction
 #endif
 
-#ifndef SENSOR_HUMIDITY_MIN_CHANGE
-    #define SENSOR_HUMIDITY_MIN_CHANGE          0                       // Minimum humidity change to report
-#endif
-
 #ifndef SENSOR_LUX_CORRECTION
     #define SENSOR_LUX_CORRECTION               0.0                     // Offset correction
-#endif
-
-#ifndef SENSOR_ENERGY_MAX_CHANGE
-    #define SENSOR_ENERGY_MAX_CHANGE            0                       // Maximum energy change to report (if > 0 it will allways report when delta(E) is greater than this)
 #endif
 
 #ifndef SENSOR_SAVE_EVERY
@@ -173,16 +156,12 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 #define CSE7766_V2R                             1.0                     // 1M voltage resistor
 
 //------------------------------------------------------------------------------
-// SonOff SC evironment unit sensor
+// Sonoff SC evironment unit sensor
 // Enable support by passing ITEAD_SONOFF_SC_SUPPORT=1 build flag
 //------------------------------------------------------------------------------
 
 #ifndef ITEAD_SONOFF_SC_SUPPORT
     #define ITEAD_SONOFF_SC_SUPPORT             0
-#endif
-
-#ifndef ITEAD_SONOFF_SC_PRO_SUPPORT
-    #define ITEAD_SONOFF_SC_PRO_SUPPORT         0
 #endif
 
 // =============================================================================
@@ -202,7 +181,6 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 #define SENSOR_HLW8012_ID                       1
 #define SENSOR_CSE7766_ID                       2
 #define SENSOR_SONOFF_SC_ID                     3
-#define SENSOR_SONOFF_SC_PRO_ID                 4
 
 // -----------------------------------------------------------------------------
 // SENSORS - Misc data
@@ -285,31 +263,6 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 #define MAGNITUDE_MAX                           35
 
 // =============================================================================
-// MODULE DEPENDENCIES LOADING
-// =============================================================================
-
-#if SENSOR_SUPPORT
-    #include "../sensors/base/BaseSensor.h"
-
-    #if HLW8012_SUPPORT
-        #include "../sensors/HLW8012Sensor.h"
-    #endif
-
-    #if CSE7766_SUPPORT
-        #include "../sensors/CSE7766Sensor.h"
-    #endif
-
-    #if ITEAD_SONOFF_SC_SUPPORT
-        #include "../sensors/SonoffScSensor.h"
-    #endif
-
-    #if ITEAD_SONOFF_SC_PRO_SUPPORT
-        #include "../sensors/SonoffScProSensor.h"
-    #endif
-
-#endif // SENSOR_SUPPORT
-
-// =============================================================================
 // MODULE PROGMEM
 // =============================================================================
 
@@ -325,23 +278,20 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
         #if ITEAD_SONOFF_SC_SUPPORT
             "SONOFF_SC "
         #endif
-        #if ITEAD_SONOFF_SC_PRO_SUPPORT
-            "SONOFF_SC_PRO "
-        #endif
         "";
 
     PROGMEM const uint8_t magnitude_decimals[] = {
         0,
-        1, 0, 2, // THP
+        1, 0, 2,                // THP
         3, 0, 0, 0, 0, 0, 0, 0, // Power decimals
-        0, 0, 0, // analog, digital, event
-        0, 0, 0, // PM
+        0, 0, 0,                // analog, digital, event
+        0, 0, 0,                // PM
         0, 0,
-        0, 0, 3, // UVA, UVB, UVI
+        0, 0, 3,                // UVA, UVB, UVI
         3, 0,
-        4, 4, // Geiger Counter decimals
+        4, 4,                   // Geiger Counter decimals
         0,
-        0, 0, 0, 3,    // NO2, CO, Ohms, pH
+        0, 0, 0, 3,             // NO2, CO, Ohms, pH
         0, 0, 0
     };
 
@@ -382,10 +332,9 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     PROGMEM const char magnitude_sonoff_sc_noise_level_name[]   = "noise-level";
 
     PROGMEM const char * const magnitude_names[] = {
-        magnitude_unknown_name, magnitude_temperature_name, magnitude_humidity_name,
-        magnitude_pressure_name, magnitude_current_name, magnitude_voltage_name,
-        magnitude_active_power_name, magnitude_apparent_power_name, magnitude_reactive_power_name,
-        magnitude_power_factor_name, magnitude_energy_name, magnitude_energy_delta_name,
+        magnitude_unknown_name,
+        magnitude_temperature_name, magnitude_humidity_name, magnitude_pressure_name,
+        magnitude_current_name, magnitude_voltage_name, magnitude_active_power_name, magnitude_apparent_power_name, magnitude_reactive_power_name, magnitude_power_factor_name, magnitude_energy_name, magnitude_energy_delta_name,
         magnitude_analog_name, magnitude_digital_name, magnitude_event_name,
         magnitude_pm1dot0_name, magnitude_pm2dot5_name, magnitude_pm10_name,
         magnitude_co2_name, magnitude_lux_name,
@@ -418,11 +367,9 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     PROGMEM const char magnitude_resistance[]   = "ohm";
 
     PROGMEM const char * const magnitude_units[] = {
-        magnitude_empty, magnitude_celsius, magnitude_percentage,
-        magnitude_hectopascals, magnitude_amperes, magnitude_volts,
-        magnitude_watts, magnitude_watts, magnitude_watts,
-        magnitude_percentage, magnitude_joules, magnitude_joules,
-        magnitude_empty, magnitude_empty, magnitude_empty,
+        magnitude_empty,
+        magnitude_celsius, magnitude_percentage, magnitude_hectopascals,
+        magnitude_amperes, magnitude_volts, magnitude_watts, magnitude_watts, magnitude_watts, magnitude_percentage, magnitude_joules, magnitude_joules, magnitude_empty, magnitude_empty, magnitude_empty,
         magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
         magnitude_ppm, magnitude_lux,
         magnitude_empty, magnitude_empty, magnitude_empty,
@@ -443,10 +390,9 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     PROGMEM const char magnitude_event_type[]           = "event";
 
     PROGMEM const char * const magnitude_types[] = {
-        magnitude_unknown_type, magnitude_environment_type, magnitude_environment_type,
-        magnitude_analog_sensor_type, magnitude_energy_type, magnitude_energy_type,
-        magnitude_energy_type, magnitude_energy_type, magnitude_energy_type,
-        magnitude_energy_type, magnitude_energy_type, magnitude_energy_type,
+        magnitude_unknown_type,
+        magnitude_environment_type, magnitude_environment_type,
+        magnitude_analog_sensor_type, magnitude_energy_type, magnitude_energy_type, magnitude_energy_type, magnitude_energy_type, magnitude_energy_type, magnitude_energy_type, magnitude_energy_type, magnitude_energy_type,
         magnitude_analog_sensor_type, magnitude_binary_sensor_type, magnitude_event_type,
         magnitude_environment_type, magnitude_environment_type, magnitude_environment_type,
         magnitude_environment_type, magnitude_environment_type,
@@ -457,5 +403,26 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
         magnitude_environment_type, magnitude_environment_type, magnitude_analog_sensor_type, magnitude_environment_type,
         magnitude_environment_type, magnitude_environment_type, magnitude_environment_type
     };
+
+#endif // SENSOR_SUPPORT
+
+// =============================================================================
+// MODULE DEPENDENCIES LOADING
+// =============================================================================
+
+#if SENSOR_SUPPORT
+    #include "../sensors/base/BaseSensor.h"
+
+    #if HLW8012_SUPPORT
+        #include "../sensors/HLW8012Sensor.h"
+    #endif
+
+    #if CSE7766_SUPPORT
+        #include "../sensors/CSE7766Sensor.h"
+    #endif
+
+    #if ITEAD_SONOFF_SC_SUPPORT
+        #include "../sensors/SonoffScSensor.h"
+    #endif
 
 #endif // SENSOR_SUPPORT

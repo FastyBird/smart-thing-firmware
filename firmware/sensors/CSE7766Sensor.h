@@ -25,6 +25,14 @@ class CSE7766Sensor : public BaseSensor {
         CSE7766Sensor(): BaseSensor(), _data() {
             _count = 6;
             _sensor_id = SENSOR_CSE7766_ID;
+
+            _appendMagnitude(MAGNITUDE_CURRENT, -1);
+            _appendMagnitude(MAGNITUDE_VOLTAGE, -1);
+            _appendMagnitude(MAGNITUDE_POWER_ACTIVE, -1);
+            _appendMagnitude(MAGNITUDE_POWER_REACTIVE, -1);
+            _appendMagnitude(MAGNITUDE_POWER_APPARENT, -1);
+            _appendMagnitude(MAGNITUDE_POWER_FACTOR, -1);
+            _appendMagnitude(MAGNITUDE_ENERGY, -1);
         }
 
         ~CSE7766Sensor() {
@@ -172,40 +180,13 @@ class CSE7766Sensor : public BaseSensor {
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String slot(
-            uint8_t index
-        ) {
-            return description();
-        }
-
-        // Address of the sensor (it could be the GPIO or I2C address)
-        String address(
-            uint8_t index
-        ) {
-            return String(_pin_rx);
-        }
-
         // Name of the sensor
         uint8_t type() {
             return SENSOR_TYPE_ENERGY;
         }
 
-        // Type for slot # index
-        uint8_t type(uint8_t index) {
-            if (index == 0) return MAGNITUDE_CURRENT;
-            if (index == 1) return MAGNITUDE_VOLTAGE;
-            if (index == 2) return MAGNITUDE_POWER_ACTIVE;
-			if (index == 3) return MAGNITUDE_POWER_REACTIVE;
-            if (index == 4) return MAGNITUDE_POWER_APPARENT;
-            if (index == 5) return MAGNITUDE_POWER_FACTOR;
-            if (index == 6) return MAGNITUDE_ENERGY;
-
-            return MAGNITUDE_NONE;
-        }
-
         // Current value for slot # index
-        double value(uint8_t index) {
+        double magnitudeCurrentValue(uint8_t index) {
             if (index == 0) return _current;
             if (index == 1) return _voltage;
             if (index == 2) return _active;

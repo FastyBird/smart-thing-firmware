@@ -45,4 +45,3 @@
 //#define HLW8012_SUPPORT               1
 //#define CSE7766_SUPPORT               1
 //#define ITEAD_SONOFF_SC_SUPPORT       1
-//#define ITEAD_SONOFF_SC_PRO_SUPPORT   1

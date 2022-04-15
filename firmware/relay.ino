@@ -722,7 +722,7 @@ void _relayProcess(
         }
 
         if (!_relay_recursive) {
-            relay_pulse_mode(id);
+            relayPulseMode(id);
 
             // We will trigger a commit only if
             // we care about current relay status on boot
@@ -744,7 +744,7 @@ void _relayProcess(
 // MODULE API
 // -----------------------------------------------------------------------------
 
-void relay_pulse_mode(
+void relayPulseMode(
     const uint8_t id
 ) {
     _relays[id].pulseTicker.detach();
@@ -804,7 +804,7 @@ bool relayStatus(
         #endif
 
         // Update the pulse counter if the relay is already in the non-normal state (#454)
-        relay_pulse_mode(id);
+        relayPulseMode(id);
 
     } else {
         uint32_t current_time = millis();

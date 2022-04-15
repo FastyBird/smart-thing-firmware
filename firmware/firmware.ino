@@ -151,6 +151,10 @@ void setup()
     #if RELAY_PROVIDER != RELAY_PROVIDER_NONE && FASTYBIRD_SUPPORT
         fastyBirdRelaySetup();
     #endif
+
+    #if FASTYBIRD_SUPPORT && SENSOR_SUPPORT
+        fastyBirdSensorSetup();
+    #endif
 }
 
 void loop()

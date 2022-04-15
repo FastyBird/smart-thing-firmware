@@ -23,6 +23,12 @@ class SonoffScSensor : public BaseSensor {
         SonoffScSensor(): BaseSensor() {
             _count = 5;
             _sensor_id = SENSOR_SONOFF_SC_ID;
+
+            _appendMagnitude(MAGNITUDE_TEMPERATURE, -1);
+            _appendMagnitude(MAGNITUDE_HUMIDITY, -1);
+            _appendMagnitude(MAGNITUDE_AIR_QUALITY_LEVEL, -1);
+            _appendMagnitude(MAGNITUDE_NOISE_LEVEL, -1);
+            _appendMagnitude(MAGNITUDE_LIGHT_LEVEL, -1);
         }
 
         ~SonoffScSensor() {
@@ -52,42 +58,13 @@ class SonoffScSensor : public BaseSensor {
             return String("SONOFF SC @ SENSOR(ATMEGA)");
         }
 
-        // Descriptive name of the slot # index
-        String slot(
-            uint8_t index
-        ) {
-            return description();
-        }
-
-        // Address of the sensor (it could be the GPIO or I2C address)
-        String address(
-            uint8_t index
-        ) {
-            return String("Not defined");
-        }
-
         // Name of the sensor
         uint8_t type() {
             return SENSOR_TYPE_ENVIRONMENT;
         }
 
-        // Type for slot # index
-        uint8_t type(uint8_t index) {
-            _error = SENSOR_ERROR_OK;
-
-            if (index == 0) return MAGNITUDE_TEMPERATURE;
-            if (index == 1) return MAGNITUDE_HUMIDITY;
-            if (index == 2) return MAGNITUDE_AIR_QUALITY_LEVEL;
-            if (index == 3) return MAGNITUDE_NOISE_LEVEL;
-            if (index == 4) return MAGNITUDE_LIGHT_LEVEL;
-
-            _error = SENSOR_ERROR_OUT_OF_RANGE;
-
-            return MAGNITUDE_NONE;
-        }
-
         // Current value for slot # index
-        double value(uint8_t index) {
+        double magnitudeCurrentValue(uint8_t index) {
             _error = SENSOR_ERROR_OK;
 
             if (index == 0) return _temperature;

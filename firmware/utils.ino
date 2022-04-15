@@ -208,21 +208,6 @@ char * ltrim(char * s) {
 
 // -----------------------------------------------------------------------------
 
-double roundTo(
-    double num,
-    unsigned int positions
-) {
-    double multiplier = 1;
-
-    while (positions-- > 0) {
-        multiplier *= 10;
-    }
-
-    return round(num * multiplier) / multiplier;
-}
-
-// -----------------------------------------------------------------------------
-
 void niceDelay(uint32_t ms) {
     uint32_t start = millis();
     while (millis() - start < ms) delay(1);
