@@ -552,12 +552,12 @@ void _sensorResetEnergyCalibration()
                 JsonObject& channel = channels.createNestedObject();
 
                 channel["index"] = i;
-                channel["type"] = _sensors[i]->magnitudeType(k);
-                channel["name"] = _sensors[i]->magnitudeName(k);
-                channel["units"] = _sensors[i]->magnitudeUnits(k);
-                channel["value"] = _sensors[i]->magnitudeValue(k);
-                channel["decimals"] = _sensors[i]->magnitudeDecimals(k);
                 channel["error"] = _sensors[i]->error();
+                channel["type"] = _sensors[i]->magnitudeType(k);
+                channel["name"] = sensorMagnitudeName(i, k);
+                channel["unit"] = sensorMagnitudeUnit(i, k);
+                channel["value"] = sensorMagnitudeValue(i, k);
+                channel["decimals"] = sensorMagnitudeDecimals(i, k);
 
                 if (_sensors[i]->magnitudeType(k) == MAGNITUDE_ENERGY) {
                     channel["sensor"] = _sensors[i]->description() + String(" (since ") + _sensor_energy_reset_ts + String(")");
@@ -644,7 +644,7 @@ void _sensorResetEnergyCalibration()
 
             #if HLW8012_SUPPORT
                 if (sensor->getID() == SENSOR_HLW8012_ID) {
-                    configuration_sensors["hlw"] = 1;
+                    configuration_sensors["hlw"] = true;
                     configuration_sensors["pwr"] = true;
                 }
             #endif
@@ -812,21 +812,20 @@ void _sensorInit()
             continue;
         }
 
-        // Initialize magnitudes
+        _sensors[i]->reportEvery(_sensor_report_every);
+
         for (uint8_t k = 0; k < _sensors[i]->magnitudesCount(); k++) {
             // Detect magnitude type
             uint8_t type = _sensors[i]->magnitudeType(k);
 
-            _sensors[i]->magnitudeFilter(k)->resize(_sensor_report_every);
-
             DEBUG_MSG(PSTR("[INFO][SENSOR]  -> %s\n"), _sensors[i]->magnitudeName(k).c_str());
         }
 
-        // Hook callback
         _sensors[i]->onEvent([i](uint8_t type, double value) {
-            DEBUG_MSG(PSTR("[INFO][SENSOR] Sensor #%u callback, type %u, payload: '%s'\n"), sensorIndex, type, String(value).c_str());
-
-            _sensorReport(i, type, value);
+            // Persist total energy value
+            if (type == MAGNITUDE_ENERGY) {
+                _sensorEnergyTotal(value);
+            }
         });
 
         // Custom initializations
@@ -984,9 +983,7 @@ void _sensorConfigure()
 
     // Update filter sizes
     for (uint8_t i = 0; i < _sensors.size(); i++) {
-        for (uint8_t k = 0; k < _sensors[i]->magnitudesCount(); k++) {
-            _sensors[i]->magnitudeFilter(k)->resize(_sensor_report_every);
-        }
+        _sensors[i]->reportEvery(_sensor_report_every);
     }
 
     // General processing
@@ -1003,35 +1000,6 @@ void _sensorConfigure()
 }
 
 // -----------------------------------------------------------------------------
-
-void _sensorReport(
-    uint8_t index,
-    uint8_t type,
-    double value
-) {
-    for (uint8_t k = 0; k < _sensors[index]->magnitudesCount(); k++) {
-        if (_sensors[index]->magnitudeType(k) == type) {
-            char buffer[10];
-
-            dtostrf(value, 1 - sizeof(buffer), _sensors[index]->magnitudeDecimals(k), buffer);
-
-            #if FASTYBIRD_SUPPORT
-                fastybirdReportChannelPropertyValue(
-                    FASTYBIRD_MAIN_DEVICE_INDEX,
-                    FASTYBIRD_SENSOR1_CHANNEL_INDEX,
-                    fastybirdFindChannelPropertyIndex(
-                        FASTYBIRD_MAIN_DEVICE_INDEX,
-                        FASTYBIRD_SENSOR1_CHANNEL_INDEX,
-                        _sensors[index]->magnitudeName(k).c_char()
-                    ),
-                    buffer
-                );
-            #endif
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
 // MODULE API
 // -----------------------------------------------------------------------------
 
@@ -1042,8 +1010,117 @@ uint8_t sensorCount()
 
 // -----------------------------------------------------------------------------
 
-BaseSensor * sensorSensor(uint8_t id) {
-    return _sensors[id];
+void sensorOnEventRegister(
+    TSensorCallback callback,
+    const uint8_t id
+) {
+    if (id >= _sensors.size()) {
+        return;
+    }
+
+    _sensors[id]->onEvent(callback);
+}
+
+// -----------------------------------------------------------------------------
+
+uint8_t sensorMagnitudesCount(uint8_t sensorIndex)
+{
+    if (sensorIndex >= _sensors.size()) {
+        return 0;
+    }
+
+    return _sensors[sensorIndex]->magnitudesCount();
+}
+
+// -----------------------------------------------------------------------------
+
+uint8_t sensorMagnitudeDecimals(uint8_t sensorIndex, uint8_t magnitudeIndex)
+{
+    if (sensorIndex >= _sensors.size()) {
+        return 0;
+    }
+
+    return _sensors[sensorIndex]->magnitudeDecimals(magnitudeIndex);
+}
+
+// -----------------------------------------------------------------------------
+
+String sensorMagnitudeName(uint8_t sensorIndex, uint8_t magnitudeIndex)
+{
+    if (sensorIndex >= _sensors.size()) {
+        return String("");
+    }
+
+    return _sensors[sensorIndex]->magnitudeName(magnitudeIndex);
+}
+
+// -----------------------------------------------------------------------------
+
+String sensorMagnitudeUnit(uint8_t sensorIndex, uint8_t magnitudeIndex)
+{
+    if (sensorIndex >= _sensors.size()) {
+        return String("");
+    }
+
+    return _sensors[sensorIndex]->magnitudeUnit(magnitudeIndex);
+}
+
+// -----------------------------------------------------------------------------
+
+double sensorMagnitudeValue(uint8_t sensorIndex, uint8_t magnitudeIndex)
+{
+    double value = 0.0;
+
+    if (sensorIndex >= _sensors.size()) {
+        return value;
+    }
+
+    value = _sensors[sensorIndex]->magnitudeValue(magnitudeIndex);
+
+    if (_sensors[sensorIndex]->magnitudeType(magnitudeIndex) == MAGNITUDE_TEMPERATURE) {
+        if (getSetting("sensor_tmp_units", SENSOR_TEMPERATURE_UNITS).toInt() == SENSOR_TMP_FAHRENHEIT) {
+            value = value * 1.8 + 32;
+        }
+
+        value = value + getSetting("sensor_tmp_correction", SENSOR_TEMPERATURE_CORRECTION).toFloat();
+    }
+
+    if (_sensors[sensorIndex]->magnitudeType(magnitudeIndex) == MAGNITUDE_HUMIDITY) {
+        value = constrain(value + getSetting("sensor_hum_correction", SENSOR_HUMIDITY_CORRECTION).toFloat(), 0, 100);
+    }
+
+    if (_sensors[sensorIndex]->magnitudeType(magnitudeIndex) == MAGNITUDE_LUX) {
+        value = value + getSetting("sensor_lux_correction", SENSOR_LUX_CORRECTION).toFloat();
+    }
+
+    if (
+        _sensors[sensorIndex]->magnitudeType(magnitudeIndex) == MAGNITUDE_ENERGY
+        || _sensors[sensorIndex]->magnitudeType(magnitudeIndex) == MAGNITUDE_ENERGY_DELTA
+    ) {
+        if (getSetting("sensor_ene_units", SENSOR_ENERGY_UNITS).toInt() == SENSOR_ENERGY_KWH) {
+            value = value  / 3600000;
+        }
+    }
+
+    if (
+        _sensors[sensorIndex]->magnitudeType(magnitudeIndex) == MAGNITUDE_POWER_ACTIVE
+        || _sensors[sensorIndex]->magnitudeType(magnitudeIndex) == MAGNITUDE_POWER_APPARENT
+        || _sensors[sensorIndex]->magnitudeType(magnitudeIndex) == MAGNITUDE_POWER_REACTIVE
+    ) {
+        if (getSetting("sensor_pwr_units", SENSOR_POWER_UNITS).toInt() == SENSOR_POWER_KILOWATTS) {
+            value = value  / 1000;
+        }
+    }
+
+    double multiplier = 1;
+
+    uint8_t positions = _sensors[sensorIndex]->magnitudeDecimals(magnitudeIndex);
+
+    while (positions-- > 0) {
+        multiplier *= 10;
+    }
+
+    return round(value * multiplier) / multiplier;
 }
 
 // -----------------------------------------------------------------------------
@@ -1070,7 +1147,7 @@ void sensorSetup()
         wsOnActionRegister(_sensorWSOnAction);
     #endif
 
-    DEBUG_MSG(PSTR("[INFO][SENSOR] Number of sensors: %d and magnitudes: %d\n"), sensorCount(), sensorMagnitudesCount());
+    DEBUG_MSG(PSTR("[INFO][SENSOR] Number of sensors: %d\n"), sensorCount());
 }
 
 // -----------------------------------------------------------------------------
@@ -1095,15 +1172,10 @@ void sensorLoop()
 
     // Check if we should read new data
     static uint32_t last_update = 0;
-    static uint32_t report_count = 0;
 
     if (millis() - last_update > _sensor_read_interval) {
         last_update = millis();
-        report_count = (report_count + 1) % _sensor_report_every;
 
-        double magnitude_value;
-
-        // Get readings
         for (uint8_t i = 0; i < _sensors.size(); i++) {
             // Pre-read hook
             _sensors[i]->pre();
@@ -1119,51 +1191,6 @@ void sensorLoop()
 
             // Process hook
             _sensors[i]->process();
-
-            for (uint8_t k = 0; k < _sensors[i]->magnitudesCount(); k++) {
-                // -------------------------------------------------------------
-                // Procesing (units and decimals)
-                // -------------------------------------------------------------
-
-                magnitude_value = _sensors[i]->magnitudeValue(k);
-
-                // -------------------------------------------------------------
-                // Debug
-                // -------------------------------------------------------------
-
-                #if SENSOR_DEBUG
-                {
-                    char buffer[64];
-
-                    dtostrf(magnitude_value, 1 - sizeof(buffer), decimals, buffer);
-
-                    DEBUG_MSG(PSTR("[INFO][SENSOR] %s - %s: %s%s\n"),
-                        _sensors[i]->description().c_str(),
-                        _sensors[i]->magnitudeName(k).c_str(),
-                        buffer,
-                        _sensors[i]->magnitudeUnits(k).c_str()
-                    );
-                }
-                #endif // SENSOR_DEBUG
-
-                // -------------------------------------------------------------
-                // Report
-                // (we do it every _sensor_report_every readings)
-                // -------------------------------------------------------------
-
-                bool report = (report_count == 0);
-
-                if (report) {
-                    _sensors[i]->magnitudeFilter(k)->reset();
-
-                    _sensorReport(i, _sensors[i]->magnitudeType(k), magnitude_value);
-
-                    // Persist total energy value
-                    if (_sensors[i]->magnitudeType(k) == MAGNITUDE_ENERGY) {
-                        _sensorEnergyTotal(magnitude_value);
-                    }
-                }
-            }
 
             // Post-read hook
             _sensors[i]->post();

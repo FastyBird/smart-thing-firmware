@@ -27,13 +27,13 @@ class HLW8012Sensor : public BaseSensor {
             _sensor_id = SENSOR_HLW8012_ID;
             _hlw8012 = new HLW8012();
 
-            _appendMagnitude(MAGNITUDE_CURRENT, -1);
-            _appendMagnitude(MAGNITUDE_VOLTAGE, -1);
-            _appendMagnitude(MAGNITUDE_POWER_ACTIVE, -1);
-            _appendMagnitude(MAGNITUDE_POWER_REACTIVE, -1);
-            _appendMagnitude(MAGNITUDE_POWER_APPARENT, -1);
-            _appendMagnitude(MAGNITUDE_POWER_FACTOR, -1);
-            _appendMagnitude(MAGNITUDE_ENERGY, -1);
+            _appendMagnitude(MAGNITUDE_CURRENT, 3, MAGNITUDE_UNIT_AMPERES);
+            _appendMagnitude(MAGNITUDE_VOLTAGE, 0, MAGNITUDE_UNIT_VOLTS);
+            _appendMagnitude(MAGNITUDE_POWER_ACTIVE, 0, MAGNITUDE_UNIT_WATTS);
+            _appendMagnitude(MAGNITUDE_POWER_REACTIVE, 0, MAGNITUDE_UNIT_WATTS);
+            _appendMagnitude(MAGNITUDE_POWER_APPARENT, 0, MAGNITUDE_UNIT_WATTS);
+            _appendMagnitude(MAGNITUDE_POWER_FACTOR, 0, MAGNITUDE_UNIT_PERCENTAGE);
+            _appendMagnitude(MAGNITUDE_ENERGY, 0, MAGNITUDE_UNIT_JOULES);
         }
 
         ~HLW8012Sensor() {
@@ -213,7 +213,7 @@ class HLW8012Sensor : public BaseSensor {
         }
 
         // Current value for slot # index
-        double magnitudeCurrentValue(uint8_t index) {
+        double _magnitudeCurrentValue(uint8_t index) {
             if (index == 0) return _hlw8012->getCurrent();
             if (index == 1) return _hlw8012->getVoltage();
             if (index == 2) return _hlw8012->getActivePower();

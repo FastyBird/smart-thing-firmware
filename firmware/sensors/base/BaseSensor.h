@@ -30,6 +30,7 @@ typedef struct {
     BaseFilter * filter;        // Filter object
     uint8_t type;               // Type of measurement
     signed char decimals;       // Number of decimals in textual representation
+    uint8_t unit;
 } sensor_magnitude_t;
 
 typedef std::function<void(uint8_t, double)> TSensorCallback;
@@ -41,152 +42,159 @@ class BaseSensor {
         // Constructor
         BaseSensor() {}
 
+        // ---------------------------------------------------------------------
+
         // Destructor
         ~BaseSensor() {}
+
+        // ---------------------------------------------------------------------
 
         // Initialization method, must be idempotent
         virtual void begin() {}
 
-        // Loop-like method, call it in your main loop
-        virtual void tick() {}
-
-        // Pre-read hook (usually to populate registers with up-to-date data)
-        virtual void pre() {}
-
-        // Post-read hook (usually to reset things)
-        virtual void post() {}
+        // ---------------------------------------------------------------------
 
         // Type for sensor
         virtual uint8_t type() = 0;
 
+        // ---------------------------------------------------------------------
+
         // Descriptive name of the sensor
         virtual String description() = 0;
 
-        // Retrieve current instance configuration
-        virtual void getConfig(JsonObject& root) {};
-
-        // Save current instance configuration
-        virtual void setConfig(JsonObject& root) {};
-
-        // Load the configuration manifest
-        static void manifest(JsonArray& root) {};
+        // ---------------------------------------------------------------------
 
         // Sensor ID
         uint8_t getID() { return _sensor_id; };
 
+        // ---------------------------------------------------------------------
+
         // Return status (true if no errors)
-        bool status() { return 0 == _error; }
+        bool status() { return _error == 0; }
+
+        // ---------------------------------------------------------------------
 
         // Return ready status (true for ready)
         bool ready() { return _ready; }
 
+        // ---------------------------------------------------------------------
+
         // Return sensor last internal error
         int error() { return _error; }
 
-        // Hook for event callback
-        void onEvent(TSensorCallback fn) { _callback = fn; };
+        // ---------------------------------------------------------------------
 
-        void process() {
+        // Hook for event callback
+        void onEvent(TSensorCallback fn) { _callbacks.push_back(fn); };
+
+        // ---------------------------------------------------------------------
+
+        void reportEvery(uint8_t reportEvery) {
+            _sensor_report_every = reportEvery;
+
             for (uint8_t k = 0; k < _magnitudes.size(); k++) {
-                _magnitudes[k].filter->add(magnitudeCurrentValue(k));
+                _magnitudes[k].filter->resize(reportEvery);
             }
         }
 
-        // Sensor magnitudes
+        // ---------------------------------------------------------------------
 
-        // Number of available magnitudes
+        // Loop-like method
+        virtual void tick() {}
+
+        // ---------------------------------------------------------------------
+
+        // Pre-read hook (usually to populate registers with up-to-date data)
+        virtual void pre() {}
+
+        // ---------------------------------------------------------------------
+
+        // Post-read hook (usually to reset things)
+        virtual void post() {}
+
+        // ---------------------------------------------------------------------
+
+        // Process readings hook
+        void process() {
+            static uint32_t report_count = 0;
+
+            report_count = (report_count + 1) % _sensor_report_every;
+
+            for (uint8_t k = 0; k < _magnitudes.size(); k++) {
+                _magnitudes[k].filter->add(_magnitudeCurrentValue(k));
+
+                double value = _magnitudes[k].filter->result();
+
+                #if SENSOR_DEBUG
+                {
+                    char buffer[64];
+
+                    dtostrf(value, 1 - sizeof(buffer), decimals, buffer);
+
+                    DEBUG_MSG(PSTR("[INFO][SENSOR] %s - %s: %s%s\n"),
+                        description().c_str(),
+                        magnitudeName(k).c_str(),
+                        buffer,
+                        magnitudeUnit(k).c_str()
+                    );
+                }
+                #endif
+
+                if (report_count == 0) {
+                    for (uint8_t i = 0; i < _callbacks.size(); i++) {
+                        _callbacks[i](_magnitudes[k].type, value);
+                    }
+
+                    _magnitudes[k].filter->reset();
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // Sensor magnitudes
+        // ---------------------------------------------------------------------
+
+        // Number of sensor available magnitudes
         uint8_t magnitudesCount() {
             return _magnitudes.size();
         }
 
-        // Current value for magnitude # index
-        virtual double magnitudeCurrentValue(uint8_t index) = 0;
+        // ---------------------------------------------------------------------
 
-        // Type for magnitude # index
+        // Sensor magnitude type
         uint8_t magnitudeType(uint8_t index) {
             return _magnitudes[index].type;
         };
 
-	    // Number of decimals for a magnitude (or -1 for default)
+        // ---------------------------------------------------------------------
+
+	    // Number of decimals for sensor magnitude
 	    uint8_t magnitudeDecimals(uint8_t index) {
-            if (index >= _magnitudes.size()) {
+            if (index >= _magnitudes.size() || _magnitudes[index].decimals < 0) {
                 return 0;
             }
 
-            if (_magnitudes[index].decimals >= 0) {
-                return _magnitudes[index].decimals;
-            }
-
-            // Hardcoded decimals (these should be linked to the unit, instead of the magnitude)
-            if (_magnitudes[index].type == MAGNITUDE_ANALOG) {
-                return SENSOR_ANALOG_DECIMALS;
-            }
-
-            if (
-                _magnitudes[index].type == MAGNITUDE_ENERGY
-                || _magnitudes[index].type == MAGNITUDE_ENERGY_DELTA
-            ) {
-                if (getSetting("sensor_ene_units", SENSOR_ENERGY_UNITS).toInt() == SENSOR_ENERGY_KWH) {
-                    return 3;
-                }
-            }
-
-            if (
-                _magnitudes[index].type == MAGNITUDE_POWER_ACTIVE
-                || _magnitudes[index].type == MAGNITUDE_POWER_APPARENT
-                || _magnitudes[index].type == MAGNITUDE_POWER_REACTIVE
-            ) {
-                if (getSetting("sensor_pwr_units", SENSOR_POWER_UNITS).toInt() == SENSOR_POWER_KILOWATTS) {
-                    return 3;
-                }
-            }
-
-            if (_magnitudes[index].type < MAGNITUDE_MAX) {
-                return pgm_read_byte(magnitude_decimals + _magnitudes[index].type);
-            }
-
-            return 0;
+            return _magnitudes[index].decimals;
         }
 
-        String magnitudeUnits(uint8_t index) {
+        // ---------------------------------------------------------------------
+
+        // Sensor magnitude unit
+        String magnitudeUnit(uint8_t index) {
             char buffer[8] = {0};
 
-            if (index >= _magnitudes.size() || _magnitudes[index].type >= MAGNITUDE_MAX) {
+            if (index >= _magnitudes.size() || _magnitudes[index].unit >= MAGNITUDE_UNIT_MAX) {
                 return String(buffer);
             }
 
-            if (
-                _magnitudes[index].type == MAGNITUDE_TEMPERATURE
-                && getSetting("sensor_tmp_units", SENSOR_TEMPERATURE_UNITS).toInt() == SENSOR_TMP_FAHRENHEIT
-            ) {
-                strncpy_P(buffer, magnitude_fahrenheit, sizeof(buffer));
-
-            } else if (
-                (
-                    _magnitudes[index].type == MAGNITUDE_ENERGY
-                    || _magnitudes[index].type == MAGNITUDE_ENERGY_DELTA
-                )
-                && getSetting("sensor_ene_units", SENSOR_ENERGY_UNITS).toInt() == SENSOR_ENERGY_KWH
-            ) {
-                strncpy_P(buffer, magnitude_kwh, sizeof(buffer));
-
-            } else if (
-                (
-                    _magnitudes[index].type == MAGNITUDE_POWER_ACTIVE
-                    || _magnitudes[index].type == MAGNITUDE_POWER_APPARENT
-                    || _magnitudes[index].type == MAGNITUDE_POWER_REACTIVE
-                )
-                && getSetting("sensor_pwr_units", SENSOR_POWER_UNITS).toInt() == SENSOR_POWER_KILOWATTS
-            ) {
-                strncpy_P(buffer, magnitude_kw, sizeof(buffer));
-
-            } else {
-                strncpy_P(buffer, magnitude_units[_magnitudes[index].type], sizeof(buffer));
-            }
+            strncpy_P(buffer, magnitude_units[_magnitudes[index].unit], sizeof(buffer));
 
             return String(buffer);
         }
 
+        // ---------------------------------------------------------------------
+
+        // Sensor magnitude name
         String magnitudeName(uint8_t index) {
             char buffer[16] = {0};
 
@@ -199,67 +207,27 @@ class BaseSensor {
             return String(buffer);
         }
 
-        BaseFilter * magnitudeFilter(uint8_t index) {
-            return _magnitudes[index].filter;
-        }
+        // ---------------------------------------------------------------------
 
         double magnitudeValue(uint8_t index) {
             if (index >= _magnitudes.size()) {
                 return 0.0;
             }
 
-            // Hardcoded conversions (these should be linked to the unit, instead of the magnitude)
-
-            double value = _magnitudes[index].filter->result();
-
-            if (_magnitudes[index].type == MAGNITUDE_TEMPERATURE) {
-                if (getSetting("sensor_tmp_units", SENSOR_TEMPERATURE_UNITS).toInt() == SENSOR_TMP_FAHRENHEIT) {
-                    value = value * 1.8 + 32;
-                }
-
-                value = value + getSetting("sensor_tmp_correction", SENSOR_TEMPERATURE_CORRECTION).toFloat();
-            }
-
-            if (_magnitudes[index].type == MAGNITUDE_HUMIDITY) {
-                value = constrain(value + getSetting("sensor_hum_correction", SENSOR_HUMIDITY_CORRECTION).toFloat(), 0, 100);
-            }
-
-            if (_magnitudes[index].type == MAGNITUDE_LUX) {
-                value = value + getSetting("sensor_lux_correction", SENSOR_LUX_CORRECTION).toFloat();
-            }
-
-            if (
-                _magnitudes[index].type == MAGNITUDE_ENERGY
-                || _magnitudes[index].type == MAGNITUDE_ENERGY_DELTA
-            ) {
-                if (getSetting("sensor_ene_units", SENSOR_ENERGY_UNITS).toInt() == SENSOR_ENERGY_KWH) {
-                    value = value  / 3600000;
-                }
-            }
-
-            if (
-                _magnitudes[index].type == MAGNITUDE_POWER_ACTIVE
-                || _magnitudes[index].type == MAGNITUDE_POWER_APPARENT
-                || _magnitudes[index].type == MAGNITUDE_POWER_REACTIVE
-            ) {
-                if (getSetting("sensor_pwr_units", SENSOR_POWER_UNITS).toInt() == SENSOR_POWER_KILOWATTS) {
-                    value = value  / 1000;
-                }
-            }
-
-            double multiplier = 1;
-
-            uint8_t positions = magnitudeDecimals(index);
-
-            while (positions-- > 0) {
-                multiplier *= 10;
-            }
-
-            return round(value * multiplier) / multiplier;
+            return _magnitudes[index].filter->result();
         }
 
+        // ---------------------------------------------------------------------
+        // Sensor internal API
+        // ---------------------------------------------------------------------
+
+        // Current value for magnitude
+        virtual double _magnitudeCurrentValue(uint8_t index) = 0;
+
+        // ---------------------------------------------------------------------
+
         // Register sensor new magnitude
-        void _appendMagnitude(uint8_t type, signed char decimals) {
+        void _appendMagnitude(uint8_t type, signed char decimals, uint8_t unit) {
             BaseFilter * filter;
 
             if (type == MAGNITUDE_ENERGY) {
@@ -283,14 +251,16 @@ class BaseSensor {
             _magnitudes.push_back({
                 filter,
                 type,
-                decimals
+                decimals,
+                unit
             });
         }
 
     protected:
 
-        TSensorCallback _callback = NULL;
+        std::vector<TSensorCallback> _callbacks;
 
+        uint8_t _sensor_report_every = SENSOR_REPORT_EVERY;
         uint8_t _sensor_id = 0x00;
         int _error = 0;
         bool _dirty = true;

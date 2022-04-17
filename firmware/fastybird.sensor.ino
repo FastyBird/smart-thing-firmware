@@ -44,21 +44,19 @@ void _sensorFastyBirdProperyQuery(
 
     uint8_t sensor_index = _sensorFastyBirdChannelIndexToSensorIndex(channelIndex);
 
-    BaseSensor * sensor = sensorSensor(sensor_index);
-
-    for (uint8_t k = 0; k < sensor->magnitudesCount(); k++) {
-        if (strcmp(sensor->magnitudeName(k).c_str(), property.name) == 0) {
+    for (uint8_t k = 0; k < sensorMagnitudesCount(sensor_index); k++) {
+        if (strcmp(sensorMagnitudeName(sensor_index, k).c_str(), property.name) == 0) {
             char buffer[10];
 
-            dtostrf(sensor->magnitudeProcess(k), 1 - sizeof(buffer), sensor->magnitudeDecimals(k), buffer);
+            dtostrf(sensorMagnitudeValue(sensor_index, k), 1 - sizeof(buffer), sensorMagnitudeDecimals(sensor_index, k), buffer);
 
             fastybirdReportChannelPropertyValue(
                 FASTYBIRD_MAIN_DEVICE_INDEX,
-                channel_index,
+                channelIndex,
                 fastybirdFindChannelPropertyIndex(
                     FASTYBIRD_MAIN_DEVICE_INDEX,
-                    channel_index,
-                    sensor->magnitudeName(k).c_char()
+                    channelIndex,
+                    sensorMagnitudeName(sensor_index, k).c_str()
                 ),
                 buffer
             );
@@ -72,14 +70,12 @@ void _fastyBirdSensorRegisterToChannel(
     const uint8_t sensorIndex,
     const uint8_t channelIndex
 ) {
-    BaseSensor * sensor = sensorSensor(sensorIndex);
-s
-    for (uint8_t i = 0; i < sensor->magnitudesCount(); i++) {
+    for (uint8_t i = 0; i < sensorMagnitudesCount(sensorIndex); i++) {
         // Create magnitude property structure
         uint8_t property_index = fastybirdRegisterProperty(
-            sensor->magnitudeName(i).c_str(),
+            sensorMagnitudeName(sensorIndex, i).c_str(),
             FASTYBIRD_PROPERTY_DATA_TYPE_FLOAT,
-            sensor->magnitudeUnits(i).c_str(),
+            sensorMagnitudeUnit(sensorIndex, i).c_str(),
             "",
             _sensorFastyBirdProperyQuery
         );
@@ -108,12 +104,10 @@ void fastyBirdSensorSetup()
             uint8_t channel_index = _sensorFastyBirdSensorIndexToChannelIndex(i);
 
             if (channel_index != INDEX_NONE) {
-                BaseSensor * sensor = sensorSensor(sensorIndex);
-
-                for (uint8_t k = 0; k < sensor->magnitudesCount(); k++) {
+                for (uint8_t k = 0; k < sensorMagnitudesCount(i); k++) {
                     char buffer[10];
 
-                    dtostrf(sensor->magnitudeProcess(k), 1 - sizeof(buffer), sensor->magnitudeDecimals(k), buffer);
+                    dtostrf(sensorMagnitudeValue(i, k), 1 - sizeof(buffer), sensorMagnitudeDecimals(i, k), buffer);
 
                     fastybirdReportChannelPropertyValue(
                         FASTYBIRD_MAIN_DEVICE_INDEX,
@@ -121,7 +115,7 @@ void fastyBirdSensorSetup()
                         fastybirdFindChannelPropertyIndex(
                             FASTYBIRD_MAIN_DEVICE_INDEX,
                             channel_index,
-                            sensor->magnitudeName(k).c_char()
+                            sensorMagnitudeName(i, k).c_str()
                         ),
                         buffer
                     );

@@ -26,13 +26,13 @@ class CSE7766Sensor : public BaseSensor {
             _count = 6;
             _sensor_id = SENSOR_CSE7766_ID;
 
-            _appendMagnitude(MAGNITUDE_CURRENT, -1);
-            _appendMagnitude(MAGNITUDE_VOLTAGE, -1);
-            _appendMagnitude(MAGNITUDE_POWER_ACTIVE, -1);
-            _appendMagnitude(MAGNITUDE_POWER_REACTIVE, -1);
-            _appendMagnitude(MAGNITUDE_POWER_APPARENT, -1);
-            _appendMagnitude(MAGNITUDE_POWER_FACTOR, -1);
-            _appendMagnitude(MAGNITUDE_ENERGY, -1);
+            _appendMagnitude(MAGNITUDE_CURRENT, 3, MAGNITUDE_UNIT_AMPERES);
+            _appendMagnitude(MAGNITUDE_VOLTAGE, 0, MAGNITUDE_UNIT_VOLTS);
+            _appendMagnitude(MAGNITUDE_POWER_ACTIVE, 0, MAGNITUDE_UNIT_WATTS);
+            _appendMagnitude(MAGNITUDE_POWER_REACTIVE, 0, MAGNITUDE_UNIT_WATTS);
+            _appendMagnitude(MAGNITUDE_POWER_APPARENT, 0, MAGNITUDE_UNIT_WATTS);
+            _appendMagnitude(MAGNITUDE_POWER_FACTOR, 0, MAGNITUDE_UNIT_PERCENTAGE);
+            _appendMagnitude(MAGNITUDE_ENERGY, 0, MAGNITUDE_UNIT_JOULES);
         }
 
         ~CSE7766Sensor() {
@@ -186,7 +186,7 @@ class CSE7766Sensor : public BaseSensor {
         }
 
         // Current value for slot # index
-        double magnitudeCurrentValue(uint8_t index) {
+        double _magnitudeCurrentValue(uint8_t index) {
             if (index == 0) return _current;
             if (index == 1) return _voltage;
             if (index == 2) return _active;

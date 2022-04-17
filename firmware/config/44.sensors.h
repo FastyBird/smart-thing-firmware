@@ -262,6 +262,32 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 #define MAGNITUDE_MAX                           35
 
+// -----------------------------------------------------------------------------
+// SENSORS - Unit
+// -----------------------------------------------------------------------------
+
+#define MAGNITUDE_UNIT_NONE                     0
+#define MAGNITUDE_UNIT_CELSIUS                  1
+#define MAGNITUDE_UNIT_FAHRENHEIT               2
+#define MAGNITUDE_UNIT_PERCENTAGE               3
+#define MAGNITUDE_UNIT_HECTOPASCALS             4
+#define MAGNITUDE_UNIT_AMPERES                  5
+#define MAGNITUDE_UNIT_VOLTS                    6
+#define MAGNITUDE_UNIT_WATTS                    7
+#define MAGNITUDE_UNIT_KILOWATTS                8
+#define MAGNITUDE_UNIT_JOULES                   9
+#define MAGNITUDE_UNIT_KILOWATTHOURS            10
+#define MAGNITUDE_UNIT_UGM3                     11
+#define MAGNITUDE_UNIT_PPM                      12
+#define MAGNITUDE_UNIT_LUX                      13
+#define MAGNITUDE_UNIT_METER                    14
+#define MAGNITUDE_UNIT_MGM3                     15
+#define MAGNITUDE_UNIT_GEIGER_CPM               16
+#define MAGNITUDE_UNIT_GEIGER_SV                17
+#define MAGNITUDE_UNIT_OHM                      18
+
+#define MAGNITUDE_UNIT_MAX                      19
+
 // =============================================================================
 // MODULE PROGMEM
 // =============================================================================
@@ -279,21 +305,6 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
             "SONOFF_SC "
         #endif
         "";
-
-    PROGMEM const uint8_t magnitude_decimals[] = {
-        0,
-        1, 0, 2,                // THP
-        3, 0, 0, 0, 0, 0, 0, 0, // Power decimals
-        0, 0, 0,                // analog, digital, event
-        0, 0, 0,                // PM
-        0, 0,
-        0, 0, 3,                // UVA, UVB, UVI
-        3, 0,
-        4, 4,                   // Geiger Counter decimals
-        0,
-        0, 0, 0, 3,             // NO2, CO, Ohms, pH
-        0, 0, 0
-    };
 
     PROGMEM const char magnitude_unknown_name[]                 = "unknown";
     PROGMEM const char magnitude_temperature_name[]             = "temperature";
@@ -333,17 +344,39 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
     PROGMEM const char * const magnitude_names[] = {
         magnitude_unknown_name,
-        magnitude_temperature_name, magnitude_humidity_name, magnitude_pressure_name,
-        magnitude_current_name, magnitude_voltage_name, magnitude_active_power_name, magnitude_apparent_power_name, magnitude_reactive_power_name, magnitude_power_factor_name, magnitude_energy_name, magnitude_energy_delta_name,
-        magnitude_analog_name, magnitude_digital_name, magnitude_event_name,
-        magnitude_pm1dot0_name, magnitude_pm2dot5_name, magnitude_pm10_name,
-        magnitude_co2_name, magnitude_lux_name,
-        magnitude_uva_name, magnitude_uvb_name, magnitude_uvi_name,
-        magnitude_distance_name, magnitude_hcho_name,
-        magnitude_geiger_cpm_name, magnitude_geiger_sv_name,
+        magnitude_temperature_name,
+        magnitude_humidity_name,
+        magnitude_pressure_name,
+        magnitude_current_name,
+        magnitude_voltage_name,
+        magnitude_active_power_name,
+        magnitude_apparent_power_name,
+        magnitude_reactive_power_name,
+        magnitude_power_factor_name,
+        magnitude_energy_name,
+        magnitude_energy_delta_name,
+        magnitude_analog_name,
+        magnitude_digital_name,
+        magnitude_event_name,
+        magnitude_pm1dot0_name,
+        magnitude_pm2dot5_name, magnitude_pm10_name,
+        magnitude_co2_name,
+        magnitude_lux_name,
+        magnitude_uva_name,
+        magnitude_uvb_name,
+        magnitude_uvi_name,
+        magnitude_distance_name,
+        magnitude_hcho_name,
+        magnitude_geiger_cpm_name,
+        magnitude_geiger_sv_name,
         magnitude_count_name,
-        magnitude_no2_name, magnitude_co_name, magnitude_resistance_name, magnitude_ph_name,
-        magnitude_sonoff_sc_air_quality_name, magnitude_sonoff_sc_light_level_name, magnitude_sonoff_sc_noise_level_name
+        magnitude_no2_name,
+        magnitude_co_name,
+        magnitude_resistance_name,
+        magnitude_ph_name,
+        magnitude_sonoff_sc_air_quality_name,
+        magnitude_sonoff_sc_light_level_name,
+        magnitude_sonoff_sc_noise_level_name
     };
 
     PROGMEM const char magnitude_empty[]        = "";
@@ -368,40 +401,24 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
     PROGMEM const char * const magnitude_units[] = {
         magnitude_empty,
-        magnitude_celsius, magnitude_percentage, magnitude_hectopascals,
-        magnitude_amperes, magnitude_volts, magnitude_watts, magnitude_watts, magnitude_watts, magnitude_percentage, magnitude_joules, magnitude_joules, magnitude_empty, magnitude_empty, magnitude_empty,
-        magnitude_ugm3, magnitude_ugm3, magnitude_ugm3,
-        magnitude_ppm, magnitude_lux,
-        magnitude_empty, magnitude_empty, magnitude_empty,
-        magnitude_distance, magnitude_mgm3,
-        magnitude_geiger_cpm, magnitude_geiger_sv,                  // Geiger counter units
-        magnitude_empty,                                            //
-        magnitude_ppm, magnitude_ppm,                               // NO2 & CO2
-        magnitude_resistance,
-        magnitude_empty,                                            // pH
-        magnitude_empty, magnitude_empty, magnitude_empty
-    };
-
-    PROGMEM const char magnitude_unknown_type[]         = "unknown";
-    PROGMEM const char magnitude_environment_type[]     = "environment";
-    PROGMEM const char magnitude_energy_type[]          = "energy";
-    PROGMEM const char magnitude_analog_sensor_type[]   = "analog-sensor";
-    PROGMEM const char magnitude_binary_sensor_type[]   = "binary-sensor";
-    PROGMEM const char magnitude_event_type[]           = "event";
-
-    PROGMEM const char * const magnitude_types[] = {
-        magnitude_unknown_type,
-        magnitude_environment_type, magnitude_environment_type,
-        magnitude_analog_sensor_type, magnitude_energy_type, magnitude_energy_type, magnitude_energy_type, magnitude_energy_type, magnitude_energy_type, magnitude_energy_type, magnitude_energy_type, magnitude_energy_type,
-        magnitude_analog_sensor_type, magnitude_binary_sensor_type, magnitude_event_type,
-        magnitude_environment_type, magnitude_environment_type, magnitude_environment_type,
-        magnitude_environment_type, magnitude_environment_type,
-        magnitude_environment_type, magnitude_environment_type, magnitude_environment_type,
-        magnitude_analog_sensor_type, magnitude_environment_type,
-        magnitude_environment_type, magnitude_environment_type,
-        magnitude_binary_sensor_type,
-        magnitude_environment_type, magnitude_environment_type, magnitude_analog_sensor_type, magnitude_environment_type,
-        magnitude_environment_type, magnitude_environment_type, magnitude_environment_type
+        magnitude_celsius,
+        magnitude_fahrenheit,
+        magnitude_percentage,
+        magnitude_hectopascals,
+        magnitude_amperes,
+        magnitude_volts,
+        magnitude_watts,
+        magnitude_kw,
+        magnitude_joules,
+        magnitude_kwh,
+        magnitude_ugm3,
+        magnitude_ppm,
+        magnitude_lux,
+        magnitude_distance,
+        magnitude_mgm3,
+        magnitude_geiger_cpm,
+        magnitude_geiger_sv,
+        magnitude_resistance
     };
 
 #endif // SENSOR_SUPPORT

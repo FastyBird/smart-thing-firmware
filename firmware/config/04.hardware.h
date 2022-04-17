@@ -153,7 +153,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define STATUS_LED_PIN_INVERSE          1
 
     // FASTYBIRD
-    #define FASTYBIRD_SUPPORT               0
+    #define FASTYBIRD_SUPPORT               1
 
     #define FASTYBIRD_MAX_CHANNELS          1
 
@@ -209,7 +209,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define LED1_PIN_INVERSE                1
 
     // FASTYBIRD
-    #define FASTYBIRD_SUPPORT               0
+    #define FASTYBIRD_SUPPORT               1
 
     #define FASTYBIRD_MAX_CHANNELS          1
 
@@ -267,7 +267,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define STATUS_LED_PIN_INVERSE          1
 
     // FASTYBIRD
-    #define FASTYBIRD_SUPPORT               0
+    #define FASTYBIRD_SUPPORT               1
 
     #define FASTYBIRD_MAX_CHANNELS          2
 
@@ -321,7 +321,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define STATUS_LED_PIN_INVERSE          1
 
     // FASTYBIRD
-    #define FASTYBIRD_SUPPORT               0
+    #define FASTYBIRD_SUPPORT               1
 
     #define FASTYBIRD_MAX_CHANNELS          1
 
@@ -374,7 +374,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define STATUS_LED_PIN_INVERSE          1
 
     // FASTYBIRD
-    #define FASTYBIRD_SUPPORT               0
+    #define FASTYBIRD_SUPPORT               1
 
     #define FASTYBIRD_MAX_CHANNELS          1
 
@@ -433,7 +433,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define HLW8012_CF_PIN                  14
 
     // FASTYBIRD
-    #define FASTYBIRD_SUPPORT               0
+    #define FASTYBIRD_SUPPORT               1
 
     #define FASTYBIRD_MAX_CHANNELS          1
 
@@ -491,7 +491,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define CSE7766_PIN                     1
 
     // FASTYBIRD
-    #define FASTYBIRD_SUPPORT               0
+    #define FASTYBIRD_SUPPORT               1
 
     #define FASTYBIRD_MAX_CHANNELS          1
 
@@ -548,7 +548,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
     #define ITEAD_SONOFF_SC_SUPPORT         1
 
     // FASTYBIRD
-    #define FASTYBIRD_SUPPORT               0
+    #define FASTYBIRD_SUPPORT               1
 
     #define FASTYBIRD_MAX_CHANNELS          1
 

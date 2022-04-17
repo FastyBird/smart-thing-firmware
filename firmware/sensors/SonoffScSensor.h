@@ -24,11 +24,11 @@ class SonoffScSensor : public BaseSensor {
             _count = 5;
             _sensor_id = SENSOR_SONOFF_SC_ID;
 
-            _appendMagnitude(MAGNITUDE_TEMPERATURE, -1);
-            _appendMagnitude(MAGNITUDE_HUMIDITY, -1);
-            _appendMagnitude(MAGNITUDE_AIR_QUALITY_LEVEL, -1);
-            _appendMagnitude(MAGNITUDE_NOISE_LEVEL, -1);
-            _appendMagnitude(MAGNITUDE_LIGHT_LEVEL, -1);
+            _appendMagnitude(MAGNITUDE_TEMPERATURE, 1, MAGNITUDE_UNIT_CELSIUS);
+            _appendMagnitude(MAGNITUDE_HUMIDITY, 0, MAGNITUDE_UNIT_PERCENTAGE);
+            _appendMagnitude(MAGNITUDE_AIR_QUALITY_LEVEL, 0, MAGNITUDE_UNIT_NONE);
+            _appendMagnitude(MAGNITUDE_NOISE_LEVEL, 0, MAGNITUDE_UNIT_NONE);
+            _appendMagnitude(MAGNITUDE_LIGHT_LEVEL, 0, MAGNITUDE_UNIT_NONE);
         }
 
         ~SonoffScSensor() {
@@ -64,7 +64,7 @@ class SonoffScSensor : public BaseSensor {
         }
 
         // Current value for slot # index
-        double magnitudeCurrentValue(uint8_t index) {
+        double _magnitudeCurrentValue(uint8_t index) {
             _error = SENSOR_ERROR_OK;
 
             if (index == 0) return _temperature;
