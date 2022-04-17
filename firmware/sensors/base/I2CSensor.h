@@ -6,7 +6,7 @@ Copyright (C) 2018 FastyBird s.r.o. <code@fastybird.com>
 
 */
 
-#if SENSOR_SUPPORT && ( I2C_SUPPORT || EMON_ANALOG_SUPPORT )
+#if SENSOR_SUPPORT && I2C_SUPPORT
 
 #if I2C_USE_BRZO
     #define I2C_TRANS_SUCCESS               0   // All i2c commands were executed without errors
@@ -48,13 +48,6 @@ class I2CSensor : public BaseSensor {
 
         uint8_t getAddress() {
             return _address;
-        }
-
-        // Descriptive name of the slot # index
-        String slot(
-            uint8_t index
-        ) {
-            return description();
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
